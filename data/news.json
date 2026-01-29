@@ -1,0 +1,40 @@
+{
+  "news": [
+    {
+      "headline": "Surging demand for sku leads to price hike",
+      "article": "In a bustling twist, tech‑savvy adventurers are lining up to purchase sku after a famous alchemist praised its quality. Expect prices to soar!",
+      "impact": 20,
+      "duration": 5
+    },
+    {
+      "headline": "Abundant harvest floods market with sku",
+      "article": "Farmers report an extraordinary yield of sku this season, leading to a glut in supply. Merchants slash prices to move stock.",
+      "impact": -15,
+      "duration": 4
+    },
+    {
+      "headline": "Industrial boom drives up demand for sku",
+      "article": "A manufacturing boom has increased the need for sku. Traders anticipate shortages and begin hoarding supplies.",
+      "impact": 25,
+      "duration": 3
+    },
+    {
+      "headline": "Strike at the mines reduces sku output",
+      "article": "Workers at several mines producing sku have gone on strike, halting operations. Production delays will likely raise prices.",
+      "impact": 10,
+      "duration": 4
+    },
+    {
+      "headline": "Recycling initiative cuts cost of sku",
+      "article": "A new recycling program floods the market with reclaimed sku, lowering production costs and consumer prices.",
+      "impact": -20,
+      "duration": 5
+    },
+    {
+      "headline": "Technological breakthrough reduces need for sku",
+      "article": "Innovators have found a way to replace sku in many devices, decreasing its demand. Sellers may need to discount to stay competitive.",
+      "impact": -10,
+      "duration": 3
+    }
+  ]
+}

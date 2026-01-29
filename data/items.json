@@ -1,0 +1,5 @@
+{
+  "items": [
+    { "id": 1, "name": "Pumpkin Seeds", "description": "Pumpkin seeds.", "price": 10, "image": "pumpkin_seeds.png", "growDays": 8, "plantStages": 8 }
+  ]
+}
