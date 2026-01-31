@@ -421,10 +421,9 @@ function renderHUD() {
 }
 
 function renderEnergyBar() {
-  const energyPanel = document.getElementById('energy-panel');
   const bar = document.getElementById('energy-bar');
   const text = document.getElementById('energy-text');
-  if (!energyPanel || !bar || !state.player) return;
+  if (!bar || !state.player) return;
   const max = Math.max(1, state.player.energyMax || 10);
   const current = Math.max(0, Math.min(state.player.energy ?? max, max));
   bar.innerHTML = '';
@@ -748,10 +747,6 @@ function showTab(tabName) {
     const panel = document.getElementById(name);
     panel.style.display = (name === tabName) ? 'block' : 'none';
   });
-  const energyPanel = document.getElementById('energy-panel');
-  if (energyPanel) {
-    energyPanel.style.display = (tabName === 'market') ? 'block' : 'none';
-  }
   if (tabName === 'market') {
     renderMarket();
     renderEnergyBar();
