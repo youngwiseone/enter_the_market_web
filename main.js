@@ -404,20 +404,26 @@ async function resetGame() {
  * each game tick or transaction.
  */
 function renderHUD() {
-  const dayElem     = document.getElementById('hud-day');
-  const cashElem    = document.getElementById('hud-cash');
+  const dayElems    = document.querySelectorAll('#hud-day');
+  const cashElems   = document.querySelectorAll('#hud-cash');
   const storageElem = document.getElementById('hud-storage');
-  const netElem     = document.getElementById('hud-networth');
+  const netElems    = document.querySelectorAll('#hud-networth');
   const { day, week, year, cash, capacity, capacityUsed, netWorth } = state.player;
   // Compute day of week (Mon, Tue, etc.). Day 1 is Monday.
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const dow        = daysOfWeek[(day - 1) % 7];
-  dayElem.textContent     = `${dow} - Day ${day}`;
-  cashElem.textContent    = `Cash: $${cash.toFixed(2)}`;
+  dayElems.forEach(el => {
+    el.textContent = `${dow} - Day ${day}`;
+  });
+  cashElems.forEach(el => {
+    el.textContent = `Cash: $${cash.toFixed(2)}`;
+  });
   if (storageElem) {
     storageElem.textContent = 'Storage: Unlimited';
   }
-  netElem.textContent     = `Net Worth: $${netWorth.toFixed(2)}`;
+  netElems.forEach(el => {
+    el.textContent = `Net Worth: $${netWorth.toFixed(2)}`;
+  });
 }
 
 function renderEnergyBar() {
@@ -750,17 +756,27 @@ function renderCraftingStore(container) {
  * @param {string} tabName The identifier of the tab to display
  */
 function showTab(tabName) {
-  const tabs = ['market', 'store'];
-  tabs.forEach(name => {
-    const panel = document.getElementById(name);
-    panel.style.display = (name === tabName) ? 'block' : 'none';
-  });
-  if (tabName === 'market') {
-    renderMarket();
-    renderEnergyBar();
-  } else if (tabName === 'store') {
+    const marketTable = document.getElementById('market-table-container');
+    const storePanel = document.getElementById('store');
+  const marketTab = document.getElementById('tab-market');
+  const storeTab = document.getElementById('tab-store');
+  const isMarket = tabName === 'market';
+    if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
+  if (storePanel) storePanel.style.display = isMarket ? 'none' : 'block';
+  if (marketTab) {
+    marketTab.classList.toggle('active', isMarket);
+    marketTab.setAttribute('aria-selected', isMarket ? 'true' : 'false');
+  }
+  if (storeTab) {
+    storeTab.classList.toggle('active', !isMarket);
+    storeTab.setAttribute('aria-selected', isMarket ? 'false' : 'true');
+  }
+  renderMarket();
+  renderEnergyBar();
+  if (!isMarket) {
     renderStore();
   }
+  updateGridSize();
 }
 
 /**
@@ -779,6 +795,30 @@ function renderAll() {
   if (storeEl && window.getComputedStyle(storeEl).display !== 'none') {
     renderStore();
   }
+  updateGridSize();
+}
+
+function updateGridSize() {
+  const root = document.documentElement;
+  const isMobile = window.innerWidth < window.innerHeight;
+  const gridContainer = document.getElementById('grid-container');
+  if (!gridContainer) return;
+  if (isMobile) {
+    const size = Math.max(200, window.innerWidth - 24);
+    root.style.setProperty('--grid-size', `${size}px`);
+    return;
+  }
+  const header = document.getElementById('market-header');
+  const messages = document.getElementById('messages-panel');
+  const nextDay = document.getElementById('next-day');
+  const headerHeight = header ? header.offsetHeight : 0;
+  const messagesHeight = messages ? messages.offsetHeight : 0;
+  const nextDayHeight = nextDay ? nextDay.offsetHeight : 0;
+  const rowHeight = Math.max(messagesHeight, nextDayHeight);
+  const availableHeight = window.innerHeight - headerHeight - rowHeight - 24;
+  const maxByWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : availableHeight;
+  const size = Math.max(240, Math.min(availableHeight, maxByWidth));
+  root.style.setProperty('--grid-size', `${size}px`);
 }
 
 /**
@@ -1680,6 +1720,14 @@ async function main() {
   await loadJSONData();
   initialiseState();
   attachEventHandlers();
+  const header = document.getElementById('market-header');
+  if (header) {
+    Array.from(header.children).forEach(child => {
+      if (child.tagName === 'SPAN') {
+        child.remove();
+      }
+    });
+  }
   updateToolButtons();
   updateCursorForTool();
   // Show welcome message on first launch
@@ -1693,6 +1741,8 @@ async function main() {
   renderHUD();
   // Additional initialisation: apply selected theme
   applyTheme(state.player.theme);
+  updateGridSize();
+  window.addEventListener('resize', updateGridSize);
 }
 
 // Run main once DOM is ready. If the async function rejects, log the error.
