@@ -7,7 +7,6 @@ These are tasks I am still planning, do not work on unless instructed.
 - Add animals.
 - Show all days of week, highlighting current and include icons.
 - Mobile layout.
-- Add Energy.
 - Add tools (Watering Can (only watered crops grow/produce), Pickaxe (for mining tiles to make more land space),
 - Sundays market closes, shows shop instead (you can buy the cosmetics from the shop, or upgrade tools, takes time for it to arrive for you to be able to use).
 - Add spend animation with coin particles. Same for sell.

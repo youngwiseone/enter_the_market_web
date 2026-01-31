@@ -34,7 +34,9 @@ const DEFAULT_DATA = {
     netWorth: 100.0,       // cash + inventory value, initialised to starting cash
     theme: 'default',      // selected theme
     uiSkin: 'classic',     // selected UI skin
-    screensaver: 'default' // selected screensaver
+    screensaver: 'default', // selected screensaver
+    energy: 10,
+    energyMax: 10
     ,
     // Tracks whether the welcome message has been shown on first load
     welcomeShown: false
@@ -245,6 +247,13 @@ function initialiseState() {
   state.store         = loadFromStorage('store',         null) ?? clone(DEFAULT_DATA.store);
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
+  if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
+    state.player.energyMax = DEFAULT_DATA.player.energyMax;
+  }
+  if (typeof state.player.energy !== 'number') {
+    state.player.energy = state.player.energyMax;
+  }
+  state.player.energy = Math.max(0, Math.min(state.player.energy, state.player.energyMax));
   // If saved items do not match the current defaults, reset items/shop/inventory.
   const defaultItem = DEFAULT_DATA.items[0];
   const savedItem = Array.isArray(state.items) ? state.items[0] : null;
@@ -374,6 +383,26 @@ function renderHUD() {
     storageElem.textContent = 'Storage: Unlimited';
   }
   netElem.textContent     = `Net Worth: $${netWorth.toFixed(2)}`;
+}
+
+function renderEnergyBar() {
+  const energyPanel = document.getElementById('energy-panel');
+  const bar = document.getElementById('energy-bar');
+  const text = document.getElementById('energy-text');
+  if (!energyPanel || !bar || !state.player) return;
+  const max = Math.max(1, state.player.energyMax || 10);
+  const current = Math.max(0, Math.min(state.player.energy ?? max, max));
+  bar.innerHTML = '';
+  for (let i = 0; i < max; i += 1) {
+    const segment = document.createElement('div');
+    segment.className = 'energy-segment' + (i < current ? ' filled' : '');
+    bar.appendChild(segment);
+  }
+  bar.setAttribute('aria-valuenow', String(current));
+  bar.setAttribute('aria-valuemax', String(max));
+  if (text) {
+    text.textContent = `Energy: ${current}/${max}`;
+  }
 }
 
 /**
@@ -657,8 +686,13 @@ function showTab(tabName) {
     const panel = document.getElementById(name);
     panel.style.display = (name === tabName) ? 'block' : 'none';
   });
+  const energyPanel = document.getElementById('energy-panel');
+  if (energyPanel) {
+    energyPanel.style.display = (tabName === 'market') ? 'block' : 'none';
+  }
   if (tabName === 'market') {
     renderMarket();
+    renderEnergyBar();
   } else if (tabName === 'store') {
     renderStore();
   }
@@ -672,6 +706,7 @@ function showTab(tabName) {
  */
 function renderAll() {
   renderHUD();
+  renderEnergyBar();
   // Always update market to keep grid/table in sync, even if hidden.
   renderMarket();
   // Update store only when visible.
@@ -704,6 +739,20 @@ function addMessage(text) {
   chatLog.appendChild(entry);
   // Scroll to bottom
   chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function consumeEnergy(amount, reason) {
+  const max = state.player.energyMax || 10;
+  if (typeof state.player.energy !== 'number') {
+    state.player.energy = max;
+  }
+  if (state.player.energy < amount) {
+    const message = reason ? `Not enough energy to ${reason}.` : 'Not enough energy.';
+    addMessage(message);
+    return false;
+  }
+  state.player.energy = Math.max(0, state.player.energy - amount);
+  return true;
 }
 
 // ----------- Game Logic Functions (Placeholders) -----------
@@ -798,6 +847,10 @@ function sellItem(itemId, quantity) {
 function nextDay() {
   // Advance day counter
   state.player.day += 1;
+  if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
+    state.player.energyMax = DEFAULT_DATA.player.energyMax;
+  }
+  state.player.energy = state.player.energyMax;
   // Determine the day of week for the new day (0=Mon,..6=Sun)
   const dowIndex = (state.player.day - 1) % 7;
   // Handle start of a new week (Monday) for days beyond the first
@@ -1088,6 +1141,9 @@ function purchaseGridSlot(index) {
     alert(`Insufficient funds to purchase this slot. Requires $${cost.toFixed(2)}.`);
     return;
   }
+  if (!consumeEnergy(1, 'unlock a grid slot')) {
+    return;
+  }
   state.player.cash -= cost;
   state.gridUnlocked[index] = true;
   // Persist changes
@@ -1108,6 +1164,9 @@ function placeItemOnGrid(itemId, cellIndex) {
   if (!state.gridUnlocked[cellIndex] || state.gridItems[cellIndex]) return;
   const item = state.items.find(it => it.id === itemId);
   if (!item) return;
+  if (!consumeEnergy(1, 'plant a seed')) {
+    return;
+  }
   state.gridItems[cellIndex] = itemId;
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = state.player.day;
@@ -1170,6 +1229,9 @@ function purchaseAndPlaceSelected(cellIndex) {
     alert('Insufficient funds.');
     return;
   }
+  if (!consumeEnergy(1, 'plant a seed')) {
+    return;
+  }
   state.player.cash -= shopEntry.price;
   state.player.netWorth = state.player.cash;
   shopEntry.quantity -= 1;
@@ -1187,6 +1249,9 @@ function harvestPlant(cellIndex) {
   if (!itemId) return;
   const item = state.items.find(it => it.id === itemId);
   if (!item) return;
+  if (!consumeEnergy(1, 'harvest this plant')) {
+    return;
+  }
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
   const basePrice = shopEntry ? shopEntry.price : 0;
   const saleValue = basePrice * 1.25;
