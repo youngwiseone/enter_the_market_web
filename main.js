@@ -185,6 +185,11 @@ let state = {
   store: null
 };
 
+const TOOL_GLOVE = 'glove';
+const TOOL_WATERING = 'watering';
+const TOOL_PICKAXE = 'pickaxe';
+const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
+
 // Deep clone a value using JSON serialisation. This is used to
 // duplicate default objects so that mutations to state do not affect
 // DEFAULT_DATA. Note: this will drop functions and complex types.
@@ -281,6 +286,10 @@ function initialiseState() {
   state.gridUnlocked = loadFromStorage('gridUnlocked', null);
   state.gridItems    = loadFromStorage('gridItems', null);
   state.gridPlantedDay = loadFromStorage('gridPlantedDay', null);
+  state.gridWateredDay = loadFromStorage('gridWateredDay', null);
+  state.gridWateredCount = loadFromStorage('gridWateredCount', null);
+  state.gridMiningHits = loadFromStorage('gridMiningHits', null);
+  state.activeTool = loadFromStorage('activeTool', null);
   if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== 81) {
     if (Array.isArray(oldGrid) && oldGrid.length === 81) {
       state.gridUnlocked = oldGrid.map(val => !!val);
@@ -293,6 +302,18 @@ function initialiseState() {
   }
   if (!Array.isArray(state.gridPlantedDay) || state.gridPlantedDay.length !== 81) {
     state.gridPlantedDay = Array(81).fill(null);
+  }
+  if (!Array.isArray(state.gridWateredDay) || state.gridWateredDay.length !== 81) {
+    state.gridWateredDay = Array(81).fill(null);
+  }
+  if (!Array.isArray(state.gridWateredCount) || state.gridWateredCount.length !== 81) {
+    state.gridWateredCount = Array(81).fill(0);
+  }
+  if (!Array.isArray(state.gridMiningHits) || state.gridMiningHits.length !== 81) {
+    state.gridMiningHits = Array(81).fill(0);
+  }
+  if (!TOOL_LIST.includes(state.activeTool)) {
+    state.activeTool = TOOL_GLOVE;
   }
 
 }
@@ -314,6 +335,10 @@ function saveState() {
   saveToStorage('gridUnlocked',  state.gridUnlocked);
   saveToStorage('gridItems',     state.gridItems);
   saveToStorage('gridPlantedDay', state.gridPlantedDay);
+  saveToStorage('gridWateredDay', state.gridWateredDay);
+  saveToStorage('gridWateredCount', state.gridWateredCount);
+  saveToStorage('gridMiningHits', state.gridMiningHits);
+  saveToStorage('activeTool', state.activeTool);
 }
 
 /**
@@ -346,12 +371,22 @@ async function resetGame() {
   state.gridUnlocked = Array(81).fill(false);
   state.gridItems    = Array(81).fill(null);
   state.gridPlantedDay = Array(81).fill(null);
+  state.gridWateredDay = Array(81).fill(null);
+  state.gridWateredCount = Array(81).fill(0);
+  state.gridMiningHits = Array(81).fill(0);
+  state.activeTool = TOOL_GLOVE;
   saveToStorage('gridUnlocked', state.gridUnlocked);
   saveToStorage('gridItems',    state.gridItems);
   saveToStorage('gridPlantedDay', state.gridPlantedDay);
+  saveToStorage('gridWateredDay', state.gridWateredDay);
+  saveToStorage('gridWateredCount', state.gridWateredCount);
+  saveToStorage('gridMiningHits', state.gridMiningHits);
+  saveToStorage('activeTool', state.activeTool);
   // Start at week 1: schedule any news for week 1
   generateNewsEvents();
   renderAll();
+  updateToolButtons();
+  updateCursorForTool();
   // Show welcome message on reset
   if (!state.player.welcomeShown) {
     addMessage('Welcome to the market!');
@@ -497,16 +532,15 @@ function renderMarket() {
       const itmId = state.gridItems[i];
         const it = state.items.find(itm => itm.id === itmId);
         if (it) {
-          const plantedDay = Array.isArray(state.gridPlantedDay) ? state.gridPlantedDay[i] : null;
           const stageCount = it.plantStages || 1;
           const growDays = typeof it.growDays === 'number' ? it.growDays : 0;
+          const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[i] || 0) : 0;
           let stageIndex = 1;
           let isGrown = true;
-          if (growDays > 0 && plantedDay !== null) {
-            const daysSince = Math.max(0, state.player.day - plantedDay);
-            const progress = Math.min(1, daysSince / growDays);
+          if (growDays > 0) {
+            const progress = Math.min(1, wateredCount / growDays);
             stageIndex = 1 + Math.floor(progress * (stageCount - 1));
-            isGrown = daysSince >= growDays;
+            isGrown = wateredCount >= growDays;
           }
           const img = document.createElement('img');
           img.width = 24;
@@ -526,39 +560,67 @@ function renderMarket() {
             const shopEntry = state.shop.find(entry => entry.itemId === itmId);
             const sellPrice = shopEntry ? shopEntry.price * 1.25 : 0;
             cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
-          } else if (growDays > 0 && plantedDay !== null) {
-            const daysSince = Math.max(0, state.player.day - plantedDay);
-            const daysLeft = Math.max(0, growDays - daysSince);
+          } else if (growDays > 0) {
+            const daysLeft = Math.max(0, growDays - wateredCount);
             cell.title = `Grows in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
           }
         }
       }
+    const miningHits = Array.isArray(state.gridMiningHits) ? state.gridMiningHits[i] : 0;
+    if (!unlocked && miningHits > 0) {
+      const crackIndex = Math.min(10, miningHits);
+      const crackImg = document.createElement('img');
+      crackImg.className = 'grid-overlay';
+      crackImg.src = `resources/tools/crack${crackIndex}.png`;
+      crackImg.alt = 'Mining progress';
+      cell.appendChild(crackImg);
+    }
+    if (unlocked && Array.isArray(state.gridWateredDay) && state.gridWateredDay[i] === state.player.day) {
+      const waterImg = document.createElement('img');
+      waterImg.className = 'grid-overlay';
+      waterImg.src = 'resources/tools/water.png';
+      waterImg.alt = 'Watered';
+      cell.appendChild(waterImg);
+    }
     // Handle clicks: purchase locked slots or remove items from grid. Use
     // dynamic state lookups instead of captured variables.
     cell.addEventListener('click', () => {
-      if (!state.gridUnlocked[i]) {
-        purchaseGridSlot(i);
-      } else {
-        if (state.gridItems[i]) {
-          const itmId = state.gridItems[i];
-          const it = state.items.find(itm => itm.id === itmId);
-          const plantedDay = Array.isArray(state.gridPlantedDay) ? state.gridPlantedDay[i] : null;
-          const growDays = it && typeof it.growDays === 'number' ? it.growDays : 0;
-          const isGrown = growDays > 0 && plantedDay !== null
-            ? (state.player.day - plantedDay) >= growDays
-            : true;
-          if (isGrown) {
-            harvestPlant(i);
-          } else {
-            addMessage('This plant is still growing.');
-          }
+      const unlockedNow = state.gridUnlocked[i];
+      if (state.activeTool === TOOL_PICKAXE) {
+        if (!unlockedNow) {
+          mineGridTile(i);
+        }
+        return;
+      }
+      if (state.activeTool === TOOL_WATERING) {
+        if (!unlockedNow) {
+          addMessage('This tile is locked. Mine it first.');
           return;
         }
-        if (selectedShopItemId) {
-          purchaseAndPlaceSelected(i);
+        waterGridTile(i);
+        return;
+      }
+      if (!unlockedNow) {
+        addMessage('Use the pickaxe to mine this tile.');
+        return;
+      }
+      if (state.gridItems[i]) {
+        const itmId = state.gridItems[i];
+        const it = state.items.find(itm => itm.id === itmId);
+        const growDays = it && typeof it.growDays === 'number' ? it.growDays : 0;
+        const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[i] || 0) : 0;
+        const isGrown = growDays > 0 ? wateredCount >= growDays : true;
+        if (isGrown) {
+          harvestPlant(i);
         } else {
-          addMessage('Select an item from the market first.');
+          addMessage('This plant is still growing.');
         }
+        return;
+      }
+      if (selectedShopItemId) {
+        purchaseAndPlaceSelected(i);
+      } else {
+        addMessage('Select an item from the market first.');
       }
     });
     // Disable the context menu on right click. Earlier versions used
@@ -1152,6 +1214,42 @@ function purchaseGridSlot(index) {
   renderAll();
 }
 
+function mineGridTile(index) {
+  if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return;
+  if (state.gridUnlocked[index]) return;
+  if (!consumeEnergy(1, 'mine this tile')) {
+    return;
+  }
+  const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0;
+  const nextHits = currentHits + 1;
+  if (nextHits >= 10) {
+    state.gridUnlocked[index] = true;
+    if (Array.isArray(state.gridMiningHits)) {
+      state.gridMiningHits[index] = 0;
+    }
+    addMessage('Cleared a tile.');
+  } else if (Array.isArray(state.gridMiningHits)) {
+    state.gridMiningHits[index] = nextHits;
+  }
+  saveState();
+  renderAll();
+}
+
+function waterGridTile(index) {
+  if (!Array.isArray(state.gridWateredDay) || index < 0 || index >= state.gridWateredDay.length) return;
+  if (!consumeEnergy(1, 'water this tile')) {
+    return;
+  }
+  if (state.gridWateredDay[index] !== state.player.day) {
+    state.gridWateredDay[index] = state.player.day;
+    if (Array.isArray(state.gridWateredCount) && state.gridItems[index]) {
+      state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
+    }
+  }
+  saveState();
+  renderAll();
+}
+
 /**
  * Place an inventory item onto an unlocked grid slot. The item must exist
  * in the player's inventory (stock on hand). Upon placement, one unit
@@ -1170,6 +1268,10 @@ function placeItemOnGrid(itemId, cellIndex) {
   state.gridItems[cellIndex] = itemId;
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = state.player.day;
+  }
+  if (Array.isArray(state.gridWateredCount)) {
+    const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
+    state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
   saveState();
   addMessage(`Placed ${item.name} on the grid.`);
@@ -1190,6 +1292,9 @@ function removeItemFromGrid(cellIndex) {
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
   }
+  if (Array.isArray(state.gridWateredCount)) {
+    state.gridWateredCount[cellIndex] = 0;
+  }
   saveState();
   addMessage(`Removed ${item.name} from the grid.`);
   renderAll();
@@ -1201,19 +1306,60 @@ let selectedShopItemId = null;
 function selectShopItem(itemId) {
   if (selectedShopItemId === itemId) {
     selectedShopItemId = null;
-    document.body.style.cursor = '';
+    updateCursorForTool();
     renderMarket();
     return;
   }
   selectedShopItemId = itemId;
-  const item = state.items.find(it => it.id === itemId);
-  if (item && item.image) {
-    const imgPath = item.image.startsWith('data:') ? item.image : `resources/${item.image}`;
-    document.body.style.cursor = `url('${imgPath}') 12 12, pointer`;
-  } else {
-    document.body.style.cursor = 'pointer';
-  }
+  setActiveTool(TOOL_GLOVE);
+  updateCursorForTool();
   renderMarket();
+}
+
+function clearShopSelection() {
+  if (!selectedShopItemId) return;
+  selectedShopItemId = null;
+  updateCursorForTool();
+  renderMarket();
+}
+
+function updateToolButtons() {
+  document.querySelectorAll('.tool-button').forEach(button => {
+    const tool = button.getAttribute('data-tool');
+    if (tool === state.activeTool) {
+      button.classList.add('active');
+    } else {
+      button.classList.remove('active');
+    }
+  });
+}
+
+function updateCursorForTool() {
+  if (state.activeTool === TOOL_WATERING) {
+    document.body.style.cursor = "url('resources/tools/watering_can.png') 12 12, pointer";
+    return;
+  }
+  if (state.activeTool === TOOL_PICKAXE) {
+    document.body.style.cursor = "url('resources/tools/pickaxe.png') 12 12, pointer";
+    return;
+  }
+  if (selectedShopItemId) {
+    const item = state.items.find(it => it.id === selectedShopItemId);
+    if (item && item.image) {
+      const imgPath = item.image.startsWith('data:') ? item.image : `resources/${item.image}`;
+      document.body.style.cursor = `url('${imgPath}') 12 12, pointer`;
+      return;
+    }
+  }
+  document.body.style.cursor = '';
+}
+
+function setActiveTool(tool) {
+  if (!TOOL_LIST.includes(tool)) return;
+  state.activeTool = tool;
+  updateToolButtons();
+  updateCursorForTool();
+  saveToStorage('activeTool', state.activeTool);
 }
 
 function purchaseAndPlaceSelected(cellIndex) {
@@ -1239,6 +1385,10 @@ function purchaseAndPlaceSelected(cellIndex) {
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = state.player.day;
   }
+  if (Array.isArray(state.gridWateredCount)) {
+    const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
+    state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
+  }
   saveState();
   addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`);
   renderAll();
@@ -1260,6 +1410,9 @@ function harvestPlant(cellIndex) {
   state.gridItems[cellIndex] = null;
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
+  }
+  if (Array.isArray(state.gridWateredCount)) {
+    state.gridWateredCount[cellIndex] = 0;
   }
   saveState();
   addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`);
@@ -1448,6 +1601,16 @@ function attachEventHandlers() {
   // Next Day button triggers a daily update
   document.getElementById('next-day').onclick = nextDay;
 
+  document.querySelectorAll('.tool-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const tool = button.getAttribute('data-tool');
+      if (tool === TOOL_WATERING || tool === TOOL_PICKAXE) {
+        clearShopSelection();
+      }
+      setActiveTool(tool);
+    });
+  });
+
 }
 
 // ----------- Startup -----------
@@ -1461,6 +1624,8 @@ async function main() {
   await loadJSONData();
   initialiseState();
   attachEventHandlers();
+  updateToolButtons();
+  updateCursorForTool();
   // Show welcome message on first launch
   if (!state.player.welcomeShown) {
     addMessage('Welcome to the market!');
