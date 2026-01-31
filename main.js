@@ -587,7 +587,12 @@ function renderMarket() {
       const unlockedNow = state.gridUnlocked[i];
       if (state.activeTool === TOOL_PICKAXE) {
         if (!unlockedNow) {
-          mineGridTile(i);
+          const didMessage = mineGridTile(i);
+          if (!didMessage) {
+            setChatProfile('player', 'neutral');
+          }
+        } else {
+          setChatProfile('player', 'neutral');
         }
         return;
       }
@@ -596,7 +601,10 @@ function renderMarket() {
           addMessage('This tile is locked. Mine it first.');
           return;
         }
-        waterGridTile(i);
+        const didMessage = waterGridTile(i);
+        if (!didMessage) {
+          setChatProfile('player', 'neutral');
+        }
         return;
       }
       if (!unlockedNow) {
@@ -779,7 +787,37 @@ function renderAll() {
  *
  * @param {string} text The message to display
  */
-function addMessage(text) {
+const PROFILE_IMAGES = {
+  player: {
+    neutral: 'resources/profiles/player.png',
+    excited: 'resources/profiles/player_excited.png',
+    tired: 'resources/profiles/player_tired.png',
+    wrong: 'resources/profiles/player_wrong.png',
+    money: 'resources/profiles/player_money.png'
+  },
+  farmer: {
+    neutral: 'resources/profiles/farmer.png'
+  },
+  merchant: {
+    neutral: 'resources/profiles/merchant.png'
+  }
+};
+let messageJustEmitted = false;
+let lastClickToken = 0;
+
+function getProfileImage(speaker, emotion) {
+  const speakerMap = PROFILE_IMAGES[speaker] || PROFILE_IMAGES.player;
+  return speakerMap[emotion] || speakerMap.neutral || PROFILE_IMAGES.player.neutral;
+}
+
+function setChatProfile(speaker, emotion) {
+  const profile = document.getElementById('chat-profile');
+  if (!profile) return;
+  profile.src = getProfileImage(speaker, emotion);
+  profile.alt = `${speaker} ${emotion}`;
+}
+
+function addMessage(text, meta) {
   const chatLog = document.getElementById('chat-log');
   // Compose a timestamp that includes the current day and day of week. The
   // state.player.day field tracks the absolute day count and dowIndex is
@@ -791,6 +829,10 @@ function addMessage(text) {
   const dowIndex = (dayIndex - 1) % 7;
   const dow = dowNames[dowIndex];
   const prefix = `DAY ${dayIndex} - ${dow}`;
+  const speaker = meta && meta.speaker ? meta.speaker : 'player';
+  const emotion = meta && meta.emotion ? meta.emotion : 'neutral';
+  setChatProfile(speaker, emotion);
+  messageJustEmitted = true;
   const entry = document.createElement('div');
   entry.textContent = `[${prefix} ${timeString}] ${text}`;
   chatLog.appendChild(entry);
@@ -805,7 +847,7 @@ function consumeEnergy(amount, reason) {
   }
   if (state.player.energy < amount) {
     const message = reason ? `Not enough energy to ${reason}.` : 'Not enough energy.';
-    addMessage(message);
+    addMessage(message, { speaker: 'player', emotion: 'tired' });
     return false;
   }
   state.player.energy = Math.max(0, state.player.energy - amount);
@@ -855,7 +897,7 @@ function buyItem(itemId, quantity) {
   invEntry.avgCost = (existingCost + totalCost) / invEntry.quantity;
   saveState();
   // Announce purchase
-  addMessage(`Bought ${quantity} × ${item.name} for $${totalCost.toFixed(2)}`);
+  addMessage(`Bought ${quantity} × ${item.name} for $${totalCost.toFixed(2)}`, { speaker: 'merchant' });
   renderAll();
 }
 
@@ -892,7 +934,7 @@ function sellItem(itemId, quantity) {
   saveState();
   // Announce sale
   const item = state.items.find(it => it.id === itemId);
-  addMessage(`Sold ${quantity} × ${item ? item.name : 'item'} for $${saleValue.toFixed(2)}`);
+  addMessage(`Sold ${quantity} × ${item ? item.name : 'item'} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
   renderAll();
 }
 
@@ -984,10 +1026,10 @@ function generateDailyTip(dowIndex) {
   if (dowIndex === 3) {
     const events = state.newsHistory[state.player.week] || [];
     if (events.length === 0) {
-      addMessage('News: No stories this week.');
+    addMessage('News: No stories this week.', { speaker: 'farmer' });
       return;
     }
-    addMessage('News: New market stories are in.');
+    addMessage('News: New market stories are in.', { speaker: 'farmer' });
     events.forEach(event => {
       let impactStr = '';
       if (typeof event.impact === 'number') {
@@ -1004,7 +1046,7 @@ function generateDailyTip(dowIndex) {
       const detail = [event.headline, itemName ? `Affects ${itemName}` : '', impactStr ? `Impact ${impactStr}` : '']
         .filter(Boolean)
         .join(' | ');
-      addMessage(detail);
+      addMessage(detail, { speaker: 'farmer' });
     });
     return;
   }
@@ -1074,7 +1116,7 @@ function purchaseCosmetic(itemId) {
   state.player.cash -= item.price;
   item.unlocked = true;
   saveState();
-  addMessage(`Purchased ${item.name} theme for $${item.price.toFixed(2)}`);
+  addMessage(`Purchased ${item.name} theme for $${item.price.toFixed(2)}`, { speaker: 'merchant' });
   renderAll();
 }
 
@@ -1095,7 +1137,7 @@ function selectCosmetic(itemId) {
   }
   // Additional types (screensaver, UI skins) could be handled here
   saveState();
-  addMessage(`Selected ${item.name} theme.`);
+  addMessage(`Selected ${item.name} theme.`, { speaker: 'merchant' });
   renderAll();
 }
 
@@ -1163,7 +1205,7 @@ function craftItem(recipeId, quantity) {
   saveState();
   // Announce crafting
   const outputItem = state.items.find(it => it.id === recipe.output.id);
-  addMessage(`Crafted ${recipe.output.qty * quantity} × ${outputItem ? outputItem.name : 'item'} for $${totalCost.toFixed(2)}`);
+  addMessage(`Crafted ${recipe.output.qty * quantity} × ${outputItem ? outputItem.name : 'item'} for $${totalCost.toFixed(2)}`, { speaker: 'merchant' });
   renderAll();
 }
 
@@ -1210,32 +1252,36 @@ function purchaseGridSlot(index) {
 }
 
 function mineGridTile(index) {
-  if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return;
-  if (state.gridUnlocked[index]) return;
+  if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false;
+  if (state.gridUnlocked[index]) return false;
   if (!consumeEnergy(1, 'mine this tile')) {
-    return;
+    return true;
   }
   const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0;
   const nextHits = currentHits + 1;
+  let didMessage = false;
   if (nextHits >= 10) {
     state.gridUnlocked[index] = true;
     if (Array.isArray(state.gridMiningHits)) {
       state.gridMiningHits[index] = 0;
     }
-    addMessage('Cleared a tile.');
+  addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited' });
+    didMessage = true;
   } else if (Array.isArray(state.gridMiningHits)) {
     state.gridMiningHits[index] = nextHits;
   }
   saveState();
   renderAll();
+  return didMessage;
 }
 
 function waterGridTile(index) {
-  if (!Array.isArray(state.gridWateredDay) || index < 0 || index >= state.gridWateredDay.length) return;
+  if (!Array.isArray(state.gridWateredDay) || index < 0 || index >= state.gridWateredDay.length) return false;
   if (!consumeEnergy(1, 'water this tile')) {
-    return;
+    return true;
   }
-  if (state.gridWateredDay[index] !== state.player.day) {
+  const wasWateredToday = state.gridWateredDay[index] === state.player.day;
+  if (!wasWateredToday) {
     state.gridWateredDay[index] = state.player.day;
     if (Array.isArray(state.gridWateredCount) && state.gridItems[index]) {
       state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
@@ -1243,6 +1289,11 @@ function waterGridTile(index) {
   }
   saveState();
   renderAll();
+  if (!wasWateredToday && state.gridItems[index]) {
+    addMessage('Watered a plant.', { speaker: 'player', emotion: 'excited' });
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -1385,7 +1436,7 @@ function purchaseAndPlaceSelected(cellIndex) {
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
   saveState();
-  addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`);
+  addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' });
   renderAll();
 }
 
@@ -1410,7 +1461,7 @@ function harvestPlant(cellIndex) {
     state.gridWateredCount[cellIndex] = 0;
   }
   saveState();
-  addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`);
+  addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
   renderAll();
 }
 
@@ -1605,6 +1656,16 @@ function attachEventHandlers() {
       setActiveTool(tool);
     });
   });
+
+  document.addEventListener('click', () => {
+    messageJustEmitted = false;
+    const token = ++lastClickToken;
+    setTimeout(() => {
+      if (!messageJustEmitted && lastClickToken === token) {
+        setChatProfile('player', 'neutral');
+      }
+    }, 0);
+  }, true);
 
 }
 

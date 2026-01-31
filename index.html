@@ -233,7 +233,7 @@
         }
         .grid-cell.revealed {
             /* Invert bevel to appear sunken when revealed */
-            background-color: #c0c0c0;
+            background-color: #663931;
             border-left: 1px solid #808080;
             border-top: 1px solid #808080;
             border-right: 1px solid white;
@@ -321,6 +321,18 @@
         .energy-segment.filled {
             background-color: var(--energy-fill);
         }
+        .chat-row {
+            display: flex;
+            gap: 0;
+            align-items: flex-start;
+        }
+        .chat-avatar {
+            width: 88px;
+            height: 88px;
+            flex: 0 0 88px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
     </style>
 </head>
 <body>
@@ -367,7 +379,10 @@
         <!-- Messages panel -->
         <div id="messages-panel" style="margin-top: 32px;">
             <div class="panel-title">Messages</div>
-            <div id="chat-log" style="background-color: black; color: lime; font-family: monospace; height: 80px; overflow-y: auto; padding: 4px;"></div>
+            <div class="chat-row">
+                <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
+                <div id="chat-log" style="background-color: black; color: lime; font-family: monospace; height: 80px; overflow-y: auto; padding: 4px; flex: 1 1 auto;"></div>
+            </div>
         </div>
     </div>
     <div id="store" class="panel">
@@ -383,7 +398,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=32"></script>
+    <script src="main.js?v=36"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
