@@ -46,7 +46,25 @@ const DEFAULT_DATA = {
   // file protocol restrictions), these fallback items ensure the game
   // remains playable. The images are embedded as base64 strings.
   items: [
-    { id: 1, name: 'Pumpkin Seeds', description: 'Pumpkin seeds.', price: 10, image: 'pumpkin_seeds.png', growDays: 7, plantStages: 8 }
+    {
+      id: 1,
+      name: 'Pumpkin Seeds',
+      description: 'Pumpkin seeds.',
+      price: 10,
+      image: 'seeds/pumpkin_seeds.png',
+      seedImage: 'seeds/pumpkin_seeds.png',
+      plantStageImages: [
+        'plants/pumpkin_plant1.png',
+        'plants/pumpkin_plant2.png',
+        'plants/pumpkin_plant3.png',
+        'plants/pumpkin_plant4.png',
+        'plants/pumpkin_plant5.png',
+        'plants/pumpkin_plant6.png'
+      ],
+      harvestImage: 'items/pumpkin.png',
+      growDays: 6,
+      plantStages: 6
+    }
   ],
   // Precompute shop fallback from the fallback items. This ensures
   // default quantities and pricing are available even if JSON fails
@@ -197,6 +215,96 @@ function clone(val) {
   return JSON.parse(JSON.stringify(val));
 }
 
+function resolveResourcePath(assetPath) {
+  if (typeof assetPath !== 'string') return '';
+  const trimmedPath = assetPath.trim();
+  if (!trimmedPath) return '';
+  if (
+    trimmedPath.startsWith('data:') ||
+    trimmedPath.startsWith('blob:') ||
+    trimmedPath.startsWith('http://') ||
+    trimmedPath.startsWith('https://') ||
+    trimmedPath.startsWith('resources/')
+  ) {
+    return trimmedPath;
+  }
+  return `resources/${trimmedPath.replace(/^\/+/, '')}`;
+}
+
+function getCropBaseName(item) {
+  if (!item) return '';
+  const sourcePath = item.seedImage || item.image || '';
+  const fileName = sourcePath.split('/').pop() || '';
+  const baseName = fileName.replace(/\.png$/i, '').replace(/_seeds$/i, '');
+  return baseName;
+}
+
+function getSeedImagePath(item) {
+  if (!item) return '';
+  return resolveResourcePath(item.seedImage || item.image || '');
+}
+
+function getPlantStageImagePath(item, stageIndex) {
+  if (!item) return '';
+  const safeStageIndex = Math.max(1, Number(stageIndex) || 1);
+  if (Array.isArray(item.plantStageImages) && item.plantStageImages.length > 0) {
+    const imageIndex = Math.min(item.plantStageImages.length - 1, safeStageIndex - 1);
+    return resolveResourcePath(item.plantStageImages[imageIndex]);
+  }
+  if (typeof item.plantImageBase === 'string' && item.plantImageBase) {
+    return resolveResourcePath(`${item.plantImageBase}${safeStageIndex}.png`);
+  }
+  if (item.plantStages && item.plantStages > 1) {
+    const baseName = getCropBaseName(item);
+    if (baseName) return resolveResourcePath(`plants/${baseName}_plant${safeStageIndex}.png`);
+  }
+  return getSeedImagePath(item);
+}
+
+function getHarvestImagePath(item) {
+  if (!item) return '';
+  if (item.harvestImage) return resolveResourcePath(item.harvestImage);
+  if (item.plantStages && item.plantStages > 1) {
+    const baseName = getCropBaseName(item);
+    if (baseName) return resolveResourcePath(`items/${baseName}.png`);
+  }
+  return getSeedImagePath(item);
+}
+
+function mergeItemAssetsWithDefaults(items, defaultItems) {
+  if (!Array.isArray(items) || !Array.isArray(defaultItems)) {
+    return { items, changed: false };
+  }
+  const defaultsById = new Map(defaultItems.map(item => [item.id, item]));
+  let changed = false;
+  const mergedItems = items.map(item => {
+    if (!item || typeof item !== 'object') return item;
+    const defaultItem = defaultsById.get(item.id);
+    if (!defaultItem) return item;
+    let nextItem = item;
+    const assignIfMissing = (key) => {
+      const currentValue = nextItem[key];
+      const defaultValue = defaultItem[key];
+      const valueMissing = currentValue === undefined || currentValue === null
+        || (Array.isArray(currentValue) && currentValue.length === 0);
+      if (!valueMissing || defaultValue === undefined || defaultValue === null) return;
+      if (nextItem === item) nextItem = { ...item };
+      nextItem[key] = Array.isArray(defaultValue) ? [...defaultValue] : defaultValue;
+      changed = true;
+    };
+    assignIfMissing('seedImage');
+    assignIfMissing('plantStageImages');
+    assignIfMissing('harvestImage');
+    if (nextItem.seedImage && nextItem.image !== nextItem.seedImage) {
+      if (nextItem === item) nextItem = { ...item };
+      nextItem.image = nextItem.seedImage;
+      changed = true;
+    }
+    return nextItem;
+  });
+  return { items: mergedItems, changed };
+}
+
 // ----------- Utility Functions -----------
 
 /**
@@ -259,6 +367,11 @@ function initialiseState() {
     state.player.energy = state.player.energyMax;
   }
   state.player.energy = Math.max(0, Math.min(state.player.energy, state.player.energyMax));
+  const itemMergeResult = mergeItemAssetsWithDefaults(state.items, DEFAULT_DATA.items);
+  if (itemMergeResult.changed) {
+    state.items = itemMergeResult.items;
+    saveToStorage('items', state.items);
+  }
   // If saved items do not match the current defaults, reset items/shop/inventory.
   const defaultItem = DEFAULT_DATA.items[0];
   const savedItem = Array.isArray(state.items) ? state.items[0] : null;
@@ -266,8 +379,7 @@ function initialiseState() {
     && state.items.length === DEFAULT_DATA.items.length
     && savedItem
     && savedItem.id === defaultItem.id
-    && savedItem.name === defaultItem.name
-    && savedItem.image === defaultItem.image;
+    && savedItem.name === defaultItem.name;
   if (!itemsMatch) {
     state.items = clone(DEFAULT_DATA.items);
     state.shop = clone(DEFAULT_DATA.shop);
@@ -484,9 +596,9 @@ function renderMarket() {
     // Img
     const imgCell = document.createElement('td');
     const img = document.createElement('img');
-    if (item.image) {
-      if (item.image.startsWith('data:')) img.src = item.image;
-      else img.src = `resources/${item.image}`;
+    const seedImagePath = getSeedImagePath(item);
+    if (seedImagePath) {
+      img.src = seedImagePath;
     } else {
       img.style.visibility = 'hidden';
     }
@@ -550,14 +662,11 @@ function renderMarket() {
           const img = document.createElement('img');
           img.width = 24;
           img.height = 24;
-          if (it.image) {
-            if (it.image.startsWith('data:')) {
-              img.src = it.image;
-            } else if (it.plantStages && it.plantStages > 1) {
-              img.src = `resources/pumpkin_plant_${stageIndex}.png`;
-            } else {
-              img.src = `resources/${it.image}`;
-            }
+          const gridImagePath = isGrown
+            ? getHarvestImagePath(it)
+            : getPlantStageImagePath(it, stageIndex);
+          if (gridImagePath) {
+            img.src = gridImagePath;
           }
           img.alt = it.name;
           cell.appendChild(img);
@@ -1431,8 +1540,9 @@ function updateCursorForTool() {
   }
   if (selectedShopItemId) {
     const item = state.items.find(it => it.id === selectedShopItemId);
-    if (item && item.image) {
-      const imgPath = item.image.startsWith('data:') ? item.image : `resources/${item.image}`;
+    if (item) {
+      const imgPath = getSeedImagePath(item);
+      if (!imgPath) return;
       document.body.style.cursor = `url('${imgPath}') 12 12, pointer`;
       return;
     }
