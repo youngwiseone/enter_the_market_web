@@ -51,6 +51,7 @@ const DEFAULT_DATA = {
       name: 'Pumpkin Seeds',
       description: 'Pumpkin seeds.',
       price: 10,
+      rarity: 'common',
       image: 'seeds/pumpkin_seeds.png',
       seedImage: 'seeds/pumpkin_seeds.png',
       plantStageImages: [
@@ -208,6 +209,20 @@ const TOOL_WATERING = 'watering';
 const TOOL_PICKAXE = 'pickaxe';
 const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
 
+const RARITY_TYPES = ['common', 'uncommon', 'rare', 'mythic'];
+const RARITY_ROLLS = [
+  { rarity: 'common', weight: 50 },
+  { rarity: 'uncommon', weight: 30 },
+  { rarity: 'rare', weight: 15 },
+  { rarity: 'mythic', weight: 5 }
+];
+const RARITY_MULTIPLIERS = {
+  common: 1.2,
+  uncommon: 1.5,
+  rare: 2,
+  mythic: 3
+};
+
 // Deep clone a value using JSON serialisation. This is used to
 // duplicate default objects so that mutations to state do not affect
 // DEFAULT_DATA. Note: this will drop functions and complex types.
@@ -295,6 +310,7 @@ function mergeItemAssetsWithDefaults(items, defaultItems) {
     assignIfMissing('seedImage');
     assignIfMissing('plantStageImages');
     assignIfMissing('harvestImage');
+    assignIfMissing('rarity');
     if (nextItem.seedImage && nextItem.image !== nextItem.seedImage) {
       if (nextItem === item) nextItem = { ...item };
       nextItem.image = nextItem.seedImage;
@@ -303,6 +319,30 @@ function mergeItemAssetsWithDefaults(items, defaultItems) {
     return nextItem;
   });
   return { items: mergedItems, changed };
+}
+
+function normalizeRarity(value) {
+  if (typeof value !== 'string') return 'common';
+  const trimmed = value.trim().toLowerCase();
+  return RARITY_TYPES.includes(trimmed) ? trimmed : 'common';
+}
+
+function rollRarity() {
+  const totalWeight = RARITY_ROLLS.reduce((sum, entry) => sum + entry.weight, 0);
+  if (totalWeight <= 0) return 'common';
+  let roll = Math.random() * totalWeight;
+  for (const entry of RARITY_ROLLS) {
+    roll -= entry.weight;
+    if (roll <= 0) {
+      return entry.rarity;
+    }
+  }
+  return 'common';
+}
+
+function getRarityMultiplier(rarity) {
+  const normalized = normalizeRarity(rarity);
+  return RARITY_MULTIPLIERS[normalized] ?? RARITY_MULTIPLIERS.common;
 }
 
 // ----------- Utility Functions -----------
@@ -372,6 +412,22 @@ function initialiseState() {
     state.items = itemMergeResult.items;
     saveToStorage('items', state.items);
   }
+  if (Array.isArray(state.items)) {
+    let rarityChanged = false;
+    const normalized = state.items.map(item => {
+      if (!item || typeof item !== 'object') return item;
+      const normalizedRarity = normalizeRarity(item.rarity);
+      if (item.rarity !== normalizedRarity) {
+        rarityChanged = true;
+        return { ...item, rarity: normalizedRarity };
+      }
+      return item;
+    });
+    if (rarityChanged) {
+      state.items = normalized;
+      saveToStorage('items', state.items);
+    }
+  }
   // If saved items do not match the current defaults, reset items/shop/inventory.
   const defaultItem = DEFAULT_DATA.items[0];
   const savedItem = Array.isArray(state.items) ? state.items[0] : null;
@@ -401,6 +457,7 @@ function initialiseState() {
   state.gridWateredDay = loadFromStorage('gridWateredDay', null);
   state.gridWateredCount = loadFromStorage('gridWateredCount', null);
   state.gridMiningHits = loadFromStorage('gridMiningHits', null);
+  state.gridRarity = loadFromStorage('gridRarity', null);
   state.activeTool = loadFromStorage('activeTool', null);
   if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== 81) {
     if (Array.isArray(oldGrid) && oldGrid.length === 81) {
@@ -423,6 +480,9 @@ function initialiseState() {
   }
   if (!Array.isArray(state.gridMiningHits) || state.gridMiningHits.length !== 81) {
     state.gridMiningHits = Array(81).fill(0);
+  }
+  if (!Array.isArray(state.gridRarity) || state.gridRarity.length !== 81) {
+    state.gridRarity = Array(81).fill(null);
   }
   if (!TOOL_LIST.includes(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
@@ -450,6 +510,7 @@ function saveState() {
   saveToStorage('gridWateredDay', state.gridWateredDay);
   saveToStorage('gridWateredCount', state.gridWateredCount);
   saveToStorage('gridMiningHits', state.gridMiningHits);
+  saveToStorage('gridRarity', state.gridRarity);
   saveToStorage('activeTool', state.activeTool);
 }
 
@@ -486,6 +547,7 @@ async function resetGame() {
   state.gridWateredDay = Array(81).fill(null);
   state.gridWateredCount = Array(81).fill(0);
   state.gridMiningHits = Array(81).fill(0);
+  state.gridRarity = Array(81).fill(null);
   state.activeTool = TOOL_GLOVE;
   saveToStorage('gridUnlocked', state.gridUnlocked);
   saveToStorage('gridItems',    state.gridItems);
@@ -493,6 +555,7 @@ async function resetGame() {
   saveToStorage('gridWateredDay', state.gridWateredDay);
   saveToStorage('gridWateredCount', state.gridWateredCount);
   saveToStorage('gridMiningHits', state.gridMiningHits);
+  saveToStorage('gridRarity', state.gridRarity);
   saveToStorage('activeTool', state.activeTool);
   // Start at week 1: schedule any news for week 1
   generateNewsEvents();
@@ -555,6 +618,23 @@ function renderEnergyBar() {
   if (text) {
     text.textContent = `Energy: ${current}/${max}`;
   }
+}
+
+function getGridRarity(index) {
+  if (!Array.isArray(state.gridRarity)) return null;
+  const rarity = state.gridRarity[index];
+  if (!rarity) return null;
+  return normalizeRarity(rarity);
+}
+
+function assignGridRarity(index) {
+  if (!Array.isArray(state.gridRarity)) return null;
+  const existing = getGridRarity(index);
+  if (existing) return existing;
+  const rolled = rollRarity();
+  state.gridRarity[index] = rolled;
+  saveToStorage('gridRarity', state.gridRarity);
+  return rolled;
 }
 
 /**
@@ -671,8 +751,21 @@ function renderMarket() {
           img.alt = it.name;
           cell.appendChild(img);
           if (isGrown) {
+            const rarity = assignGridRarity(i);
+            if (rarity) {
+              cell.classList.add('rarity-border', `rarity-${rarity}`);
+              const frame = document.createElement('div');
+              frame.className = 'rarity-frame';
+              cell.appendChild(frame);
+              if (rarity === 'mythic') {
+                const holo = document.createElement('div');
+                holo.className = 'rarity-holo';
+                cell.appendChild(holo);
+              }
+            }
             const shopEntry = state.shop.find(entry => entry.itemId === itmId);
-            const sellPrice = shopEntry ? shopEntry.price * 1.25 : 0;
+            const multiplier = getRarityMultiplier(rarity);
+            const sellPrice = shopEntry ? shopEntry.price * multiplier : 0;
             cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
           } else if (growDays > 0) {
             const daysLeft = Math.max(0, growDays - wateredCount);
@@ -1434,6 +1527,13 @@ function waterGridTile(index) {
     state.gridWateredDay[index] = state.player.day;
     if (Array.isArray(state.gridWateredCount) && state.gridItems[index]) {
       state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
+      const item = state.items.find(it => it.id === state.gridItems[index]);
+      if (item) {
+        const growDays = typeof item.growDays === 'number' ? item.growDays : 0;
+        if (growDays > 0 && state.gridWateredCount[index] >= growDays) {
+          assignGridRarity(index);
+        }
+      }
     }
   }
   saveState();
@@ -1461,6 +1561,9 @@ function placeItemOnGrid(itemId, cellIndex) {
     return;
   }
   state.gridItems[cellIndex] = itemId;
+  if (Array.isArray(state.gridRarity)) {
+    state.gridRarity[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = state.player.day;
   }
@@ -1484,6 +1587,9 @@ function removeItemFromGrid(cellIndex) {
   const item = state.items.find(it => it.id === itemId);
   if (!item) return;
   state.gridItems[cellIndex] = null;
+  if (Array.isArray(state.gridRarity)) {
+    state.gridRarity[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
   }
@@ -1578,6 +1684,9 @@ function purchaseAndPlaceSelected(cellIndex) {
   state.player.netWorth = state.player.cash;
   shopEntry.quantity -= 1;
   state.gridItems[cellIndex] = selectedShopItemId;
+  if (Array.isArray(state.gridRarity)) {
+    state.gridRarity[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = state.player.day;
   }
@@ -1600,10 +1709,15 @@ function harvestPlant(cellIndex) {
   }
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
   const basePrice = shopEntry ? shopEntry.price : 0;
-  const saleValue = basePrice * 1.25;
+  const rarity = getGridRarity(cellIndex) || assignGridRarity(cellIndex);
+  const multiplier = getRarityMultiplier(rarity);
+  const saleValue = basePrice * multiplier;
   state.player.cash += saleValue;
   state.player.netWorth = state.player.cash;
   state.gridItems[cellIndex] = null;
+  if (Array.isArray(state.gridRarity)) {
+    state.gridRarity[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
   }

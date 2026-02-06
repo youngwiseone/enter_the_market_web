@@ -5,6 +5,7 @@
       "name": "Pumpkin Seeds",
       "description": "Pumpkin seeds.",
       "price": 10,
+      "rarity": "common",
       "image": "seeds/pumpkin_seeds.png",
       "seedImage": "seeds/pumpkin_seeds.png",
       "plantStageImages": [

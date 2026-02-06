@@ -230,6 +230,7 @@
             cursor: inherit;
             user-select: none;
             position: relative;
+            overflow: hidden;
         }
         .grid-cell.revealed {
             /* Invert bevel to appear sunken when revealed */
@@ -256,6 +257,51 @@
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             z-index: 2;
+        }
+        .rarity-border {
+            box-shadow: inset 0 0 0 3px var(--rarity-color, #ffffff);
+        }
+        .rarity-frame {
+            position: absolute;
+            inset: 0;
+            border: 3px solid var(--rarity-color, #ffffff);
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 4;
+        }
+        .rarity-common {
+            --rarity-color: #ffffff;
+        }
+        .rarity-uncommon {
+            --rarity-color: #c0c0c0;
+        }
+        .rarity-rare {
+            --rarity-color: #d4af37;
+        }
+        .rarity-mythic {
+            --rarity-color: #a855f7;
+        }
+        .rarity-holo {
+            position: absolute;
+            inset: 1px;
+            pointer-events: none;
+            z-index: 3;
+            background: linear-gradient(
+                120deg,
+                rgba(168, 85, 247, 0.0),
+                rgba(168, 85, 247, 0.35),
+                rgba(120, 60, 200, 0.6),
+                rgba(168, 85, 247, 0.35),
+                rgba(168, 85, 247, 0.0)
+            );
+            background-size: 200% 200%;
+            mix-blend-mode: screen;
+            animation: holo-shine 3.5s linear infinite;
+        }
+        @keyframes holo-shine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         .farm-toolbar {
             display: flex;
@@ -534,7 +580,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=38"></script>
+    <script src="main.js?v=41"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
