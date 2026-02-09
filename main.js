@@ -217,6 +217,34 @@ let state = {
   store: null
 };
 
+function getEffectiveWateredCount(index) {
+  const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[index] || 0) : 0;
+  const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[index] === state.player.day;
+  return Math.max(0, wateredCount - (wateredToday ? 1 : 0));
+}
+
+function getPlantGrowthState(item, index) {
+  const stageCount = Math.max(1, Number(item?.plantStages) || 1);
+  const growDays = Math.max(0, Number(item?.growDays) || 0);
+  if (growDays <= 0) {
+    return { stageIndex: stageCount, isGrown: true, daysLeft: 0 };
+  }
+  const effectiveWateredCount = getEffectiveWateredCount(index);
+  const isGrown = effectiveWateredCount >= growDays;
+  const daysLeft = Math.max(0, growDays - effectiveWateredCount);
+  let stageIndex = 1;
+  if (stageCount > 1 && !isGrown) {
+    // Spread visible plant stages across pre-harvest growth so the final
+    // stage appears before harvest day.
+    const preHarvestDays = Math.max(1, growDays - 1);
+    const scaled = Math.ceil((effectiveWateredCount / preHarvestDays) * stageCount);
+    stageIndex = Math.min(stageCount, Math.max(1, scaled));
+  } else if (isGrown) {
+    stageIndex = stageCount;
+  }
+  return { stageIndex, isGrown, daysLeft };
+}
+
 const TOOL_GLOVE = 'glove';
 const TOOL_WATERING = 'watering';
 const TOOL_PICKAXE = 'pickaxe';
@@ -742,28 +770,20 @@ function renderMarket() {
       const itmId = state.gridItems[i];
         const it = state.items.find(itm => itm.id === itmId);
         if (it) {
-          const stageCount = it.plantStages || 1;
+          const growth = getPlantGrowthState(it, i);
           const growDays = typeof it.growDays === 'number' ? it.growDays : 0;
-          const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[i] || 0) : 0;
-          let stageIndex = 1;
-          let isGrown = true;
-          if (growDays > 0) {
-            const progress = Math.min(1, wateredCount / growDays);
-            stageIndex = 1 + Math.floor(progress * (stageCount - 1));
-            isGrown = wateredCount >= growDays;
-          }
           const img = document.createElement('img');
           img.width = 24;
           img.height = 24;
-          const gridImagePath = isGrown
+          const gridImagePath = growth.isGrown
             ? getHarvestImagePath(it)
-            : getPlantStageImagePath(it, stageIndex);
+            : getPlantStageImagePath(it, growth.stageIndex);
           if (gridImagePath) {
             img.src = gridImagePath;
           }
           img.alt = it.name;
           cell.appendChild(img);
-          if (isGrown) {
+          if (growth.isGrown) {
             const rarity = assignGridRarity(i);
             if (rarity) {
               cell.classList.add('rarity-border', `rarity-${rarity}`);
@@ -781,8 +801,7 @@ function renderMarket() {
             const sellPrice = shopEntry ? shopEntry.price * multiplier : 0;
             cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
           } else if (growDays > 0) {
-            const daysLeft = Math.max(0, growDays - wateredCount);
-            cell.title = `Grows in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
+            cell.title = `Grows in ${growth.daysLeft} day${growth.daysLeft === 1 ? '' : 's'}`;
           }
         }
       }
@@ -835,9 +854,7 @@ function renderMarket() {
       if (state.gridItems[i]) {
         const itmId = state.gridItems[i];
         const it = state.items.find(itm => itm.id === itmId);
-        const growDays = it && typeof it.growDays === 'number' ? it.growDays : 0;
-        const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[i] || 0) : 0;
-        const isGrown = growDays > 0 ? wateredCount >= growDays : true;
+        const isGrown = it ? getPlantGrowthState(it, i).isGrown : true;
         if (isGrown) {
           harvestPlant(i);
         } else {
@@ -1739,6 +1756,10 @@ function harvestPlant(cellIndex) {
   if (!itemId) return;
   const item = state.items.find(it => it.id === itemId);
   if (!item) return;
+  if (!getPlantGrowthState(item, cellIndex).isGrown) {
+    addMessage('This plant is still growing.');
+    return;
+  }
   if (!consumeEnergy(1, 'harvest this plant')) {
     return;
   }
