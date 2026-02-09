@@ -2,16 +2,35 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Enter The Market (Web)</title>
     <!-- 98.css for a Windows 98 look -->
     <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.16/dist/98.css">
     <style>
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --grid-size: 580px;
+            --messages-height: clamp(72px, 14vh, 112px);
+            --bottom-bar-height: 170px;
+            --font-ui: clamp(13px, 1.8vw, 16px);
+            --font-table: clamp(12px, 1.6vw, 15px);
+            --font-title: clamp(14px, 2.2vw, 18px);
+            --font-button: clamp(14px, 2.4vw, 20px);
+        }
         body {
             background-color: #c0c0c0;
-            padding: 10px;
+            margin: 0;
+            padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
             font-family: 'MS Sans Serif', sans-serif;
+            font-size: var(--font-ui);
             --energy-fill: #00a2ff;
             --energy-empty: #bcbcbc;
+            min-height: 100dvh;
+            overflow: hidden;
+            box-sizing: border-box;
         }
         #hud {
             display: flex;
@@ -171,7 +190,7 @@
             padding: 4px 6px;
             font-weight: bold;
             border-bottom: 1px solid var(--header-border, #808080);
-            font-size: 0.9rem;
+            font-size: var(--font-title);
         }
 
         /* Zebra table styling and sticky header */
@@ -183,7 +202,7 @@
         .zebra-table td {
             padding: 2px 4px;
             border: 1px solid var(--header-border, #808080);
-            font-size: 0.8rem;
+            font-size: var(--font-table);
         }
         .zebra-table tr:nth-child(even) {
             background-color: #f0f0f0;
@@ -368,12 +387,14 @@
         .chat-row {
             display: flex;
             gap: 0;
-            align-items: flex-start;
+            align-items: stretch;
+            height: var(--messages-height, 88px);
         }
         .chat-avatar {
-            width: 88px;
-            height: 88px;
-            flex: 0 0 88px;
+            width: var(--messages-height, 88px);
+            height: 100%;
+            flex: 0 0 var(--messages-height, 88px);
+            display: block;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -389,7 +410,7 @@
         .market-stats {
             display: flex;
             gap: 12px;
-            font-size: 0.9rem;
+            font-size: var(--font-ui);
             margin-top: 4px;
         }
         .market-tabs {
@@ -399,11 +420,13 @@
         }
         .tab-button {
             padding: 4px 10px;
+            font-size: var(--font-ui);
             background-color: #c0c0c0;
             border-left: 1px solid white;
             border-top: 1px solid white;
             border-right: 1px solid #808080;
             border-bottom: 1px solid #808080;
+            min-height: 44px;
         }
         .tab-button.active {
             background-color: #d4d0c8;
@@ -411,15 +434,20 @@
         }
         #market-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(max(280px, 33vw), var(--grid-size, 580px)) minmax(0, 1fr);
             grid-template-areas:
-                "farm side"
-                "messages actions";
+                "farm side";
             gap: 8px;
-            align-items: start;
+            align-items: stretch;
+            position: relative;
+            height: calc(100dvh - (20px + var(--safe-top) + var(--safe-bottom)));
+            overflow: hidden;
         }
         #farm-panel {
             grid-area: farm;
+            position: relative;
+            align-self: start;
+            z-index: 20;
         }
         #market {
             grid-area: side;
@@ -429,30 +457,59 @@
             flex-direction: column;
             gap: 8px;
             margin: 0;
+            min-height: 0;
+            overflow-y: auto;
+            padding-bottom: calc(var(--bottom-bar-height, 170px) + 8px);
+            box-sizing: border-box;
         }
         #market-table-container {
-            max-height: 360px;
-            overflow-y: auto;
+            max-height: none;
+            overflow: visible;
             margin: 0;
         }
         #store {
             display: none;
         }
+        #bottom-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 35;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 168px;
+            gap: 8px;
+            align-items: stretch;
+            pointer-events: none;
+        }
         #messages-panel {
-            grid-area: messages;
             margin: 0;
             display: flex;
             flex-direction: column;
             align-self: stretch;
+            min-height: 0;
+            pointer-events: auto;
+            background-color: #d4d0c8;
+        }
+        #chat-log {
+            height: 100% !important;
+            font-size: clamp(12px, 1.9vw, 15px);
+            box-sizing: border-box;
         }
         #next-day {
-            grid-area: actions;
-            font-size: 1.1rem;
-            height: 100%;
+            font-size: var(--font-button);
+            min-height: 44px;
             align-self: stretch;
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: auto;
+            white-space: normal;
+            line-height: 1.1;
+            text-align: center;
+        }
+        #next-day .next-day-label + .next-day-label {
+            margin-left: 0.35em;
         }
         #store {
             margin: 0;
@@ -462,54 +519,53 @@
             height: var(--grid-size, 580px);
             max-width: 100%;
         }
-        @media (max-aspect-ratio: 1/1) {
-            #market-layout {
-                grid-template-columns: 1fr 140px;
-                grid-template-areas:
-                    "farm farm"
-                    "side side"
-                    "messages actions";
+        @media (max-width: 900px) {
+            :root {
+                --messages-height: clamp(56px, 10vh, 78px);
             }
-            #market-table-container {
-                max-height: none;
+            #market-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto minmax(0, 1fr);
+                grid-template-areas:
+                    "farm"
+                    "side";
+            }
+            #farm-panel {
+                position: relative;
             }
             #grid-container {
                 width: 100%;
                 height: auto;
                 aspect-ratio: 1 / 1;
             }
-        }
-        @media (hover: none) and (pointer: coarse) {
-            #chat-log {
-                height: 180px !important;
-            }
-            .chat-avatar {
-                width: 188px;
-                height: 188px;
-                flex: 0 0 188px;
-            }
-            .tool-button {
-                width: 150px;
-                height: 150px;
-            }
-            .tool-button img {
-                width: 100px;
-                height: 100px;
-            }
-            .progress-indicator {
-                height: 150px;
-            }
-            .panel-title {
-                font-size: 2.4rem;
-            }
-            .market-stats {
-                font-size: 1.8rem;
-            }
-            .zebra-table th, .zebra-table td {
-                font-size: 1.8rem;
+            #bottom-bar {
+                grid-template-columns: minmax(0, 1fr) 86px;
             }
             #next-day {
-                font-size: 3.0rem;
+                flex-direction: column;
+                gap: 0;
+            }
+            #next-day .next-day-label + .next-day-label {
+                margin-left: 0;
+            }
+            .tool-button {
+                width: 44px;
+                height: 44px;
+            }
+            .tool-button img {
+                width: 28px;
+                height: 28px;
+            }
+            .progress-indicator {
+                height: 44px;
+            }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            :root {
+                --font-ui: clamp(14px, 2.6vw, 18px);
+                --font-table: clamp(13px, 2.2vw, 16px);
+                --font-title: clamp(15px, 3vw, 20px);
+                --font-button: clamp(15px, 3.2vw, 22px);
             }
         }
     </style>
@@ -566,21 +622,23 @@
             <button id="reset-game" class="button" style="margin-top: 8px;">Reset Game</button>
         </div>
     </div>
-        <!-- Messages panel -->
-        <div id="messages-panel">
-            <div class="panel-title">Messages</div>
-            <div class="chat-row">
-                <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
-                <div id="chat-log" style="background-color: black; color: lime; font-family: monospace; height: 80px; overflow-y: auto; padding: 4px; flex: 1 1 auto;"></div>
+        <div id="bottom-bar">
+            <!-- Messages panel -->
+            <div id="messages-panel" class="panel">
+                <div class="panel-title">Messages</div>
+                <div class="chat-row">
+                    <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
+                    <div id="chat-log" style="background-color: black; color: lime; font-family: monospace; overflow-y: auto; padding: 4px; flex: 1 1 auto;"></div>
+                </div>
             </div>
+            <button id="next-day" class="button"><span class="next-day-label">Next</span><span class="next-day-label">Day</span></button>
         </div>
-        <button id="next-day" class="button">Next Day</button>
     </div>
     <!-- Append a version query string to bust browser caching of the script. Update the version number when making changes to main.js. -->
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=41"></script>
+    <script src="main.js?v=42"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

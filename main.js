@@ -1002,25 +1002,46 @@ function renderAll() {
 
 function updateGridSize() {
   const root = document.documentElement;
-  const isMobile = window.innerWidth < window.innerHeight;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const gridContainer = document.getElementById('grid-container');
-  if (!gridContainer) return;
-  if (isMobile) {
-    const size = Math.max(200, window.innerWidth - 24);
-    root.style.setProperty('--grid-size', `${size}px`);
-    return;
-  }
-  const header = document.getElementById('market-header');
-  const messages = document.getElementById('messages-panel');
+  const farmPanel = document.getElementById('farm-panel');
+  const bottomBar = document.getElementById('bottom-bar');
   const nextDay = document.getElementById('next-day');
-  const headerHeight = header ? header.offsetHeight : 0;
-  const messagesHeight = messages ? messages.offsetHeight : 0;
-  const nextDayHeight = nextDay ? nextDay.offsetHeight : 0;
-  const rowHeight = Math.max(messagesHeight, nextDayHeight);
-  const availableHeight = window.innerHeight - headerHeight - rowHeight - 24;
-  const maxByWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : availableHeight;
-  const size = Math.max(240, Math.min(availableHeight, maxByWidth));
+
+  if (!gridContainer || !farmPanel) return;
+
+  const layoutHeight = Math.max(320, window.innerHeight - 20);
+  const isMobileLayout = window.matchMedia('(max-width: 900px)').matches;
+  const nextDayHeight = nextDay ? nextDay.offsetHeight : 44;
+
+  const minMessages = isMobileLayout ? 56 : 72;
+  const maxMessages = isMobileLayout ? 84 : 120;
+  let targetMessagesHeight = clamp(Math.round(layoutHeight * (isMobileLayout ? 0.18 : 0.2)), minMessages, maxMessages);
+  root.style.setProperty('--messages-height', `${targetMessagesHeight}px`);
+
+  // Force a layout pass so measurements reflect current message height.
+  const measuredBottomBar = bottomBar ? bottomBar.offsetHeight : (targetMessagesHeight + nextDayHeight + 12);
+  const farmChrome = Math.max(0, farmPanel.offsetHeight - gridContainer.offsetHeight);
+  const desktopMinimumTarget = Math.floor(window.innerWidth / 3);
+  const minGridSize = isMobileLayout ? 160 : Math.max(260, desktopMinimumTarget);
+  const maxGridSize = isMobileLayout ? Math.floor(window.innerWidth - 24) : Math.floor(window.innerWidth * 0.62);
+  const verticalPadding = isMobileLayout ? 24 : 28;
+
+  let availableGridByHeight = layoutHeight - measuredBottomBar - farmChrome - verticalPadding;
+  if (availableGridByHeight < minGridSize) {
+    const deficit = minGridSize - availableGridByHeight;
+    targetMessagesHeight = clamp(targetMessagesHeight - deficit, minMessages, maxMessages);
+    root.style.setProperty('--messages-height', `${targetMessagesHeight}px`);
+    availableGridByHeight = layoutHeight - (bottomBar ? bottomBar.offsetHeight : measuredBottomBar) - farmChrome - verticalPadding;
+  }
+
+  const maxByWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
+  const size = clamp(Math.floor(Math.min(availableGridByHeight, maxByWidth)), minGridSize, maxGridSize);
   root.style.setProperty('--grid-size', `${size}px`);
+
+  if (bottomBar) {
+    root.style.setProperty('--bottom-bar-height', `${bottomBar.offsetHeight}px`);
+  }
 }
 
 /**
@@ -1080,6 +1101,7 @@ function addMessage(text, meta) {
   chatLog.appendChild(entry);
   // Scroll to bottom
   chatLog.scrollTop = chatLog.scrollHeight;
+  updateGridSize();
 }
 
 function consumeEnergy(amount, reason) {
@@ -1967,6 +1989,16 @@ async function main() {
   applyTheme(state.player.theme);
   updateGridSize();
   window.addEventListener('resize', updateGridSize);
+  window.addEventListener('orientationchange', updateGridSize);
+  if ('ResizeObserver' in window) {
+    const observedElements = ['bottom-bar', 'messages-panel', 'market-header']
+      .map(id => document.getElementById(id))
+      .filter(Boolean);
+    if (observedElements.length > 0) {
+      const resizeObserver = new ResizeObserver(() => updateGridSize());
+      observedElements.forEach(el => resizeObserver.observe(el));
+    }
+  }
 }
 
 // Run main once DOM is ready. If the async function rejects, log the error.
