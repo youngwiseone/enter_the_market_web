@@ -19,6 +19,18 @@
       "harvestImage": "items/pumpkin.png",
       "growDays": 6,
       "plantStages": 6
+    },
+    {
+      "id": 2,
+      "name": "Tomatoe Seeds",
+      "description": "Tomatoe seeds.",
+      "price": 8,
+      "rarity": "common",
+      "image": "seeds/tomatoe_seeds.png",
+      "seedImage": "seeds/tomatoe_seeds.png",
+      "harvestImage": "items/tomatoe.png",
+      "growDays": 6,
+      "plantStages": 6
     }
   ]
 }

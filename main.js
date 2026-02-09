@@ -65,6 +65,18 @@ const DEFAULT_DATA = {
       harvestImage: 'items/pumpkin.png',
       growDays: 6,
       plantStages: 6
+    },
+    {
+      id: 2,
+      name: 'Tomatoe Seeds',
+      description: 'Tomatoe seeds.',
+      price: 8,
+      rarity: 'common',
+      image: 'seeds/tomatoe_seeds.png',
+      seedImage: 'seeds/tomatoe_seeds.png',
+      harvestImage: 'items/tomatoe.png',
+      growDays: 6,
+      plantStages: 6
     }
   ],
   // Precompute shop fallback from the fallback items. This ensures
@@ -72,7 +84,8 @@ const DEFAULT_DATA = {
   // to load. These entries are overwritten by loadJSONData() when
   // external data is successfully fetched.
   shop: [
-    { itemId: 1, quantity: 100, price: 10, priceSum: 0, daysCount: 0 }
+    { itemId: 1, quantity: 100, price: 10, priceSum: 0, daysCount: 0 },
+    { itemId: 2, quantity: 100, price: 8, priceSum: 0, daysCount: 0 }
   ],
   // Player inventory starts empty. Each entry holds the item id and
   // quantity owned. Additional metadata such as average cost could be
@@ -270,8 +283,8 @@ function getPlantStageImagePath(item, stageIndex) {
     return resolveResourcePath(`${item.plantImageBase}${safeStageIndex}.png`);
   }
   if (item.plantStages && item.plantStages > 1) {
-    const baseName = getCropBaseName(item);
-    if (baseName) return resolveResourcePath(`plants/${baseName}_plant${safeStageIndex}.png`);
+    const genericStageIndex = Math.min(6, safeStageIndex);
+    return resolveResourcePath(`plants/plant${genericStageIndex}.png`);
   }
   return getSeedImagePath(item);
 }
