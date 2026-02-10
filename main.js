@@ -612,6 +612,19 @@ function getRarityMultiplier(rarity) {
   return RARITY_MULTIPLIERS[normalized] ?? RARITY_MULTIPLIERS.common;
 }
 
+function addRareGrowthMessage(item, rarity) {
+  const normalized = normalizeRarity(rarity);
+  if (normalized !== 'rare' && normalized !== 'mythic') return;
+  const rarityLabel = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  const multiplier = getRarityMultiplier(normalized);
+  const multiplierLabel = Number.isInteger(multiplier) ? String(multiplier) : multiplier.toFixed(2);
+  const basePrice = getItemCurrentPrice(item.id);
+  addMessage(
+    `1x ${rarityLabel} ${item.name} grown! Worth ${multiplierLabel}x buy price ($${basePrice.toFixed(2)} -> $${(basePrice * multiplier).toFixed(2)}).`,
+    { speaker: 'player', emotion: 'excited' }
+  );
+}
+
 // ----------- Utility Functions -----------
 
 /**
@@ -1083,7 +1096,11 @@ function renderMarket() {
           img.alt = it.name;
           cell.appendChild(img);
           if (growth.isGrown) {
+            const hadRarity = !!getGridRarity(i);
             const rarity = assignGridRarity(i);
+            if (!hadRarity) {
+              addRareGrowthMessage(it, rarity);
+            }
             if (rarity) {
               cell.classList.add('rarity-border', `rarity-${rarity}`);
               const frame = document.createElement('div');
@@ -1520,6 +1537,8 @@ const PROFILE_IMAGES = {
   player: {
     neutral: 'resources/profiles/player.png',
     excited: 'resources/profiles/player_excited.png',
+    mining: 'resources/profiles/player_mining.png',
+    watering: 'resources/profiles/player_watering.png',
     tired: 'resources/profiles/player_tired.png',
     wrong: 'resources/profiles/player_wrong.png',
     money: 'resources/profiles/player_money.png',
@@ -1992,10 +2011,13 @@ function mineGridTile(index) {
     if (Array.isArray(state.gridMiningHits)) {
       state.gridMiningHits[index] = 0;
     }
-  addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited' });
+    addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited' });
     didMessage = true;
   } else if (Array.isArray(state.gridMiningHits)) {
     state.gridMiningHits[index] = nextHits;
+    const hitsLeft = Math.max(0, 10 - nextHits);
+    addMessage(`Mining progress: ${nextHits}/10 hits (${hitsLeft} left).`, { speaker: 'player', emotion: 'mining' });
+    didMessage = true;
   }
   evaluateGoals();
   saveState();
@@ -2005,30 +2027,48 @@ function mineGridTile(index) {
 
 function waterGridTile(index) {
   if (!Array.isArray(state.gridWateredDay) || index < 0 || index >= state.gridWateredDay.length) return false;
+  const itemId = Array.isArray(state.gridItems) ? state.gridItems[index] : null;
+  const item = itemId ? state.items.find(it => it.id === itemId) : null;
+  if (!item) return false;
+
+  const growth = getPlantGrowthState(item, index);
+  if (growth.isGrown) {
+    addMessage('This plant is already grown. Harvest it instead.', { speaker: 'player', emotion: 'watering' });
+    return true;
+  }
+
+  const wasWateredToday = state.gridWateredDay[index] === state.player.day;
+  if (wasWateredToday) {
+    const growDays = Math.max(0, Number(item.growDays) || 0);
+    const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
+    const daysLeft = Math.max(0, growDays - wateredDays);
+    addMessage(
+      `Already watered today. ${item.name} progress: ${wateredDays}/${growDays} days (${daysLeft} left).`,
+      { speaker: 'player', emotion: 'watering' }
+    );
+    return true;
+  }
+
   if (!consumeEnergy(1, 'water this tile')) {
     return true;
   }
-  const wasWateredToday = state.gridWateredDay[index] === state.player.day;
-  if (!wasWateredToday) {
-    state.gridWateredDay[index] = state.player.day;
-    if (Array.isArray(state.gridWateredCount) && state.gridItems[index]) {
-      state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
-      const item = state.items.find(it => it.id === state.gridItems[index]);
-      if (item) {
-        const growDays = typeof item.growDays === 'number' ? item.growDays : 0;
-        if (growDays > 0 && state.gridWateredCount[index] >= growDays) {
-          assignGridRarity(index);
-        }
-      }
-    }
+
+  state.gridWateredDay[index] = state.player.day;
+  if (Array.isArray(state.gridWateredCount)) {
+    state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
   }
+
+  const growDays = Math.max(0, Number(item.growDays) || 0);
+  const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
+  const daysLeft = Math.max(0, growDays - wateredDays);
+  addMessage(
+    `Watering progress: ${item.name} ${wateredDays}/${growDays} days (${daysLeft} left).`,
+    { speaker: 'player', emotion: 'watering' }
+  );
+
   saveState();
   renderAll();
-  if (!wasWateredToday && state.gridItems[index]) {
-    addMessage('Watered a plant.', { speaker: 'player', emotion: 'excited' });
-    return true;
-  }
-  return false;
+  return true;
 }
 
 /**
