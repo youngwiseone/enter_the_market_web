@@ -335,10 +335,51 @@ function consumeFreePurchases(itemId, quantity) {
   return freeQty;
 }
 
+function getItemCurrentPrice(itemId) {
+  const shopEntry = Array.isArray(state.shop)
+    ? state.shop.find(entry => entry.itemId === itemId)
+    : null;
+  if (shopEntry && typeof shopEntry.price === 'number') {
+    return Math.max(0, shopEntry.price);
+  }
+  const item = Array.isArray(state.items)
+    ? state.items.find(it => it.id === itemId)
+    : null;
+  return Math.max(0, Number(item?.price) || 0);
+}
+
+function calculateInventoryValue() {
+  if (!Array.isArray(state.inventory)) return 0;
+  return state.inventory.reduce((total, entry) => {
+    const qty = Number(entry?.quantity) || 0;
+    if (qty <= 0) return total;
+    return total + getItemCurrentPrice(entry.itemId) * qty;
+  }, 0);
+}
+
+function calculateGridValue() {
+  if (!Array.isArray(state.gridItems)) return 0;
+  return state.gridItems.reduce((total, itemId) => {
+    if (!itemId) return total;
+    return total + getItemCurrentPrice(itemId);
+  }, 0);
+}
+
+function calculateNetWorth() {
+  const cash = Number(state.player?.cash) || 0;
+  return cash + calculateInventoryValue() + calculateGridValue();
+}
+
+function updateNetWorth() {
+  if (!state.player || typeof state.player !== 'object') return 0;
+  state.player.netWorth = calculateNetWorth();
+  return state.player.netWorth;
+}
+
 function getGoalMetricValue(metric) {
   if (typeof metric !== 'string') return 0;
   if (metric === 'cash') return Number(state.player?.cash) || 0;
-  if (metric === 'netWorth') return Number(state.player?.netWorth) || 0;
+  if (metric === 'netWorth') return calculateNetWorth();
   if (metric === 'day') return Number(state.player?.day) || 0;
   if (metric === 'harvestCount') return Number(state.goalStats?.harvestCount) || 0;
   if (metric === 'gridUnlockedCount') {
@@ -764,6 +805,7 @@ function initialiseState() {
  * any mutation to player data, shop, inventory, reports, or news.
  */
 function saveState() {
+  updateNetWorth();
   saveToStorage('player',        state.player);
   saveToStorage('items',         state.items);
   saveToStorage('shop',          state.shop);
@@ -869,6 +911,7 @@ async function resetGame() {
  * each game tick or transaction.
  */
 function renderHUD() {
+  updateNetWorth();
   const dayElems    = document.querySelectorAll('#hud-day');
   const cashElems   = document.querySelectorAll('#hud-cash');
   const storageElem = document.getElementById('hud-storage');
@@ -1587,7 +1630,7 @@ function buyItem(itemId, quantity) {
   const existingCost = invEntry.avgCost * invEntry.quantity;
   invEntry.quantity += quantity;
   invEntry.avgCost = (existingCost + totalCost) / invEntry.quantity;
-  state.player.netWorth = state.player.cash;
+  updateNetWorth();
   evaluateGoals();
   saveState();
   if (freeQty > 0) {
@@ -1618,7 +1661,7 @@ function sellItem(itemId, quantity) {
     const index = state.inventory.indexOf(invEntry);
     state.inventory.splice(index, 1);
   }
-  state.player.netWorth = state.player.cash;
+  updateNetWorth();
   evaluateGoals();
   saveState();
   // Announce sale
@@ -1684,15 +1727,8 @@ function nextDay() {
     }
     return true;
   });
-  // Recalculate net worth (cash + inventory value)
-  let inventoryValue = 0;
-  state.inventory.forEach(entry => {
-    const shopEntry = state.shop.find(s => s.itemId === entry.itemId);
-    if (shopEntry) {
-      inventoryValue += shopEntry.price * entry.quantity;
-    }
-  });
-  state.player.netWorth = state.player.cash + inventoryValue;
+  // Recalculate net worth (cash + inventory + grid item value)
+  updateNetWorth();
   // Save active news events and history
   saveToStorage('newsEvents', state.newsEvents);
   saveToStorage('newsHistory', state.newsHistory);
@@ -2154,7 +2190,6 @@ function purchaseAndPlaceSelected(cellIndex) {
     consumeFreePurchases(selectedShopItemId, 1);
   }
   state.player.cash -= totalCost;
-  state.player.netWorth = state.player.cash;
   shopEntry.quantity -= 1;
   state.gridItems[cellIndex] = selectedShopItemId;
   if (Array.isArray(state.gridRarity)) {
@@ -2167,6 +2202,7 @@ function purchaseAndPlaceSelected(cellIndex) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
+  updateNetWorth();
   evaluateGoals();
   saveState();
   if (freeQty > 0) {
@@ -2195,7 +2231,6 @@ function harvestPlant(cellIndex) {
   const multiplier = getRarityMultiplier(rarity);
   const saleValue = basePrice * multiplier;
   state.player.cash += saleValue;
-  state.player.netWorth = state.player.cash;
   state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
   const harvestKey = String(itemId);
   state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
@@ -2209,6 +2244,7 @@ function harvestPlant(cellIndex) {
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[cellIndex] = 0;
   }
+  updateNetWorth();
   evaluateGoals();
   saveState();
   addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
