@@ -87,6 +87,35 @@ const DEFAULT_DATA = {
     { itemId: 1, quantity: 100, price: 10, priceSum: 0, daysCount: 0 },
     { itemId: 2, quantity: 100, price: 8, priceSum: 0, daysCount: 0 }
   ],
+  goals: [
+    {
+      id: 'day-2-watering',
+      name: 'Early Riser',
+      description: 'Reach Day 2 to gain watering can',
+      type: 'feature',
+      goal: { metric: 'day', operator: '>=', value: 2 },
+      reward: { unlockTool: 'watering' },
+      message: 'Goal complete: Watering Can is now available.'
+    },
+    {
+      id: 'tomatoe-first-harvest',
+      name: 'Tomatoe Starter',
+      description: 'Harvest 1 Tomatoe',
+      type: 'economy',
+      goal: { metric: 'itemsHarvested.2', operator: '>=', value: 1 },
+      reward: { freePurchases: { itemId: 2, count: 2 } },
+      message: 'Goal complete: Next 2 Tomatoe Seeds bought are free.'
+    },
+    {
+      id: 'cash-150-theme',
+      name: 'Pocket Profit',
+      description: 'Reach $150 cash',
+      type: 'cosmetic',
+      goal: { metric: 'cash', operator: '>=', value: 150 },
+      reward: { grantCosmetic: 'theme-mono' },
+      message: 'Goal complete: Monochrome Green theme awarded.'
+    }
+  ],
   // Player inventory starts empty. Each entry holds the item id and
   // quantity owned. Additional metadata such as average cost could be
   // stored to calculate profit/loss on sales.
@@ -204,6 +233,17 @@ async function loadJSONData() {
   } catch (err) {
     console.error('Failed to load news.json', err);
   }
+  try {
+    const goalsResp = await fetch('data/goals.json');
+    if (goalsResp.ok) {
+      const goalsData = await goalsResp.json();
+      if (goalsData && Array.isArray(goalsData.goals)) {
+        DEFAULT_DATA.goals = goalsData.goals;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load goals.json', err);
+  }
 }
 
 // Internal state used at runtime. Loaded from localStorage or seeded
@@ -214,7 +254,14 @@ let state = {
   shop: null,
   inventory: null,
   newsEvents: null,
-  store: null
+  store: null,
+  goals: null,
+  goalsClaimed: null,
+  unlockedTools: null,
+  unlockedShopItems: null,
+  freePurchasesByItem: null,
+  goalFlags: null,
+  goalStats: null
 };
 
 function getEffectiveWateredCount(index) {
@@ -243,6 +290,144 @@ function getPlantGrowthState(item, index) {
     stageIndex = stageCount;
   }
   return { stageIndex, isGrown, daysLeft };
+}
+
+function getDefaultUnlockedTools() {
+  return {
+    [TOOL_GLOVE]: true,
+    [TOOL_PICKAXE]: true,
+    [TOOL_WATERING]: false
+  };
+}
+
+function getDefaultUnlockedShopItems(items) {
+  const unlocked = {};
+  if (!Array.isArray(items)) return unlocked;
+  items.forEach(item => {
+    if (!item || typeof item.id !== 'number') return;
+    unlocked[item.id] = item.goalLocked !== true;
+  });
+  return unlocked;
+}
+
+function isToolUnlocked(tool) {
+  if (tool === TOOL_GLOVE) return true;
+  return !!(state.unlockedTools && state.unlockedTools[tool]);
+}
+
+function isShopItemUnlocked(itemId) {
+  return !!(state.unlockedShopItems && state.unlockedShopItems[itemId]);
+}
+
+function getFreePurchaseCount(itemId) {
+  if (!state.freePurchasesByItem) return 0;
+  const key = String(itemId);
+  return Math.max(0, Number(state.freePurchasesByItem[key]) || 0);
+}
+
+function consumeFreePurchases(itemId, quantity) {
+  const key = String(itemId);
+  const available = getFreePurchaseCount(itemId);
+  const freeQty = Math.min(available, Math.max(0, quantity));
+  if (freeQty > 0) {
+    state.freePurchasesByItem[key] = available - freeQty;
+  }
+  return freeQty;
+}
+
+function getGoalMetricValue(metric) {
+  if (typeof metric !== 'string') return 0;
+  if (metric === 'cash') return Number(state.player?.cash) || 0;
+  if (metric === 'netWorth') return Number(state.player?.netWorth) || 0;
+  if (metric === 'day') return Number(state.player?.day) || 0;
+  if (metric === 'harvestCount') return Number(state.goalStats?.harvestCount) || 0;
+  if (metric === 'gridUnlockedCount') {
+    return Array.isArray(state.gridUnlocked)
+      ? state.gridUnlocked.reduce((sum, v) => sum + (v ? 1 : 0), 0)
+      : 0;
+  }
+  if (metric.startsWith('itemsHarvested.')) {
+    const itemId = metric.split('.')[1];
+    return Number(state.goalStats?.itemsHarvested?.[itemId]) || 0;
+  }
+  return 0;
+}
+
+function doesGoalMeetCondition(goal) {
+  if (!goal || typeof goal !== 'object' || !goal.goal) return false;
+  const metricValue = getGoalMetricValue(goal.goal.metric);
+  const targetValue = Number(goal.goal.value) || 0;
+  const operator = goal.goal.operator || '>=';
+  if (operator === '>') return metricValue > targetValue;
+  if (operator === '==') return metricValue === targetValue;
+  return metricValue >= targetValue;
+}
+
+function applyGoalReward(goal) {
+  if (!goal || typeof goal !== 'object') return false;
+  const reward = goal.reward || {};
+  let changed = false;
+  if (typeof reward.unlockTool === 'string' && TOOL_LIST.includes(reward.unlockTool)) {
+    if (!state.unlockedTools[reward.unlockTool]) {
+      state.unlockedTools[reward.unlockTool] = true;
+      changed = true;
+    }
+  }
+  if (typeof reward.unlockShopItem === 'number') {
+    const itemId = reward.unlockShopItem;
+    if (!state.unlockedShopItems[itemId]) {
+      state.unlockedShopItems[itemId] = true;
+      changed = true;
+    }
+  }
+  if (reward.freePurchases && typeof reward.freePurchases === 'object') {
+    const itemId = reward.freePurchases.itemId;
+    const count = Math.max(0, Number(reward.freePurchases.count) || 0);
+    if (typeof itemId === 'number' && count > 0) {
+      const key = String(itemId);
+      const previous = getFreePurchaseCount(itemId);
+      state.freePurchasesByItem[key] = previous + count;
+      changed = true;
+    }
+  }
+  if (typeof reward.grantCosmetic === 'string' && state.store && Array.isArray(state.store.cosmetics)) {
+    const cosmetic = state.store.cosmetics.find(c => c.id === reward.grantCosmetic);
+    if (cosmetic && !cosmetic.unlocked) {
+      cosmetic.unlocked = true;
+      changed = true;
+    }
+  }
+  if (typeof reward.setFlag === 'string' && reward.setFlag) {
+    if (!state.goalFlags[reward.setFlag]) {
+      state.goalFlags[reward.setFlag] = true;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function evaluateGoals() {
+  if (!Array.isArray(state.goals) || !state.goals.length) return false;
+  let didChange = false;
+  state.goals.forEach(goal => {
+    if (!goal || typeof goal !== 'object' || typeof goal.id !== 'string') return;
+    if (goal.enabled === false) return;
+    if (state.goalsClaimed[goal.id]) return;
+    if (!doesGoalMeetCondition(goal)) return;
+    applyGoalReward(goal);
+    state.goalsClaimed[goal.id] = true;
+    didChange = true;
+    const message = goal.message || `Goal complete: ${goal.name || goal.id}.`;
+    addMessage(message, { speaker: 'player', emotion: 'goal_unlocked' });
+  });
+  if (!didChange) return false;
+  if (state.activeTool && !isToolUnlocked(state.activeTool)) {
+    state.activeTool = TOOL_GLOVE;
+  }
+  saveState();
+  updateToolButtons();
+  updateCursorForTool();
+  return true;
 }
 
 const TOOL_GLOVE = 'glove';
@@ -439,6 +624,13 @@ function initialiseState() {
   // contains the schedule of upcoming events.
   state.newsEvents    = loadFromStorage('newsEvents',    null) ?? [];
   state.store         = loadFromStorage('store',         null) ?? clone(DEFAULT_DATA.store);
+  state.goals         = loadFromStorage('goals',         null) ?? clone(DEFAULT_DATA.goals);
+  state.goalsClaimed  = loadFromStorage('goalsClaimed',  null) ?? {};
+  state.unlockedTools = loadFromStorage('unlockedTools', null) ?? getDefaultUnlockedTools();
+  state.unlockedShopItems = loadFromStorage('unlockedShopItems', null) ?? getDefaultUnlockedShopItems(state.items);
+  state.freePurchasesByItem = loadFromStorage('freePurchasesByItem', null) ?? {};
+  state.goalFlags = loadFromStorage('goalFlags', null) ?? {};
+  state.goalStats = loadFromStorage('goalStats', null) ?? { harvestCount: 0, itemsHarvested: {} };
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
   if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
@@ -528,6 +720,42 @@ function initialiseState() {
   if (!TOOL_LIST.includes(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
   }
+  if (!state.unlockedTools || typeof state.unlockedTools !== 'object') {
+    state.unlockedTools = getDefaultUnlockedTools();
+  }
+  if (!state.unlockedShopItems || typeof state.unlockedShopItems !== 'object') {
+    state.unlockedShopItems = getDefaultUnlockedShopItems(state.items);
+  }
+  const defaultShopUnlocks = getDefaultUnlockedShopItems(state.items);
+  Object.keys(defaultShopUnlocks).forEach(itemId => {
+    if (!(itemId in state.unlockedShopItems)) {
+      state.unlockedShopItems[itemId] = defaultShopUnlocks[itemId];
+    }
+  });
+  if (!state.freePurchasesByItem || typeof state.freePurchasesByItem !== 'object') {
+    state.freePurchasesByItem = {};
+  }
+  if (!state.goalFlags || typeof state.goalFlags !== 'object') {
+    state.goalFlags = {};
+  }
+  if (!state.goalsClaimed || typeof state.goalsClaimed !== 'object' || Array.isArray(state.goalsClaimed)) {
+    state.goalsClaimed = {};
+  }
+  if (!Array.isArray(state.goals)) {
+    state.goals = clone(DEFAULT_DATA.goals);
+  }
+  if (!state.goalStats || typeof state.goalStats !== 'object') {
+    state.goalStats = { harvestCount: 0, itemsHarvested: {} };
+  }
+  if (!state.goalStats.itemsHarvested || typeof state.goalStats.itemsHarvested !== 'object') {
+    state.goalStats.itemsHarvested = {};
+  }
+  if (typeof state.goalStats.harvestCount !== 'number') {
+    state.goalStats.harvestCount = 0;
+  }
+  if (!isToolUnlocked(TOOL_WATERING) && state.activeTool === TOOL_WATERING) {
+    state.activeTool = TOOL_GLOVE;
+  }
 
 }
 
@@ -543,6 +771,13 @@ function saveState() {
   saveToStorage('newsEvents',    state.newsEvents);
   saveToStorage('store',         state.store);
   saveToStorage('newsHistory',   state.newsHistory);
+  saveToStorage('goals',         state.goals);
+  saveToStorage('goalsClaimed',  state.goalsClaimed);
+  saveToStorage('unlockedTools', state.unlockedTools);
+  saveToStorage('unlockedShopItems', state.unlockedShopItems);
+  saveToStorage('freePurchasesByItem', state.freePurchasesByItem);
+  saveToStorage('goalFlags', state.goalFlags);
+  saveToStorage('goalStats', state.goalStats);
   // Persist grid purchase and placement state. These arrays represent which grid
   // slots have been purchased (gridUnlocked) and which contain items (gridItems).
   saveToStorage('gridUnlocked',  state.gridUnlocked);
@@ -590,6 +825,13 @@ async function resetGame() {
   state.gridMiningHits = Array(81).fill(0);
   state.gridRarity = Array(81).fill(null);
   state.activeTool = TOOL_GLOVE;
+  state.goals = clone(DEFAULT_DATA.goals);
+  state.goalsClaimed = {};
+  state.unlockedTools = getDefaultUnlockedTools();
+  state.unlockedShopItems = getDefaultUnlockedShopItems(state.items);
+  state.freePurchasesByItem = {};
+  state.goalFlags = {};
+  state.goalStats = { harvestCount: 0, itemsHarvested: {} };
   saveToStorage('gridUnlocked', state.gridUnlocked);
   saveToStorage('gridItems',    state.gridItems);
   saveToStorage('gridPlantedDay', state.gridPlantedDay);
@@ -598,6 +840,13 @@ async function resetGame() {
   saveToStorage('gridMiningHits', state.gridMiningHits);
   saveToStorage('gridRarity', state.gridRarity);
   saveToStorage('activeTool', state.activeTool);
+  saveToStorage('goals', state.goals);
+  saveToStorage('goalsClaimed', state.goalsClaimed);
+  saveToStorage('unlockedTools', state.unlockedTools);
+  saveToStorage('unlockedShopItems', state.unlockedShopItems);
+  saveToStorage('freePurchasesByItem', state.freePurchasesByItem);
+  saveToStorage('goalFlags', state.goalFlags);
+  saveToStorage('goalStats', state.goalStats);
   // Start at week 1: schedule any news for week 1
   generateNewsEvents();
   renderAll();
@@ -688,6 +937,9 @@ function renderMarket() {
   // Unified farmer's market table container
   const tableContainer = document.getElementById('market-table');
   const gridEl         = document.getElementById('grid');
+  if (selectedShopItemId && !isShopItemUnlocked(selectedShopItemId)) {
+    selectedShopItemId = null;
+  }
   // Clear previous content
   if (tableContainer) tableContainer.innerHTML = '';
   if (gridEl) gridEl.innerHTML = '';
@@ -704,6 +956,7 @@ function renderMarket() {
   table.appendChild(headerRow);
   // For each shop entry, create a unified row
   state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
     const item = state.items.find(it => it.id === entry.itemId);
     if (!item) return;
     const row = document.createElement('tr');
@@ -739,7 +992,10 @@ function renderMarket() {
     row.appendChild(avgPriceCell);
     // Price
     const priceCell = document.createElement('td');
-    priceCell.textContent = `$${entry.price.toFixed(2)}`;
+    const freeCount = getFreePurchaseCount(item.id);
+    priceCell.textContent = freeCount > 0
+      ? `$${entry.price.toFixed(2)} (${freeCount} free)`
+      : `$${entry.price.toFixed(2)}`;
     row.appendChild(priceCell);
 
     row.addEventListener('click', () => {
@@ -900,6 +1156,127 @@ function renderStore() {
   }
 }
 
+function formatGoalMetric(metric) {
+  if (typeof metric !== 'string' || !metric) return metric;
+  if (metric === 'cash') return 'Cash';
+  if (metric === 'netWorth') return 'Net Worth';
+  if (metric === 'day') return 'Day';
+  if (metric === 'harvestCount') return 'Harvest Count';
+  if (metric === 'gridUnlockedCount') return 'Tiles Unlocked';
+  if (metric.startsWith('itemsHarvested.')) {
+    const itemId = Number(metric.split('.')[1]);
+    const item = state.items.find(it => it.id === itemId);
+    return item ? `${item.name} Harvested` : `Item ${itemId} Harvested`;
+  }
+  return metric;
+}
+
+function formatGoalReward(reward) {
+  if (!reward || typeof reward !== 'object') return 'Reward pending';
+  const parts = [];
+  if (typeof reward.unlockTool === 'string') {
+    parts.push(`Tool: ${reward.unlockTool}`);
+  }
+  if (typeof reward.unlockShopItem === 'number') {
+    const item = state.items.find(it => it.id === reward.unlockShopItem);
+    parts.push(`Shop item: ${item ? item.name : reward.unlockShopItem}`);
+  }
+  if (reward.freePurchases && typeof reward.freePurchases === 'object') {
+    const itemId = Number(reward.freePurchases.itemId);
+    const count = Number(reward.freePurchases.count) || 0;
+    const item = state.items.find(it => it.id === itemId);
+    parts.push(`${count} free purchases (${item ? item.name : itemId})`);
+  }
+  if (typeof reward.grantCosmetic === 'string') {
+    const cosmetic = state.store?.cosmetics?.find(c => c.id === reward.grantCosmetic);
+    parts.push(`Cosmetic: ${cosmetic ? cosmetic.name : reward.grantCosmetic}`);
+  }
+  if (typeof reward.setFlag === 'string') {
+    parts.push(`Flag: ${reward.setFlag}`);
+  }
+  return parts.length ? parts.join(' | ') : 'Reward pending';
+}
+
+function getGoalProgress(goal) {
+  if (!goal || typeof goal !== 'object' || !goal.goal) {
+    return { current: 0, target: 0, percent: 0, progressText: '0 / 0' };
+  }
+  const metric = goal.goal.metric;
+  const target = Math.max(0, Number(goal.goal.value) || 0);
+  const current = Math.max(0, getGoalMetricValue(metric));
+  const operator = goal.goal.operator || '>=';
+  let percent = 0;
+  if (target <= 0) {
+    percent = 100;
+  } else if (operator === '==') {
+    percent = current === target ? 100 : Math.min(99, Math.round((current / target) * 100));
+  } else {
+    percent = Math.min(100, Math.round((current / target) * 100));
+  }
+  const isMoneyMetric = metric === 'cash' || metric === 'netWorth';
+  const progressText = isMoneyMetric
+    ? `$${current.toFixed(2)} / $${target.toFixed(2)}`
+    : `${current} / ${target}`;
+  return { current, target, percent, progressText };
+}
+
+function renderGoals() {
+  const container = document.getElementById('goals-content');
+  if (!container) return;
+  container.innerHTML = '';
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'Goals';
+  container.appendChild(title);
+
+  const table = document.createElement('table');
+  table.className = 'zebra-table';
+  const headerRow = document.createElement('tr');
+  ['Goal', 'Progress', 'Reward', 'Status'].forEach(label => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  const goals = Array.isArray(state.goals) ? state.goals.slice() : [];
+  goals.sort((a, b) => {
+    const aDone = state.goalsClaimed?.[a.id] ? 1 : 0;
+    const bDone = state.goalsClaimed?.[b.id] ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    const aProgress = getGoalProgress(a).percent;
+    const bProgress = getGoalProgress(b).percent;
+    return bProgress - aProgress;
+  });
+
+  goals.forEach(goal => {
+    const row = document.createElement('tr');
+    const goalCell = document.createElement('td');
+    const metricLabel = formatGoalMetric(goal.goal?.metric);
+    goalCell.textContent = `${goal.name || goal.id} - ${goal.description || metricLabel}`;
+    row.appendChild(goalCell);
+
+    const progressCell = document.createElement('td');
+    const progress = getGoalProgress(goal);
+    progressCell.textContent = `${progress.progressText} (${progress.percent}%)`;
+    row.appendChild(progressCell);
+
+    const rewardCell = document.createElement('td');
+    rewardCell.textContent = formatGoalReward(goal.reward);
+    row.appendChild(rewardCell);
+
+    const statusCell = document.createElement('td');
+    const isCompleted = !!state.goalsClaimed?.[goal.id];
+    statusCell.textContent = isCompleted ? 'Completed' : 'In Progress';
+    statusCell.className = isCompleted ? 'goal-status-completed' : 'goal-status-progress';
+    row.appendChild(statusCell);
+
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
 /**
  * Render the Cosmetics sub‑tab. Lists themes and other cosmetic items
  * available for purchase or selection. Unlocking a theme deducts its
@@ -990,23 +1367,35 @@ function renderCraftingStore(container) {
 function showTab(tabName) {
     const marketTable = document.getElementById('market-table-container');
     const storePanel = document.getElementById('store');
+    const goalsPanel = document.getElementById('goals-panel');
   const marketTab = document.getElementById('tab-market');
   const storeTab = document.getElementById('tab-store');
+  const goalsTab = document.getElementById('tab-goals');
   const isMarket = tabName === 'market';
+  const isStore = tabName === 'store';
+  const isGoals = tabName === 'goals';
     if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
-  if (storePanel) storePanel.style.display = isMarket ? 'none' : 'block';
+  if (storePanel) storePanel.style.display = isStore ? 'block' : 'none';
+  if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
   if (marketTab) {
     marketTab.classList.toggle('active', isMarket);
     marketTab.setAttribute('aria-selected', isMarket ? 'true' : 'false');
   }
   if (storeTab) {
-    storeTab.classList.toggle('active', !isMarket);
-    storeTab.setAttribute('aria-selected', isMarket ? 'false' : 'true');
+    storeTab.classList.toggle('active', isStore);
+    storeTab.setAttribute('aria-selected', isStore ? 'true' : 'false');
+  }
+  if (goalsTab) {
+    goalsTab.classList.toggle('active', isGoals);
+    goalsTab.setAttribute('aria-selected', isGoals ? 'true' : 'false');
   }
   renderMarket();
   renderEnergyBar();
-  if (!isMarket) {
+  if (isStore) {
     renderStore();
+  }
+  if (isGoals) {
+    renderGoals();
   }
   updateGridSize();
 }
@@ -1026,6 +1415,10 @@ function renderAll() {
   const storeEl = document.getElementById('store');
   if (storeEl && window.getComputedStyle(storeEl).display !== 'none') {
     renderStore();
+  }
+  const goalsEl = document.getElementById('goals-panel');
+  if (goalsEl && window.getComputedStyle(goalsEl).display !== 'none') {
+    renderGoals();
   }
   updateGridSize();
 }
@@ -1086,7 +1479,8 @@ const PROFILE_IMAGES = {
     excited: 'resources/profiles/player_excited.png',
     tired: 'resources/profiles/player_tired.png',
     wrong: 'resources/profiles/player_wrong.png',
-    money: 'resources/profiles/player_money.png'
+    money: 'resources/profiles/player_money.png',
+    goal_unlocked: 'resources/profiles/player_goal_unlocked.png'
   },
   farmer: {
     neutral: 'resources/profiles/farmer.png'
@@ -1162,49 +1556,48 @@ function consumeEnergy(amount, reason) {
  * @param {number} quantity The number of units to buy
  */
 function buyItem(itemId, quantity) {
+  if (!isShopItemUnlocked(itemId)) {
+    addMessage('This item is not available yet.');
+    return;
+  }
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
-  const item      = state.items.find(it => it.id === itemId);
+  const item = state.items.find(it => it.id === itemId);
   if (!shopEntry || !item) return;
-  // Check stock
   if (shopEntry.quantity < quantity) {
     alert('Not enough stock available.');
     return;
   }
-  // Compute total cost
-  const totalCost = shopEntry.price * quantity;
+  const freeQty = Math.min(getFreePurchaseCount(itemId), quantity);
+  const paidQty = quantity - freeQty;
+  const totalCost = shopEntry.price * paidQty;
   if (state.player.cash < totalCost) {
     alert('Insufficient funds.');
     return;
   }
-  // Deduct cash and stock
+  if (freeQty > 0) {
+    consumeFreePurchases(itemId, freeQty);
+  }
   state.player.cash -= totalCost;
   shopEntry.quantity -= quantity;
-  // Add to inventory (or increase quantity if exists)
   let invEntry = state.inventory.find(entry => entry.itemId === itemId);
   if (!invEntry) {
     invEntry = { itemId: itemId, quantity: 0, avgCost: 0 };
     state.inventory.push(invEntry);
   }
-  // Update average cost: weighted average of existing stock and new purchase
   const existingCost = invEntry.avgCost * invEntry.quantity;
   invEntry.quantity += quantity;
   invEntry.avgCost = (existingCost + totalCost) / invEntry.quantity;
+  state.player.netWorth = state.player.cash;
+  evaluateGoals();
   saveState();
-  // Announce purchase
-  addMessage(`Bought ${quantity} × ${item.name} for $${totalCost.toFixed(2)}`, { speaker: 'merchant' });
+  if (freeQty > 0) {
+    addMessage(`Bought ${quantity} x ${item.name} for $${totalCost.toFixed(2)} (${freeQty} free).`, { speaker: 'merchant' });
+  } else {
+    addMessage(`Bought ${quantity} x ${item.name} for $${totalCost.toFixed(2)}.`, { speaker: 'merchant' });
+  }
   renderAll();
 }
 
-/**
- * Sell a quantity of an item from the player's inventory back to the
- * shop. Increases cash and increases shop stock. The
- * sale price is currently equal to the shop price. The Python
- * implementation also updates the shop’s price based on sales volume;
- * you can port that logic here.
- *
- * @param {number} itemId The ID of the item to sell
- * @param {number} quantity The number of units to sell
- */
 function sellItem(itemId, quantity) {
   const invEntry  = state.inventory.find(entry => entry.itemId === itemId);
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
@@ -1225,6 +1618,8 @@ function sellItem(itemId, quantity) {
     const index = state.inventory.indexOf(invEntry);
     state.inventory.splice(index, 1);
   }
+  state.player.netWorth = state.player.cash;
+  evaluateGoals();
   saveState();
   // Announce sale
   const item = state.items.find(it => it.id === itemId);
@@ -1303,6 +1698,7 @@ function nextDay() {
   saveToStorage('newsHistory', state.newsHistory);
   // Provide a single contextual tip or reminder for the day
   generateDailyTip(dowIndex);
+  evaluateGoals();
   saveState();
   renderAll();
 }
@@ -1539,6 +1935,7 @@ function purchaseGridSlot(index) {
   }
   state.player.cash -= cost;
   state.gridUnlocked[index] = true;
+  evaluateGoals();
   // Persist changes
   saveState();
   addMessage(`Purchased a grid slot for $${cost.toFixed(2)}.`);
@@ -1564,6 +1961,7 @@ function mineGridTile(index) {
   } else if (Array.isArray(state.gridMiningHits)) {
     state.gridMiningHits[index] = nextHits;
   }
+  evaluateGoals();
   saveState();
   renderAll();
   return didMessage;
@@ -1657,6 +2055,10 @@ function removeItemFromGrid(cellIndex) {
 let selectedShopItemId = null;
 
 function selectShopItem(itemId) {
+  if (!isShopItemUnlocked(itemId)) {
+    addMessage('This item is not available yet.');
+    return;
+  }
   if (selectedShopItemId === itemId) {
     selectedShopItemId = null;
     updateCursorForTool();
@@ -1679,6 +2081,9 @@ function clearShopSelection() {
 function updateToolButtons() {
   document.querySelectorAll('.tool-button').forEach(button => {
     const tool = button.getAttribute('data-tool');
+    const unlocked = isToolUnlocked(tool);
+    button.disabled = !unlocked;
+    button.title = unlocked ? (button.title || '') : 'Locked by goal';
     if (tool === state.activeTool) {
       button.classList.add('active');
     } else {
@@ -1688,6 +2093,9 @@ function updateToolButtons() {
 }
 
 function updateCursorForTool() {
+  if (state.activeTool && !isToolUnlocked(state.activeTool)) {
+    state.activeTool = TOOL_GLOVE;
+  }
   if (state.activeTool === TOOL_WATERING) {
     document.body.style.cursor = "url('resources/tools/watering_can.png') 12 12, pointer";
     return;
@@ -1710,6 +2118,10 @@ function updateCursorForTool() {
 
 function setActiveTool(tool) {
   if (!TOOL_LIST.includes(tool)) return;
+  if (!isToolUnlocked(tool)) {
+    addMessage('This tool is locked. Complete goals to unlock it.');
+    return;
+  }
   state.activeTool = tool;
   updateToolButtons();
   updateCursorForTool();
@@ -1718,6 +2130,10 @@ function setActiveTool(tool) {
 
 function purchaseAndPlaceSelected(cellIndex) {
   if (!selectedShopItemId) return;
+  if (!isShopItemUnlocked(selectedShopItemId)) {
+    addMessage('This item is not available yet.');
+    return;
+  }
   const shopEntry = state.shop.find(entry => entry.itemId === selectedShopItemId);
   const item = state.items.find(it => it.id === selectedShopItemId);
   if (!shopEntry || !item) return;
@@ -1725,14 +2141,19 @@ function purchaseAndPlaceSelected(cellIndex) {
     addMessage('Out of stock.');
     return;
   }
-  if (state.player.cash < shopEntry.price) {
+  const freeQty = Math.min(getFreePurchaseCount(selectedShopItemId), 1);
+  const totalCost = shopEntry.price * (1 - freeQty);
+  if (state.player.cash < totalCost) {
     alert('Insufficient funds.');
     return;
   }
   if (!consumeEnergy(1, 'plant a seed')) {
     return;
   }
-  state.player.cash -= shopEntry.price;
+  if (freeQty > 0) {
+    consumeFreePurchases(selectedShopItemId, 1);
+  }
+  state.player.cash -= totalCost;
   state.player.netWorth = state.player.cash;
   shopEntry.quantity -= 1;
   state.gridItems[cellIndex] = selectedShopItemId;
@@ -1746,8 +2167,13 @@ function purchaseAndPlaceSelected(cellIndex) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
+  evaluateGoals();
   saveState();
-  addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' });
+  if (freeQty > 0) {
+    addMessage(`Purchased ${item.name} for $0.00 (free) and placed it on the grid.`, { speaker: 'farmer' });
+  } else {
+    addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' });
+  }
   renderAll();
 }
 
@@ -1770,6 +2196,9 @@ function harvestPlant(cellIndex) {
   const saleValue = basePrice * multiplier;
   state.player.cash += saleValue;
   state.player.netWorth = state.player.cash;
+  state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
+  const harvestKey = String(itemId);
+  state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
   state.gridItems[cellIndex] = null;
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
@@ -1780,6 +2209,7 @@ function harvestPlant(cellIndex) {
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[cellIndex] = 0;
   }
+  evaluateGoals();
   saveState();
   addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
   renderAll();
@@ -1953,6 +2383,7 @@ function generateNewsEvents() {
 function attachEventHandlers() {
   document.getElementById('tab-market').onclick = () => showTab('market');
   document.getElementById('tab-store').onclick  = () => showTab('store');
+  document.getElementById('tab-goals').onclick  = () => showTab('goals');
   document.getElementById('store-cosmetics').onclick = () => {
     currentStoreTab = 'cosmetics';
     renderStore();
@@ -1999,6 +2430,7 @@ async function main() {
   // Load external JSON data for items and news before initialisation
   await loadJSONData();
   initialiseState();
+  evaluateGoals();
   attachEventHandlers();
   const header = document.getElementById('market-header');
   if (header) {

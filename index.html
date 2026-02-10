@@ -46,6 +46,17 @@
         #store {
             display: none;
         }
+        #goals-panel {
+            display: none;
+            margin: 0;
+        }
+        .goal-status-completed {
+            font-weight: bold;
+            color: #006400;
+        }
+        .goal-status-progress {
+            color: #5a3a00;
+        }
         .panel {
             background-color: #d4d0c8;
             border: 1px solid #808080;
@@ -607,6 +618,7 @@
                 <div class="market-tabs" role="tablist">
                     <button id="tab-market" class="tab-button active" role="tab" aria-selected="true">Farmer&#39;s Market</button>
                     <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Store</button>
+                    <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goals</button>
                 </div>
             </div>
         <div id="market-table-container" class="panel">
@@ -620,6 +632,9 @@
             <div id="store-content" style="margin-left: 150px;"></div>
             <div style="clear: both;"></div>
             <button id="reset-game" class="button" style="margin-top: 8px;">Reset Game</button>
+        </div>
+        <div id="goals-panel" class="panel">
+            <div id="goals-content"></div>
         </div>
     </div>
         <div id="bottom-bar">
@@ -638,7 +653,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=42"></script>
+    <script src="main.js?v=44"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

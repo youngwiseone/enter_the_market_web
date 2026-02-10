@@ -1,0 +1,31 @@
+{
+  "goals": [
+    {
+      "id": "day-2-watering",
+      "name": "Early Riser",
+      "description": "Reach Day 2 to gain watering can",
+      "type": "feature",
+      "goal": { "metric": "day", "operator": ">=", "value": 2 },
+      "reward": { "unlockTool": "watering" },
+      "message": "Goal complete: Watering Can is now available."
+    },
+    {
+      "id": "tomatoe-first-harvest",
+      "name": "Tomatoe Starter",
+      "description": "Harvest 1 Tomatoe",
+      "type": "economy",
+      "goal": { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
+      "reward": { "freePurchases": { "itemId": 2, "count": 2 } },
+      "message": "Goal complete: Next 2 Tomatoe Seeds bought are free."
+    },
+    {
+      "id": "cash-150-theme",
+      "name": "Pocket Profit",
+      "description": "Reach $150 cash",
+      "type": "cosmetic",
+      "goal": { "metric": "cash", "operator": ">=", "value": 150 },
+      "reward": { "grantCosmetic": "theme-mono" },
+      "message": "Goal complete: Monochrome Green theme awarded."
+    }
+  ]
+}
