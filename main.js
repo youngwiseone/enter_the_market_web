@@ -261,7 +261,8 @@ let state = {
   unlockedShopItems: null,
   freePurchasesByItem: null,
   goalFlags: null,
-  goalStats: null
+  goalStats: null,
+  dayStartSnapshot: null
 };
 
 function getEffectiveWateredCount(index) {
@@ -448,27 +449,44 @@ function applyGoalReward(goal) {
 }
 
 function evaluateGoals() {
-  if (!Array.isArray(state.goals) || !state.goals.length) return false;
-  let didChange = false;
+  if (!Array.isArray(state.goals) || !state.goals.length) return 0;
+  let completedCount = 0;
+  const milestonePercents = [25, 50, 75];
   state.goals.forEach(goal => {
     if (!goal || typeof goal !== 'object' || typeof goal.id !== 'string') return;
     if (goal.enabled === false) return;
     if (state.goalsClaimed[goal.id]) return;
+
+    const progress = getGoalProgress(goal);
+    milestonePercents.forEach(percent => {
+      const key = `goalMilestone:${goal.id}:${percent}`;
+      if (progress.percent >= percent && !state.goalFlags[key]) {
+        state.goalFlags[key] = true;
+        addMessage(`${goal.name || goal.id} progress: ${percent}% complete.`, {
+          speaker: 'player',
+          emotion: 'neutral',
+          category: 'goal',
+          priority: 'normal'
+        });
+      }
+    });
+
     if (!doesGoalMeetCondition(goal)) return;
     applyGoalReward(goal);
     state.goalsClaimed[goal.id] = true;
-    didChange = true;
+    completedCount += 1;
     const message = goal.message || `Goal complete: ${goal.name || goal.id}.`;
-    addMessage(message, { speaker: 'player', emotion: 'goal_unlocked' });
+    addMessage(message, { speaker: 'player', emotion: 'goal_unlocked', category: 'goal', priority: 'high' });
   });
-  if (!didChange) return false;
-  if (state.activeTool && !isToolUnlocked(state.activeTool)) {
-    state.activeTool = TOOL_GLOVE;
+  if (completedCount > 0) {
+    if (state.activeTool && !isToolUnlocked(state.activeTool)) {
+      state.activeTool = TOOL_GLOVE;
+    }
+    saveState();
+    updateToolButtons();
+    updateCursorForTool();
   }
-  saveState();
-  updateToolButtons();
-  updateCursorForTool();
-  return true;
+  return completedCount;
 }
 
 const TOOL_GLOVE = 'glove';
@@ -621,7 +639,7 @@ function addRareGrowthMessage(item, rarity) {
   const basePrice = getItemCurrentPrice(item.id);
   addMessage(
     `1x ${rarityLabel} ${item.name} grown! Worth ${multiplierLabel}x buy price ($${basePrice.toFixed(2)} -> $${(basePrice * multiplier).toFixed(2)}).`,
-    { speaker: 'player', emotion: 'excited' }
+    { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' }
   );
 }
 
@@ -685,6 +703,7 @@ function initialiseState() {
   state.freePurchasesByItem = loadFromStorage('freePurchasesByItem', null) ?? {};
   state.goalFlags = loadFromStorage('goalFlags', null) ?? {};
   state.goalStats = loadFromStorage('goalStats', null) ?? { harvestCount: 0, itemsHarvested: {} };
+  state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
   if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
@@ -810,6 +829,13 @@ function initialiseState() {
   if (!isToolUnlocked(TOOL_WATERING) && state.activeTool === TOOL_WATERING) {
     state.activeTool = TOOL_GLOVE;
   }
+  const currentDay = Number(state.player?.day) || 1;
+  const validDayStart = state.dayStartSnapshot
+    && typeof state.dayStartSnapshot === 'object'
+    && Number(state.dayStartSnapshot.day) === currentDay;
+  if (!validDayStart) {
+    state.dayStartSnapshot = getCurrentDaySnapshot();
+  }
 
 }
 
@@ -833,6 +859,7 @@ function saveState() {
   saveToStorage('freePurchasesByItem', state.freePurchasesByItem);
   saveToStorage('goalFlags', state.goalFlags);
   saveToStorage('goalStats', state.goalStats);
+  saveToStorage('dayStartSnapshot', state.dayStartSnapshot);
   // Persist grid purchase and placement state. These arrays represent which grid
   // slots have been purchased (gridUnlocked) and which contain items (gridItems).
   saveToStorage('gridUnlocked',  state.gridUnlocked);
@@ -1099,7 +1126,17 @@ function renderMarket() {
             const hadRarity = !!getGridRarity(i);
             const rarity = assignGridRarity(i);
             if (!hadRarity) {
-              addRareGrowthMessage(it, rarity);
+              const normalizedRarity = normalizeRarity(rarity);
+              if (normalizedRarity === 'rare' || normalizedRarity === 'mythic') {
+                addRareGrowthMessage(it, normalizedRarity);
+              } else {
+                addMessage(`${it.name} is ready to harvest.`, {
+                  speaker: 'player',
+                  emotion: 'excited',
+                  category: 'progress',
+                  priority: 'normal'
+                });
+              }
             }
             if (rarity) {
               cell.classList.add('rarity-border', `rarity-${rarity}`);
@@ -1553,6 +1590,18 @@ const PROFILE_IMAGES = {
 };
 let messageJustEmitted = false;
 let lastClickToken = 0;
+const MESSAGE_LIMIT = 150;
+const ECONOMY_ALERT_THRESHOLD = 0.15;
+const MESSAGE_FILTERS_DEFAULT = {
+  progress: true,
+  economy: true,
+  goals: true,
+  tips: true
+};
+let messageFilters = null;
+let unreadMessageCount = 0;
+let lowEnergyNoticeDay = null;
+const messageReplaceMap = new Map();
 
 function getProfileImage(speaker, emotion) {
   const speakerMap = PROFILE_IMAGES[speaker] || PROFILE_IMAGES.player;
@@ -1566,28 +1615,248 @@ function setChatProfile(speaker, emotion) {
   profile.alt = `${speaker} ${emotion}`;
 }
 
-function addMessage(text, meta) {
-  const chatLog = document.getElementById('chat-log');
-  // Compose a timestamp that includes the current day and day of week. The
-  // state.player.day field tracks the absolute day count and dowIndex is
-  // derived from it. Use local time for the time portion.
-  const now = new Date();
-  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function normaliseMessageFilters(raw) {
+  const base = { ...MESSAGE_FILTERS_DEFAULT };
+  if (!raw || typeof raw !== 'object') return base;
+  Object.keys(base).forEach(key => {
+    if (typeof raw[key] === 'boolean') {
+      base[key] = raw[key];
+    }
+  });
+  return base;
+}
+
+function updateFilterLabelState(filterKey, enabled) {
+  const label = document.getElementById(`filter-${filterKey}-label`);
+  if (!label) return;
+  label.classList.toggle('filter-on', !!enabled);
+  label.classList.toggle('filter-off', !enabled);
+}
+
+function getFilterNameFromId(id) {
+  if (id === 'filter-progress') return 'Progress';
+  if (id === 'filter-economy') return 'Economy';
+  if (id === 'filter-goals') return 'Goals';
+  if (id === 'filter-tips') return 'Tips';
+  return 'Filter';
+}
+
+function getMessageDayIndex() {
+  return (state.player && typeof state.player.day === 'number') ? state.player.day : 1;
+}
+
+function getMessageDayPrefix(dayIndex) {
   const dowNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const dayIndex = (state.player && state.player.day) ? state.player.day : 1;
   const dowIndex = (dayIndex - 1) % 7;
   const dow = dowNames[dowIndex];
-  const prefix = `DAY ${dayIndex} - ${dow}`;
-  const speaker = meta && meta.speaker ? meta.speaker : 'player';
-  const emotion = meta && meta.emotion ? meta.emotion : 'neutral';
-  setChatProfile(speaker, emotion);
-  messageJustEmitted = true;
+  return `DAY ${dayIndex} - ${dow}`;
+}
+
+function buildMessageEntryText(payload) {
+  const dayIndex = Number(payload.dayIndex) || getMessageDayIndex();
+  const now = new Date(Number(payload.timestamp) || Date.now());
+  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `[${getMessageDayPrefix(dayIndex)} ${timeString}] ${payload.text}`;
+}
+
+function isMessageVisibleByFilters(payload) {
+  if ((payload.priority || 'normal') === 'high') return true;
+  if (!messageFilters) messageFilters = normaliseMessageFilters(loadFromStorage('messageFilters', MESSAGE_FILTERS_DEFAULT));
+  const category = payload.category || 'system';
+  if (category === 'tips') return !!messageFilters.tips;
+  if (category === 'economy') return !!messageFilters.economy;
+  if (category === 'goal') return !!messageFilters.goals;
+  return !!messageFilters.progress;
+}
+
+function refreshMessageVisibility() {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return;
+  const rows = chatLog.querySelectorAll('.chat-entry');
+  rows.forEach(row => {
+    const payload = {
+      priority: row.dataset.priority || 'normal',
+      category: row.dataset.category || 'system'
+    };
+    row.style.display = isMessageVisibleByFilters(payload) ? '' : 'none';
+  });
+}
+
+function isChatNearBottom() {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return true;
+  const threshold = 24;
+  return (chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight) <= threshold;
+}
+
+function updateUnreadIndicator() {
+  const chip = document.getElementById('chat-unread-chip');
+  if (!chip) return;
+  if (unreadMessageCount > 0) {
+    chip.style.display = 'inline-block';
+    chip.textContent = `${unreadMessageCount} new message${unreadMessageCount === 1 ? '' : 's'}`;
+  } else {
+    chip.style.display = 'none';
+    chip.textContent = '';
+  }
+}
+
+function pruneChatLog() {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return;
+  while (chatLog.children.length > MESSAGE_LIMIT) {
+    chatLog.removeChild(chatLog.firstChild);
+  }
+  messageReplaceMap.forEach((entry, key) => {
+    if (!entry || !entry.element || !chatLog.contains(entry.element)) {
+      messageReplaceMap.delete(key);
+    }
+  });
+}
+
+function clearNonSummaryMessagesForDay(dayIndex) {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return;
+  const targetDay = String(dayIndex);
+  const rows = Array.from(chatLog.querySelectorAll('.chat-entry'));
+  rows.forEach(row => {
+    const isSummary = row.classList.contains('chat-summary-entry');
+    const rowDay = row.dataset.day || '';
+    if (!isSummary && rowDay === targetDay) {
+      row.remove();
+    }
+  });
+  messageReplaceMap.forEach((entry, key) => {
+    if (!entry || !entry.element || !chatLog.contains(entry.element)) {
+      messageReplaceMap.delete(key);
+    }
+  });
+  unreadMessageCount = 0;
+  updateUnreadIndicator();
+}
+
+function createSummaryEntry(payload) {
   const entry = document.createElement('div');
-  entry.textContent = `[${prefix} ${timeString}] ${text}`;
-  chatLog.appendChild(entry);
-  // Scroll to bottom
-  chatLog.scrollTop = chatLog.scrollHeight;
+  entry.className = 'chat-entry chat-summary-entry';
+  const details = document.createElement('details');
+  details.className = 'chat-summary';
+  const summary = document.createElement('summary');
+  summary.textContent = buildMessageEntryText(payload);
+  details.appendChild(summary);
+  const list = document.createElement('ul');
+  (payload.summaryLines || []).forEach(line => {
+    const li = document.createElement('li');
+    li.textContent = line;
+    list.appendChild(li);
+  });
+  details.appendChild(list);
+  entry.appendChild(details);
+  return entry;
+}
+
+function emitMessage(payload) {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return null;
+  const normalized = {
+    text: String(payload?.text ?? '').trim(),
+    speaker: payload?.speaker || 'player',
+    emotion: payload?.emotion || 'neutral',
+    priority: payload?.priority || 'normal',
+    category: payload?.category || 'system',
+    timestamp: Number(payload?.timestamp) || Date.now(),
+    dayIndex: Number(payload?.dayIndex) || getMessageDayIndex(),
+    replaceKey: payload?.replaceKey || '',
+    isSummary: !!payload?.isSummary,
+    summaryLines: Array.isArray(payload?.summaryLines) ? payload.summaryLines : []
+  };
+  if (!normalized.text) return null;
+  const wasNearBottom = isChatNearBottom();
+  setChatProfile(normalized.speaker, normalized.emotion);
+  messageJustEmitted = true;
+
+  let scopedReplaceKey = '';
+  if (normalized.replaceKey) {
+    scopedReplaceKey = `${normalized.replaceKey}:day:${normalized.dayIndex}`;
+  }
+  const existingReplaceEntry = scopedReplaceKey ? messageReplaceMap.get(scopedReplaceKey) : null;
+  let entry = existingReplaceEntry && existingReplaceEntry.element ? existingReplaceEntry.element : null;
+
+  if (entry) {
+    entry.dataset.ts = String(normalized.timestamp);
+    if (normalized.isSummary) {
+      entry.innerHTML = '';
+      entry.appendChild(createSummaryEntry(normalized).firstChild);
+    } else {
+      entry.textContent = buildMessageEntryText(normalized);
+    }
+  } else {
+    if (normalized.isSummary) {
+      entry = createSummaryEntry(normalized);
+    } else {
+      entry = document.createElement('div');
+      entry.className = 'chat-entry';
+      entry.textContent = buildMessageEntryText(normalized);
+    }
+    chatLog.appendChild(entry);
+    if (scopedReplaceKey) {
+      messageReplaceMap.set(scopedReplaceKey, { element: entry });
+    }
+  }
+
+  entry.dataset.priority = normalized.priority;
+  entry.dataset.category = normalized.category;
+  entry.dataset.day = String(normalized.dayIndex);
+  entry.dataset.replaceKey = scopedReplaceKey;
+
+  const visible = isMessageVisibleByFilters(normalized);
+  entry.style.display = visible ? '' : 'none';
+
+  pruneChatLog();
+
+  if (visible) {
+    if (wasNearBottom) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+      unreadMessageCount = 0;
+    } else if (!existingReplaceEntry) {
+      unreadMessageCount += 1;
+    }
+    updateUnreadIndicator();
+  }
   updateGridSize();
+  return entry;
+}
+
+function initialiseMessageUI() {
+  messageFilters = normaliseMessageFilters(loadFromStorage('messageFilters', MESSAGE_FILTERS_DEFAULT));
+  const progressToggle = document.getElementById('filter-progress');
+  const economyToggle = document.getElementById('filter-economy');
+  const goalsToggle = document.getElementById('filter-goals');
+  const tipsToggle = document.getElementById('filter-tips');
+  if (progressToggle) progressToggle.checked = !!messageFilters.progress;
+  if (economyToggle) economyToggle.checked = !!messageFilters.economy;
+  if (goalsToggle) goalsToggle.checked = !!messageFilters.goals;
+  if (tipsToggle) tipsToggle.checked = !!messageFilters.tips;
+  updateFilterLabelState('progress', !!messageFilters.progress);
+  updateFilterLabelState('economy', !!messageFilters.economy);
+  updateFilterLabelState('goals', !!messageFilters.goals);
+  updateFilterLabelState('tips', !!messageFilters.tips);
+  refreshMessageVisibility();
+  updateUnreadIndicator();
+}
+
+function addMessage(text, meta) {
+  const metadata = meta && typeof meta === 'object' ? meta : {};
+  emitMessage({
+    text,
+    speaker: metadata.speaker || 'player',
+    emotion: metadata.emotion || 'neutral',
+    priority: metadata.priority || 'normal',
+    category: metadata.category || 'system',
+    replaceKey: metadata.replaceKey || '',
+    isSummary: !!metadata.isSummary,
+    summaryLines: Array.isArray(metadata.summaryLines) ? metadata.summaryLines : [],
+    dayIndex: metadata.dayIndex
+  });
 }
 
 function consumeEnergy(amount, reason) {
@@ -1597,10 +1866,20 @@ function consumeEnergy(amount, reason) {
   }
   if (state.player.energy < amount) {
     const message = reason ? `Not enough energy to ${reason}.` : 'Not enough energy.';
-    addMessage(message, { speaker: 'player', emotion: 'tired' });
+    addMessage(message, { speaker: 'player', emotion: 'tired', category: 'system', priority: 'normal' });
     return false;
   }
   state.player.energy = Math.max(0, state.player.energy - amount);
+  if (state.player.energy <= 2 && lowEnergyNoticeDay !== state.player.day) {
+    lowEnergyNoticeDay = state.player.day;
+    addMessage(`Low energy: ${state.player.energy}/${state.player.energyMax}. Consider ending the day.`, {
+      speaker: 'player',
+      emotion: 'tired',
+      category: 'tips',
+      priority: 'low',
+      replaceKey: 'tip:low-energy'
+    });
+  }
   return true;
 }
 
@@ -1689,14 +1968,92 @@ function sellItem(itemId, quantity) {
   renderAll();
 }
 
+function countReadyToHarvestTiles() {
+  if (!Array.isArray(state.gridItems)) return 0;
+  let count = 0;
+  state.gridItems.forEach((itemId, index) => {
+    if (!itemId) return;
+    const item = state.items.find(it => it.id === itemId);
+    if (!item) return;
+    if (getPlantGrowthState(item, index).isGrown) {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+function getCurrentDaySnapshot() {
+  return {
+    day: Number(state.player?.day) || 1,
+    cash: Number(state.player?.cash) || 0,
+    netWorth: calculateNetWorth(),
+    readyTiles: countReadyToHarvestTiles(),
+    unlockedTiles: Array.isArray(state.gridUnlocked) ? state.gridUnlocked.reduce((sum, v) => sum + (v ? 1 : 0), 0) : 0
+  };
+}
+
+function emitEconomyAlert(priceMoves) {
+  if (!Array.isArray(priceMoves) || priceMoves.length === 0) return;
+  const significant = priceMoves
+    .filter(move => Math.abs(move.pctChange) >= ECONOMY_ALERT_THRESHOLD)
+    .sort((a, b) => Math.abs(b.pctChange) - Math.abs(a.pctChange));
+  if (significant.length === 0) return;
+  const top = significant.slice(0, 3).map(move => {
+    const sign = move.pctChange >= 0 ? '+' : '';
+    return `${move.itemName} ${sign}${(move.pctChange * 100).toFixed(0)}%`;
+  });
+  const extra = significant.length > 3 ? ` (+${significant.length - 3} more)` : '';
+  addMessage(`Economy alert: ${top.join(', ')}${extra}.`, {
+    speaker: 'farmer',
+    category: 'economy',
+    priority: 'normal'
+  });
+}
+
+function emitDaySummaryForDay(summaryDay, snapshot) {
+  const totalGoals = Array.isArray(state.goals) ? state.goals.length : 0;
+  const completedGoals = state.goalsClaimed ? Object.keys(state.goalsClaimed).length : 0;
+  const summaryText = `Day ${summaryDay} Summary`;
+  const summaryLines = [
+    `Cash: $${(Number(snapshot.cash) || 0).toFixed(2)}`,
+    `Net worth: $${(Number(snapshot.netWorth) || 0).toFixed(2)}`,
+    `Tiles unlocked: ${Math.max(0, Number(snapshot.unlockedTiles) || 0)}`,
+    `Harvest-ready tiles: ${Math.max(0, Number(snapshot.readyTiles) || 0)}`,
+    `Goals complete: ${completedGoals}${totalGoals > 0 ? ` / ${totalGoals}` : ''}`
+  ];
+  addMessage(summaryText, {
+    speaker: 'player',
+    emotion: 'neutral',
+    category: 'system',
+    priority: 'normal',
+    isSummary: true,
+    summaryLines,
+    dayIndex: summaryDay
+  });
+}
+
 /**
  * Advance the game by one day. This function should update item
  * prices (possibly using random fluctuations or news event impacts),
  * generate new news on a schedule and increment the day/week/year.
  */
 function nextDay() {
+  updateNetWorth();
+  const summaryDay = state.player.day;
+  if (!state.dayStartSnapshot || Number(state.dayStartSnapshot.day) !== summaryDay) {
+    state.dayStartSnapshot = getCurrentDaySnapshot();
+  }
+  const endOfDaySnapshot = getCurrentDaySnapshot();
+  emitDaySummaryForDay(summaryDay, endOfDaySnapshot);
+  clearNonSummaryMessagesForDay(summaryDay);
+
+  const previousPrices = new Map();
+  state.shop.forEach(entry => {
+    previousPrices.set(entry.itemId, Number(entry.price) || 0);
+  });
   // Advance day counter
   state.player.day += 1;
+  lowEnergyNoticeDay = null;
   if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
     state.player.energyMax = DEFAULT_DATA.player.energyMax;
   }
@@ -1748,12 +2105,27 @@ function nextDay() {
   });
   // Recalculate net worth (cash + inventory + grid item value)
   updateNetWorth();
+  const priceMoves = [];
+  state.shop.forEach(entry => {
+    const previous = previousPrices.get(entry.itemId);
+    if (typeof previous !== 'number' || previous <= 0) return;
+    const current = Number(entry.price) || 0;
+    const pctChange = (current - previous) / previous;
+    const item = state.items.find(it => it.id === entry.itemId);
+    priceMoves.push({
+      itemId: entry.itemId,
+      itemName: item ? item.name : `Item ${entry.itemId}`,
+      pctChange
+    });
+  });
+  emitEconomyAlert(priceMoves);
   // Save active news events and history
   saveToStorage('newsEvents', state.newsEvents);
   saveToStorage('newsHistory', state.newsHistory);
   // Provide a single contextual tip or reminder for the day
   generateDailyTip(dowIndex);
   evaluateGoals();
+  state.dayStartSnapshot = getCurrentDaySnapshot();
   saveState();
   renderAll();
 }
@@ -1771,10 +2143,10 @@ function generateDailyTip(dowIndex) {
   if (dowIndex === 3) {
     const events = state.newsHistory[state.player.week] || [];
     if (events.length === 0) {
-    addMessage('News: No stories this week.', { speaker: 'farmer' });
+    addMessage('News: No stories this week.', { speaker: 'farmer', category: 'economy', priority: 'normal' });
       return;
     }
-    addMessage('News: New market stories are in.', { speaker: 'farmer' });
+    addMessage('News: New market stories are in.', { speaker: 'farmer', category: 'economy', priority: 'normal' });
     events.forEach(event => {
       let impactStr = '';
       if (typeof event.impact === 'number') {
@@ -1791,7 +2163,7 @@ function generateDailyTip(dowIndex) {
       const detail = [event.headline, itemName ? `Affects ${itemName}` : '', impactStr ? `Impact ${impactStr}` : '']
         .filter(Boolean)
         .join(' | ');
-      addMessage(detail, { speaker: 'farmer' });
+      addMessage(detail, { speaker: 'farmer', category: 'economy', priority: 'normal' });
     });
     return;
   }
@@ -1841,7 +2213,7 @@ function generateDailyTip(dowIndex) {
   // If no optional tips generated, fall back to cash summary
   const tipOptions = optionalTips.length > 0 ? optionalTips : [`Current cash: $${state.player.cash.toFixed(2)}`];
   const idx = Math.floor(Math.random() * tipOptions.length);
-  addMessage(tipOptions[idx]);
+  addMessage(tipOptions[idx], { category: 'tips', priority: 'low' });
 }
 
 /**
@@ -2011,12 +2383,18 @@ function mineGridTile(index) {
     if (Array.isArray(state.gridMiningHits)) {
       state.gridMiningHits[index] = 0;
     }
-    addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited' });
+    addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' });
     didMessage = true;
   } else if (Array.isArray(state.gridMiningHits)) {
     state.gridMiningHits[index] = nextHits;
     const hitsLeft = Math.max(0, 10 - nextHits);
-    addMessage(`Mining progress: ${nextHits}/10 hits (${hitsLeft} left).`, { speaker: 'player', emotion: 'mining' });
+    addMessage(`Mining progress: ${nextHits}/10 hits (${hitsLeft} left).`, {
+      speaker: 'player',
+      emotion: 'mining',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:mine'
+    });
     didMessage = true;
   }
   evaluateGoals();
@@ -2033,7 +2411,13 @@ function waterGridTile(index) {
 
   const growth = getPlantGrowthState(item, index);
   if (growth.isGrown) {
-    addMessage('This plant is already grown. Harvest it instead.', { speaker: 'player', emotion: 'watering' });
+    addMessage('This plant is already grown. Harvest it instead.', {
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:water'
+    });
     return true;
   }
 
@@ -2044,7 +2428,13 @@ function waterGridTile(index) {
     const daysLeft = Math.max(0, growDays - wateredDays);
     addMessage(
       `Already watered today. ${item.name} progress: ${wateredDays}/${growDays} days (${daysLeft} left).`,
-      { speaker: 'player', emotion: 'watering' }
+      {
+        speaker: 'player',
+        emotion: 'watering',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:water'
+      }
     );
     return true;
   }
@@ -2063,7 +2453,13 @@ function waterGridTile(index) {
   const daysLeft = Math.max(0, growDays - wateredDays);
   addMessage(
     `Watering progress: ${item.name} ${wateredDays}/${growDays} days (${daysLeft} left).`,
-    { speaker: 'player', emotion: 'watering' }
+    {
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:water'
+    }
   );
 
   saveState();
@@ -2143,6 +2539,16 @@ function selectShopItem(itemId) {
   }
   selectedShopItemId = itemId;
   setActiveTool(TOOL_GLOVE);
+  const freeCount = getFreePurchaseCount(itemId);
+  if (freeCount > 0) {
+    const item = state.items.find(it => it.id === itemId);
+    addMessage(`You have ${freeCount} free purchase${freeCount === 1 ? '' : 's'} left for ${item ? item.name : 'this item'}.`, {
+      speaker: 'merchant',
+      category: 'tips',
+      priority: 'low',
+      replaceKey: 'tip:free-purchase'
+    });
+  }
   updateCursorForTool();
   renderMarket();
 }
@@ -2474,6 +2880,64 @@ function attachEventHandlers() {
   // Next Day button triggers a daily update
   document.getElementById('next-day').onclick = nextDay;
 
+  const progressToggle = document.getElementById('filter-progress');
+  const economyToggle = document.getElementById('filter-economy');
+  const goalsToggle = document.getElementById('filter-goals');
+  const tipsToggle = document.getElementById('filter-tips');
+  const onFilterChange = () => {
+    messageFilters = {
+      progress: !!(progressToggle && progressToggle.checked),
+      economy: !!(economyToggle && economyToggle.checked),
+      goals: !!(goalsToggle && goalsToggle.checked),
+      tips: !!(tipsToggle && tipsToggle.checked)
+    };
+    updateFilterLabelState('progress', messageFilters.progress);
+    updateFilterLabelState('economy', messageFilters.economy);
+    updateFilterLabelState('goals', messageFilters.goals);
+    updateFilterLabelState('tips', messageFilters.tips);
+    saveToStorage('messageFilters', messageFilters);
+    refreshMessageVisibility();
+  };
+  const onFilterToggle = (event) => {
+    onFilterChange();
+    const filterName = getFilterNameFromId(event?.target?.id);
+    const isEnabled = !!event?.target?.checked;
+    const filterKey = filterName.toLowerCase();
+    addMessage(`${filterName} messages turned ${isEnabled ? 'ON' : 'OFF'}.`, {
+      speaker: 'player',
+      emotion: 'neutral',
+      category: 'system',
+      priority: 'high',
+      replaceKey: `filter:${filterKey}`
+    });
+  };
+  if (progressToggle) progressToggle.addEventListener('change', onFilterToggle);
+  if (economyToggle) economyToggle.addEventListener('change', onFilterToggle);
+  if (goalsToggle) goalsToggle.addEventListener('change', onFilterToggle);
+  if (tipsToggle) tipsToggle.addEventListener('change', onFilterToggle);
+
+  const unreadChip = document.getElementById('chat-unread-chip');
+  if (unreadChip) {
+    unreadChip.addEventListener('click', () => {
+      const chatLog = document.getElementById('chat-log');
+      if (chatLog) {
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+      unreadMessageCount = 0;
+      updateUnreadIndicator();
+    });
+  }
+
+  const chatLog = document.getElementById('chat-log');
+  if (chatLog) {
+    chatLog.addEventListener('scroll', () => {
+      if (isChatNearBottom()) {
+        unreadMessageCount = 0;
+        updateUnreadIndicator();
+      }
+    });
+  }
+
   document.querySelectorAll('.tool-button').forEach(button => {
     button.addEventListener('click', () => {
       const tool = button.getAttribute('data-tool');
@@ -2508,6 +2972,7 @@ async function main() {
   initialiseState();
   evaluateGoals();
   attachEventHandlers();
+  initialiseMessageUI();
   const header = document.getElementById('market-header');
   if (header) {
     Array.from(header.children).forEach(child => {
