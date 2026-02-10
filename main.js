@@ -1040,13 +1040,10 @@ function renderMarket() {
   // For each shop entry, create a unified row
   state.shop.forEach(entry => {
     if (!isShopItemUnlocked(entry.itemId)) return;
-    const item = state.items.find(it => it.id === entry.itemId);
-    if (!item) return;
-    const row = document.createElement('tr');
-    row.style.cursor = 'pointer';
-    if (selectedShopItemId === item.id) {
-      row.classList.add('market-row-selected');
-    }
+    const item = state.items.find(it => it.id === entry.itemId); 
+    if (!item) return; 
+    const row = document.createElement('tr'); 
+    row.style.cursor = 'pointer'; 
     // Do not set the entire row as draggable. Instead, attach draggable behaviour
     // to the item image so that dragging originates from the icon. This improves
     // cross‑browser drag behaviour and avoids issues with draggable <tr> elements.
@@ -1081,19 +1078,34 @@ function renderMarket() {
       : `$${entry.price.toFixed(2)}`;
     row.appendChild(priceCell);
 
-    row.addEventListener('click', () => {
-      selectShopItem(item.id);
-    });
+    row.classList.add('market-row'); 
+    row.dataset.itemId = String(item.id); 
+    if (selectedShopItemId === item.id) { 
+      row.classList.add('market-row-selected'); 
+    } 
+    if (selectionPulseId === item.id) { 
+      row.classList.add('market-row-pulse'); 
+      row.addEventListener('animationend', () => { 
+        row.classList.remove('market-row-pulse'); 
+      }, { once: true }); 
+    } 
+    row.addEventListener('click', () => { 
+      selectShopItem(item.id); 
+    }); 
 
     table.appendChild(row);
   });
-  if (tableContainer) {
-    tableContainer.appendChild(table);
-  }
+  if (tableContainer) { 
+    tableContainer.appendChild(table); 
+  } 
+  if (selectionPulseId !== null) { 
+    selectionPulseId = null; 
+  } 
   // Build the 9×9 farm. Each cell may be locked (unpurchased), unlocked and empty, or contain an item.
-  for (let i = 0; i < 81; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'grid-cell';
+  for (let i = 0; i < 81; i++) { 
+    const cell = document.createElement('div'); 
+    cell.className = 'grid-cell'; 
+    cell.dataset.index = String(i); 
     // Determine unlocked state and item placement. Use temporary variables for initial
     // visual state only. Event handlers will reference state arrays directly to
     // reflect up‑to‑date values.
@@ -1520,12 +1532,12 @@ function renderAll() {
   updateGridSize();
 }
 
-function updateGridSize() {
-  const root = document.documentElement;
-  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-  const gridContainer = document.getElementById('grid-container');
-  const farmPanel = document.getElementById('farm-panel');
-  const bottomBar = document.getElementById('bottom-bar');
+function updateGridSize() { 
+  const root = document.documentElement; 
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value)); 
+  const gridContainer = document.getElementById('grid-container'); 
+  const farmPanel = document.getElementById('farm-panel'); 
+  const bottomBar = document.getElementById('bottom-bar'); 
   const nextDay = document.getElementById('next-day');
 
   if (!gridContainer || !farmPanel) return;
@@ -1559,10 +1571,353 @@ function updateGridSize() {
   const size = clamp(Math.floor(Math.min(availableGridByHeight, maxByWidth)), minGridSize, maxGridSize);
   root.style.setProperty('--grid-size', `${size}px`);
 
-  if (bottomBar) {
-    root.style.setProperty('--bottom-bar-height', `${bottomBar.offsetHeight}px`);
-  }
-}
+  if (bottomBar) { 
+    root.style.setProperty('--bottom-bar-height', `${bottomBar.offsetHeight}px`); 
+  } 
+  resizeFxCanvas(); 
+} 
+
+// ----------- FX Utilities ----------- 
+const FX_IMAGE_CACHE = new Map(); 
+const FX_STATE = {  
+  canvas: null,  
+  ctx: null,  
+  particles: [],  
+  pool: [],  
+  maxParticles: 240,  
+  running: false,  
+  lastTs: 0,  
+  reduceMotion: false  
+}; 
+let lastMythicSparkleTs = 0; 
+
+function initFxLayer() { 
+  if (FX_STATE.canvas) return; 
+  const farmPanel = document.getElementById('farm-panel'); 
+  if (!farmPanel) return; 
+  const canvas = document.createElement('canvas'); 
+  canvas.className = 'fx-canvas'; 
+  farmPanel.appendChild(canvas); 
+  FX_STATE.canvas = canvas; 
+  FX_STATE.ctx = canvas.getContext('2d'); 
+  resizeFxCanvas(); 
+  FX_STATE.running = true; 
+  FX_STATE.lastTs = performance.now(); 
+  requestAnimationFrame(fxTick); 
+} 
+
+function resizeFxCanvas() { 
+  if (!FX_STATE.canvas || !FX_STATE.ctx) return; 
+  const parent = FX_STATE.canvas.parentElement; 
+  if (!parent) return; 
+  const rect = parent.getBoundingClientRect(); 
+  const dpr = window.devicePixelRatio || 1; 
+  FX_STATE.canvas.width = Math.max(1, Math.floor(rect.width * dpr)); 
+  FX_STATE.canvas.height = Math.max(1, Math.floor(rect.height * dpr)); 
+  FX_STATE.canvas.style.width = `${rect.width}px`; 
+  FX_STATE.canvas.style.height = `${rect.height}px`; 
+  FX_STATE.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); 
+} 
+
+function setReduceMotion(enabled) { 
+  FX_STATE.reduceMotion = !!enabled; 
+} 
+
+function getFxImage(src) { 
+  if (!src) return null; 
+  const resolved = resolveResourcePath(src); 
+  if (FX_IMAGE_CACHE.has(resolved)) return FX_IMAGE_CACHE.get(resolved); 
+  const img = new Image(); 
+  img.src = resolved; 
+  FX_IMAGE_CACHE.set(resolved, img); 
+  return img; 
+} 
+
+function allocParticle() { 
+  if (FX_STATE.pool.length > 0) return FX_STATE.pool.pop(); 
+  if (FX_STATE.particles.length < FX_STATE.maxParticles) { 
+    const p = { active: false }; 
+    FX_STATE.particles.push(p); 
+    return p; 
+  } 
+  return null; 
+} 
+
+function releaseParticle(p) { 
+  if (!p) return; 
+  p.active = false; 
+  FX_STATE.pool.push(p); 
+} 
+
+function spawnBurst({ x, y, count, imgList, speedRange, sizeRange, gravity, lifeRange }) { 
+  if (FX_STATE.reduceMotion) return; 
+  const images = (imgList || []).map(getFxImage).filter(Boolean); 
+  if (images.length === 0) return; 
+  const minSpeed = speedRange?.[0] ?? 30; 
+  const maxSpeed = speedRange?.[1] ?? 90; 
+  const minSize = sizeRange?.[0] ?? 6; 
+  const maxSize = sizeRange?.[1] ?? 16; 
+  const minLife = lifeRange?.[0] ?? 260; 
+  const maxLife = lifeRange?.[1] ?? 520; 
+  for (let i = 0; i < count; i++) { 
+    const p = allocParticle(); 
+    if (!p) return; 
+    const angle = Math.random() * Math.PI * 2; 
+    const speed = minSpeed + Math.random() * (maxSpeed - minSpeed); 
+    p.type = 'image'; 
+    p.img = images[Math.floor(Math.random() * images.length)]; 
+    p.x = x; 
+    p.y = y; 
+    p.vx = Math.cos(angle) * speed; 
+    p.vy = Math.sin(angle) * speed; 
+    p.gravity = gravity ?? 0; 
+    p.life = 0; 
+    p.maxLife = minLife + Math.random() * (maxLife - minLife); 
+    p.size = minSize + Math.random() * (maxSize - minSize); 
+    p.rotation = Math.random() * Math.PI * 2; 
+    p.rotationSpeed = (Math.random() - 0.5) * 4; 
+    p.active = true; 
+  } 
+} 
+
+function spawnRing({ x, y, radius, color, life }) { 
+  if (FX_STATE.reduceMotion) return; 
+  const p = allocParticle(); 
+  if (!p) return; 
+  p.type = 'ring'; 
+  p.x = x; 
+  p.y = y; 
+  p.radius = radius ?? 14; 
+  p.radiusEnd = (radius ?? 14) * 2.2; 
+  p.color = color || 'rgba(255,255,255,0.8)'; 
+  p.life = 0; 
+  p.maxLife = life ?? 220; 
+  p.active = true; 
+} 
+
+function spawnCoinTravel(from, to, count) { 
+  if (FX_STATE.reduceMotion) return; 
+  const imgList = [ 
+    'resources/effects/coin_particle_01.png', 
+    'resources/effects/coin_particle_02.png' 
+  ]; 
+  const images = imgList.map(getFxImage).filter(Boolean); 
+  if (images.length === 0) return; 
+  const total = Math.max(1, count || 4); 
+  for (let i = 0; i < total; i++) { 
+    const p = allocParticle(); 
+    if (!p) return; 
+    p.type = 'travel'; 
+    p.img = images[Math.floor(Math.random() * images.length)]; 
+    p.fromX = from.x; 
+    p.fromY = from.y; 
+    p.toX = to.x; 
+    p.toY = to.y; 
+    p.arc = -8 - Math.random() * 6; 
+    p.life = 0; 
+    p.maxLife = 360 + Math.random() * 120; 
+    p.size = 10 + Math.random() * 8; 
+    p.active = true; 
+  } 
+} 
+
+function spawnCoinTravelWithImage(from, to, count, imgPath) { 
+  if (FX_STATE.reduceMotion) return; 
+  const img = getFxImage(imgPath); 
+  if (!img) return; 
+  const total = Math.max(1, count || 1); 
+  for (let i = 0; i < total; i++) { 
+    const p = allocParticle(); 
+    if (!p) return; 
+    p.type = 'travel'; 
+    p.img = img; 
+    p.fromX = from.x; 
+    p.fromY = from.y; 
+    p.toX = to.x; 
+    p.toY = to.y; 
+    p.arc = -8 - Math.random() * 6; 
+    p.life = 0; 
+    p.maxLife = 360 + Math.random() * 120; 
+    p.size = 10 + Math.random() * 8; 
+    p.active = true; 
+  } 
+} 
+
+function spawnCoinsForSaleValue(amount, from, to) { 
+  if (FX_STATE.reduceMotion) return; 
+  const rounded = Math.round((Number(amount) || 0) * 100) / 100; 
+  let dollars = Math.floor(rounded); 
+  let cents = Math.round((rounded - dollars) * 100); 
+  if (cents >= 100) { 
+    dollars += 1; 
+    cents = 0; 
+  } 
+  const hundreds = Math.floor(dollars / 100); 
+  const tens = dollars % 100; 
+  if (hundreds > 0) { 
+    spawnCoinTravelWithImage(from, to, hundreds, 'resources/effects/coin_particle_03.png'); 
+  } 
+  if (tens > 0) { 
+    spawnCoinTravelWithImage(from, to, tens, 'resources/effects/coin_particle_02.png'); 
+  } 
+  if (cents > 0) { 
+    spawnCoinTravelWithImage(from, to, cents, 'resources/effects/coin_particle_01.png'); 
+  } 
+} 
+
+function fxTick(ts) {  
+  if (!FX_STATE.running || !FX_STATE.ctx) return;  
+  const dt = Math.min(64, ts - FX_STATE.lastTs);  
+  FX_STATE.lastTs = ts;  
+  const ctx = FX_STATE.ctx;  
+  ctx.clearRect(0, 0, FX_STATE.canvas.width, FX_STATE.canvas.height);  
+  FX_STATE.particles.forEach(p => {  
+    if (!p.active) return; 
+    p.life += dt; 
+    const t = Math.min(1, p.life / p.maxLife); 
+    if (t >= 1) { 
+      releaseParticle(p); 
+      return; 
+    } 
+    if (p.type === 'image') { 
+      p.vy += (p.gravity || 0) * (dt / 1000); 
+      p.x += p.vx * (dt / 1000); 
+      p.y += p.vy * (dt / 1000); 
+      p.rotation += p.rotationSpeed * (dt / 1000); 
+      ctx.save(); 
+      ctx.globalAlpha = 1 - t; 
+      ctx.translate(p.x, p.y); 
+      ctx.rotate(p.rotation); 
+      ctx.drawImage(p.img, -p.size / 2, -p.size / 2, p.size, p.size); 
+      ctx.restore(); 
+    } else if (p.type === 'ring') { 
+      const radius = p.radius + (p.radiusEnd - p.radius) * t; 
+      ctx.save(); 
+      ctx.globalAlpha = 1 - t; 
+      ctx.strokeStyle = p.color; 
+      ctx.lineWidth = 2; 
+      ctx.beginPath(); 
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2); 
+      ctx.stroke(); 
+      ctx.restore(); 
+    } else if (p.type === 'travel') { 
+      const ease = 1 - Math.pow(1 - t, 3); 
+      const x = p.fromX + (p.toX - p.fromX) * ease; 
+      const y = p.fromY + (p.toY - p.fromY) * ease + p.arc * (1 - t); 
+      ctx.save(); 
+      ctx.globalAlpha = 1 - t * 0.6; 
+      ctx.drawImage(p.img, x - p.size / 2, y - p.size / 2, p.size, p.size); 
+      ctx.restore(); 
+    }  
+  });  
+  maybeSpawnMythicSparkle(ts);  
+  requestAnimationFrame(fxTick);  
+}  
+
+function maybeSpawnMythicSparkle(ts) {  
+  if (FX_STATE.reduceMotion) return;  
+  if (ts - lastMythicSparkleTs < 1200) return;  
+  const mythicCells = Array.from(document.querySelectorAll('#grid .grid-cell.rarity-mythic'));  
+  if (mythicCells.length === 0) return;  
+  if (Math.random() > 0.35) return;  
+  const target = mythicCells[Math.floor(Math.random() * mythicCells.length)];  
+  const center = getElementCenterInFarmPanel(target);  
+  if (!center) return;  
+  spawnBurst({  
+    x: center.x,  
+    y: center.y,  
+    count: 2 + Math.floor(Math.random() * 2),  
+    imgList: ['resources/effects/prism_sparkle_01.png', 'resources/effects/prism_sparkle_02.png'],  
+    speedRange: [10, 30],  
+    sizeRange: [8, 14],  
+    gravity: 0,  
+    lifeRange: [260, 420]  
+  });  
+  lastMythicSparkleTs = ts;  
+}  
+
+function triggerFxClass(el, className) { 
+  if (!el || !className) return; 
+  el.classList.remove(className); 
+  void el.offsetWidth; 
+  el.classList.add(className); 
+  el.addEventListener('animationend', () => { 
+    el.classList.remove(className); 
+  }, { once: true }); 
+} 
+
+function getTileCenter(index) { 
+  const grid = document.getElementById('grid'); 
+  const farmPanel = document.getElementById('farm-panel'); 
+  if (!grid || !farmPanel) return null; 
+  const cell = grid.children[index]; 
+  if (!cell) return null; 
+  const cellRect = cell.getBoundingClientRect(); 
+  const panelRect = farmPanel.getBoundingClientRect(); 
+  return { 
+    x: cellRect.left - panelRect.left + cellRect.width / 2, 
+    y: cellRect.top - panelRect.top + cellRect.height / 2 
+  }; 
+} 
+
+function getElementCenterInFarmPanel(el) { 
+  const farmPanel = document.getElementById('farm-panel'); 
+  if (!el || !farmPanel) return null; 
+  const rect = el.getBoundingClientRect(); 
+  const panelRect = farmPanel.getBoundingClientRect(); 
+  return { 
+    x: rect.left - panelRect.left + rect.width / 2, 
+    y: rect.top - panelRect.top + rect.height / 2 
+  }; 
+} 
+
+function getHudCenters() { 
+  const farmPanel = document.getElementById('farm-panel'); 
+  if (!farmPanel) return []; 
+  const panelRect = farmPanel.getBoundingClientRect(); 
+  return Array.from(document.querySelectorAll('#hud-cash, #hud-networth')) 
+    .map(el => { 
+      const rect = el.getBoundingClientRect(); 
+      return { 
+        x: rect.left - panelRect.left + rect.width / 2, 
+        y: rect.top - panelRect.top + rect.height / 2, 
+        el 
+      }; 
+    }) 
+    .filter(pt => Number.isFinite(pt.x) && Number.isFinite(pt.y)); 
+} 
+
+function pulseHud(isGain) { 
+  const className = isGain ? 'fx-pulse-up' : 'fx-pulse-down'; 
+  document.querySelectorAll('#hud-cash, #hud-networth').forEach(el => { 
+    triggerFxClass(el, className); 
+  }); 
+} 
+
+function spawnFloatingText({ x, y, text, color }) { 
+  if (FX_STATE.reduceMotion) return; 
+  const panel = document.getElementById('farm-panel'); 
+  if (!panel) return; 
+  const node = document.createElement('div'); 
+  node.className = 'fx-floating-text fx-fade-up'; 
+  node.textContent = text; 
+  if (color) node.style.color = color; 
+  node.style.left = `${x}px`; 
+  node.style.top = `${y}px`; 
+  panel.appendChild(node); 
+  node.addEventListener('animationend', () => node.remove(), { once: true }); 
+} 
+
+function playDayTransition() { 
+  if (FX_STATE.reduceMotion) return; 
+  const panel = document.getElementById('farm-panel'); 
+  if (!panel) return; 
+  const wipe = document.createElement('div'); 
+  wipe.className = 'fx-day-wipe'; 
+  panel.appendChild(wipe); 
+  triggerFxClass(panel, 'fx-panel-tint'); 
+  wipe.addEventListener('animationend', () => wipe.remove(), { once: true }); 
+} 
 
 /**
  * Append a message to the chat log. Messages appear in the messages
@@ -1598,9 +1953,10 @@ const MESSAGE_FILTERS_DEFAULT = {
   goals: true,
   tips: true
 };
-let messageFilters = null;
-let unreadMessageCount = 0;
-let lowEnergyNoticeDay = null;
+let messageFilters = null; 
+let unreadMessageCount = 0; 
+let lastUnreadCount = 0; 
+let lowEnergyNoticeDay = null; 
 const messageReplaceMap = new Map();
 
 function getProfileImage(speaker, emotion) {
@@ -1689,17 +2045,21 @@ function isChatNearBottom() {
   return (chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight) <= threshold;
 }
 
-function updateUnreadIndicator() {
-  const chip = document.getElementById('chat-unread-chip');
-  if (!chip) return;
-  if (unreadMessageCount > 0) {
-    chip.style.display = 'inline-block';
-    chip.textContent = `${unreadMessageCount} new message${unreadMessageCount === 1 ? '' : 's'}`;
-  } else {
-    chip.style.display = 'none';
-    chip.textContent = '';
-  }
-}
+function updateUnreadIndicator() { 
+  const chip = document.getElementById('chat-unread-chip'); 
+  if (!chip) return; 
+  if (unreadMessageCount > 0) { 
+    chip.style.display = 'inline-block'; 
+    chip.textContent = `${unreadMessageCount} new message${unreadMessageCount === 1 ? '' : 's'}`; 
+    if (unreadMessageCount > lastUnreadCount) { 
+      triggerFxClass(chip, 'fx-pulse-up'); 
+    } 
+  } else { 
+    chip.style.display = 'none'; 
+    chip.textContent = ''; 
+  } 
+  lastUnreadCount = unreadMessageCount; 
+} 
 
 function pruneChatLog() {
   const chatLog = document.getElementById('chat-log');
@@ -1778,10 +2138,11 @@ function emitMessage(payload) {
   if (normalized.replaceKey) {
     scopedReplaceKey = `${normalized.replaceKey}:day:${normalized.dayIndex}`;
   }
-  const existingReplaceEntry = scopedReplaceKey ? messageReplaceMap.get(scopedReplaceKey) : null;
-  let entry = existingReplaceEntry && existingReplaceEntry.element ? existingReplaceEntry.element : null;
-
-  if (entry) {
+  const existingReplaceEntry = scopedReplaceKey ? messageReplaceMap.get(scopedReplaceKey) : null; 
+  let entry = existingReplaceEntry && existingReplaceEntry.element ? existingReplaceEntry.element : null; 
+  const wasReplace = !!entry; 
+ 
+  if (entry) { 
     entry.dataset.ts = String(normalized.timestamp);
     if (normalized.isSummary) {
       entry.innerHTML = '';
@@ -1805,8 +2166,13 @@ function emitMessage(payload) {
 
   entry.dataset.priority = normalized.priority;
   entry.dataset.category = normalized.category;
-  entry.dataset.day = String(normalized.dayIndex);
-  entry.dataset.replaceKey = scopedReplaceKey;
+  entry.dataset.day = String(normalized.dayIndex); 
+  entry.dataset.replaceKey = scopedReplaceKey; 
+  if (wasReplace) { 
+    triggerFxClass(entry, 'fx-pulse-up'); 
+  } else { 
+    triggerFxClass(entry, 'fx-fade-up'); 
+  } 
 
   const visible = isMessageVisibleByFilters(normalized);
   entry.style.display = visible ? '' : 'none';
@@ -2037,9 +2403,10 @@ function emitDaySummaryForDay(summaryDay, snapshot) {
  * prices (possibly using random fluctuations or news event impacts),
  * generate new news on a schedule and increment the day/week/year.
  */
-function nextDay() {
-  updateNetWorth();
-  const summaryDay = state.player.day;
+function nextDay() { 
+  updateNetWorth(); 
+  playDayTransition(); 
+  const summaryDay = state.player.day; 
   if (!state.dayStartSnapshot || Number(state.dayStartSnapshot.day) !== summaryDay) {
     state.dayStartSnapshot = getCurrentDaySnapshot();
   }
@@ -2369,20 +2736,21 @@ function purchaseGridSlot(index) {
   renderAll();
 }
 
-function mineGridTile(index) {
-  if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false;
-  if (state.gridUnlocked[index]) return false;
-  if (!consumeEnergy(1, 'mine this tile')) {
-    return true;
-  }
-  const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0;
-  const nextHits = currentHits + 1;
-  let didMessage = false;
-  if (nextHits >= 10) {
-    state.gridUnlocked[index] = true;
-    if (Array.isArray(state.gridMiningHits)) {
-      state.gridMiningHits[index] = 0;
-    }
+function mineGridTile(index) { 
+  if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false; 
+  if (state.gridUnlocked[index]) return false; 
+  if (!consumeEnergy(1, 'mine this tile')) { 
+    return true; 
+  } 
+  const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0; 
+  const nextHits = currentHits + 1; 
+  const didClear = nextHits >= 10; 
+  let didMessage = false; 
+  if (didClear) { 
+    state.gridUnlocked[index] = true; 
+    if (Array.isArray(state.gridMiningHits)) { 
+      state.gridMiningHits[index] = 0; 
+    } 
     addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' });
     didMessage = true;
   } else if (Array.isArray(state.gridMiningHits)) {
@@ -2396,12 +2764,47 @@ function mineGridTile(index) {
       replaceKey: 'progress:mine'
     });
     didMessage = true;
-  }
-  evaluateGoals();
-  saveState();
-  renderAll();
-  return didMessage;
-}
+  } 
+  evaluateGoals(); 
+  saveState(); 
+  renderAll(); 
+  const center = getTileCenter(index); 
+  const gridContainer = document.getElementById('grid-container'); 
+  if (center) { 
+    if (didClear) { 
+      spawnBurst({ 
+        x: center.x, 
+        y: center.y, 
+        count: 14, 
+        imgList: ['resources/effects/dust_puff_01.png', 'resources/effects/dust_puff_02.png'], 
+        speedRange: [20, 70], 
+        sizeRange: [10, 18], 
+        gravity: 10, 
+        lifeRange: [300, 560] 
+      }); 
+      spawnRing({ x: center.x, y: center.y, radius: 12, color: 'rgba(255,255,255,0.8)', life: 220 }); 
+      if (gridContainer) { 
+        triggerFxClass(gridContainer, 'fx-camera-nudge'); 
+      } 
+    } else { 
+      spawnBurst({ 
+        x: center.x, 
+        y: center.y, 
+        count: 6, 
+        imgList: ['resources/effects/rock_chip_01.png', 'resources/effects/rock_chip_02.png'], 
+        speedRange: [30, 90], 
+        sizeRange: [6, 12], 
+        gravity: 40, 
+        lifeRange: [200, 420] 
+      }); 
+      const cell = document.getElementById('grid')?.children[index]; 
+      if (cell) triggerFxClass(cell, 'fx-shake'); 
+      const toolButton = document.querySelector('.tool-button[data-tool=\"pickaxe\"]'); 
+      if (toolButton) triggerFxClass(toolButton, 'fx-pop'); 
+    } 
+  } 
+  return didMessage; 
+} 
 
 function waterGridTile(index) {
   if (!Array.isArray(state.gridWateredDay) || index < 0 || index >= state.gridWateredDay.length) return false;
@@ -2410,34 +2813,38 @@ function waterGridTile(index) {
   if (!item) return false;
 
   const growth = getPlantGrowthState(item, index);
-  if (growth.isGrown) {
-    addMessage('This plant is already grown. Harvest it instead.', {
-      speaker: 'player',
-      emotion: 'watering',
-      category: 'progress',
-      priority: 'normal',
-      replaceKey: 'progress:water'
-    });
-    return true;
-  }
+  if (growth.isGrown) { 
+    addMessage('This plant is already grown. Harvest it instead.', { 
+      speaker: 'player', 
+      emotion: 'watering', 
+      category: 'progress', 
+      priority: 'normal', 
+      replaceKey: 'progress:water' 
+    }); 
+    const cell = document.getElementById('grid')?.children[index]; 
+    if (cell) triggerFxClass(cell, 'fx-wobble'); 
+    return true; 
+  } 
 
   const wasWateredToday = state.gridWateredDay[index] === state.player.day;
   if (wasWateredToday) {
     const growDays = Math.max(0, Number(item.growDays) || 0);
     const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
     const daysLeft = Math.max(0, growDays - wateredDays);
-    addMessage(
-      `Already watered today. ${item.name} progress: ${wateredDays}/${growDays} days (${daysLeft} left).`,
-      {
-        speaker: 'player',
-        emotion: 'watering',
-        category: 'progress',
-        priority: 'normal',
-        replaceKey: 'progress:water'
-      }
-    );
-    return true;
-  }
+    addMessage( 
+      `Already watered today. ${item.name} progress: ${wateredDays}/${growDays} days (${daysLeft} left).`, 
+      { 
+        speaker: 'player', 
+        emotion: 'watering', 
+        category: 'progress', 
+        priority: 'normal', 
+        replaceKey: 'progress:water' 
+      } 
+    ); 
+    const cell = document.getElementById('grid')?.children[index]; 
+    if (cell) triggerFxClass(cell, 'fx-wobble'); 
+    return true; 
+  } 
 
   if (!consumeEnergy(1, 'water this tile')) {
     return true;
@@ -2462,10 +2869,27 @@ function waterGridTile(index) {
     }
   );
 
-  saveState();
-  renderAll();
-  return true;
-}
+  saveState(); 
+  renderAll(); 
+  const center = getTileCenter(index); 
+  if (center) { 
+    spawnBurst({ 
+      x: center.x, 
+      y: center.y, 
+      count: 10, 
+      imgList: ['resources/effects/water_drop_01.png', 'resources/effects/water_drop_02.png'], 
+      speedRange: [20, 60], 
+      sizeRange: [6, 10], 
+      gravity: 80, 
+      lifeRange: [240, 520] 
+    }); 
+    spawnRing({ x: center.x, y: center.y, radius: 10, color: 'rgba(80,160,255,0.7)', life: 220 }); 
+    const cell = document.getElementById('grid')?.children[index]; 
+    const overlay = cell ? cell.querySelector('img.grid-overlay[src*=\"water.png\"]') : null; 
+    if (overlay) triggerFxClass(overlay, 'fx-pop'); 
+  } 
+  return true; 
+} 
 
 /**
  * Place an inventory item onto an unlocked grid slot. The item must exist
@@ -2493,10 +2917,25 @@ function placeItemOnGrid(itemId, cellIndex) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
-  saveState();
-  addMessage(`Placed ${item.name} on the grid.`);
-  renderAll();
-}
+  saveState(); 
+  addMessage(`Placed ${item.name} on the grid.`); 
+  renderAll(); 
+  const center = getTileCenter(cellIndex); 
+  if (center) { 
+    spawnBurst({ 
+      x: center.x, 
+      y: center.y + 6, 
+      count: 6, 
+      imgList: ['resources/effects/soil_puff_01.png', 'resources/effects/soil_puff_02.png'], 
+      speedRange: [10, 40], 
+      sizeRange: [8, 14], 
+      gravity: 30, 
+      lifeRange: [220, 460] 
+    }); 
+    const cell = document.getElementById('grid')?.children[cellIndex]; 
+    if (cell) triggerFxClass(cell, 'fx-pop'); 
+  } 
+} 
 
 /**
  * Remove an item from a grid slot back into the player's inventory.
@@ -2524,23 +2963,25 @@ function removeItemFromGrid(cellIndex) {
 }
 
 // Track the currently selected shop item for farm placement.
-let selectedShopItemId = null;
+let selectedShopItemId = null; 
+let selectionPulseId = null; 
 
-function selectShopItem(itemId) {
-  if (!isShopItemUnlocked(itemId)) {
-    addMessage('This item is not available yet.');
-    return;
-  }
-  if (selectedShopItemId === itemId) {
-    selectedShopItemId = null;
-    updateCursorForTool();
-    renderMarket();
-    return;
-  }
-  selectedShopItemId = itemId;
-  setActiveTool(TOOL_GLOVE);
-  const freeCount = getFreePurchaseCount(itemId);
-  if (freeCount > 0) {
+function selectShopItem(itemId) { 
+  if (!isShopItemUnlocked(itemId)) { 
+    addMessage('This item is not available yet.'); 
+    return; 
+  } 
+  if (selectedShopItemId === itemId) { 
+    selectedShopItemId = null; 
+    updateCursorForTool(); 
+    renderMarket(); 
+    return; 
+  } 
+  selectedShopItemId = itemId; 
+  selectionPulseId = itemId; 
+  setActiveTool(TOOL_GLOVE); 
+  const freeCount = getFreePurchaseCount(itemId); 
+  if (freeCount > 0) { 
     const item = state.items.find(it => it.id === itemId);
     addMessage(`You have ${freeCount} free purchase${freeCount === 1 ? '' : 's'} left for ${item ? item.name : 'this item'}.`, {
       speaker: 'merchant',
@@ -2553,12 +2994,13 @@ function selectShopItem(itemId) {
   renderMarket();
 }
 
-function clearShopSelection() {
-  if (!selectedShopItemId) return;
-  selectedShopItemId = null;
-  updateCursorForTool();
-  renderMarket();
-}
+function clearShopSelection() { 
+  if (!selectedShopItemId) return; 
+  selectedShopItemId = null; 
+  selectionPulseId = null; 
+  updateCursorForTool(); 
+  renderMarket(); 
+} 
 
 function updateToolButtons() {
   document.querySelectorAll('.tool-button').forEach(button => {
@@ -2651,13 +3093,33 @@ function purchaseAndPlaceSelected(cellIndex) {
   updateNetWorth();
   evaluateGoals();
   saveState();
-  if (freeQty > 0) {
-    addMessage(`Purchased ${item.name} for $0.00 (free) and placed it on the grid.`, { speaker: 'farmer' });
-  } else {
-    addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' });
-  }
-  renderAll();
-}
+  if (freeQty > 0) { 
+    addMessage(`Purchased ${item.name} for $0.00 (free) and placed it on the grid.`, { speaker: 'farmer' }); 
+  } else { 
+    addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' }); 
+  } 
+  renderAll(); 
+  const center = getTileCenter(cellIndex); 
+  if (center) { 
+    spawnBurst({ 
+      x: center.x, 
+      y: center.y + 6, 
+      count: 6, 
+      imgList: ['resources/effects/soil_puff_01.png', 'resources/effects/soil_puff_02.png'], 
+      speedRange: [10, 40], 
+      sizeRange: [8, 14], 
+      gravity: 30, 
+      lifeRange: [220, 460] 
+    }); 
+    const cell = document.getElementById('grid')?.children[cellIndex]; 
+    if (cell) triggerFxClass(cell, 'fx-pop'); 
+  } 
+  pulseHud(false); 
+  const hudCenters = getHudCenters(); 
+  if (center && hudCenters.length > 0) { 
+    spawnCoinTravel(hudCenters[0], center, 5); 
+  } 
+} 
 
 function harvestPlant(cellIndex) {
   const itemId = state.gridItems[cellIndex];
@@ -2692,10 +3154,49 @@ function harvestPlant(cellIndex) {
   }
   updateNetWorth();
   evaluateGoals();
-  saveState();
-  addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
-  renderAll();
-}
+  saveState(); 
+  addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' }); 
+  renderAll(); 
+  const center = getTileCenter(cellIndex); 
+  if (center) { 
+    const isRare = rarity === 'rare'; 
+    const isMythic = rarity === 'mythic'; 
+    const sparkleList = isMythic 
+      ? ['resources/effects/prism_sparkle_01.png', 'resources/effects/prism_sparkle_02.png'] 
+      : ['resources/effects/sparkle_gold_01.png', 'resources/effects/sparkle_gold_02.png']; 
+    const burstCount = isMythic ? 16 : (isRare ? 12 : 8); 
+    spawnBurst({ 
+      x: center.x, 
+      y: center.y - 6, 
+      count: burstCount, 
+      imgList: sparkleList, 
+      speedRange: [20, 70], 
+      sizeRange: [8, 14], 
+      gravity: 10, 
+      lifeRange: [240, 520] 
+    }); 
+    if (isRare || isMythic) { 
+      spawnRing({ 
+        x: center.x, 
+        y: center.y, 
+        radius: 10, 
+        color: isMythic ? 'rgba(198,180,255,0.8)' : 'rgba(255,213,100,0.8)', 
+        life: 220 
+      }); 
+    } 
+    spawnFloatingText({ 
+      x: center.x - 12, 
+      y: center.y - 18, 
+      text: `+$${saleValue.toFixed(2)}`, 
+      color: isMythic ? '#c6b4ff' : '#ffe680' 
+    }); 
+  } 
+  pulseHud(true); 
+  const hudCenters = getHudCenters(); 
+  if (center && hudCenters.length > 0) { 
+    spawnCoinsForSaleValue(saleValue, center, hudCenters[0]); 
+  } 
+} 
 
 /**
  * Produce items for an extractor of a given level. Returns an array
@@ -2938,15 +3439,16 @@ function attachEventHandlers() {
     });
   }
 
-  document.querySelectorAll('.tool-button').forEach(button => {
-    button.addEventListener('click', () => {
-      const tool = button.getAttribute('data-tool');
-      if (tool === TOOL_WATERING || tool === TOOL_PICKAXE) {
-        clearShopSelection();
-      }
-      setActiveTool(tool);
-    });
-  });
+  document.querySelectorAll('.tool-button').forEach(button => { 
+    button.addEventListener('click', () => { 
+      const tool = button.getAttribute('data-tool'); 
+      if (tool === TOOL_WATERING || tool === TOOL_PICKAXE) { 
+        clearShopSelection(); 
+      } 
+      triggerFxClass(button, 'fx-pop'); 
+      setActiveTool(tool); 
+    }); 
+  }); 
 
   document.addEventListener('click', () => {
     messageJustEmitted = false;
@@ -2994,9 +3496,17 @@ async function main() {
   renderHUD();
   // Additional initialisation: apply selected theme
   applyTheme(state.player.theme);
-  updateGridSize();
-  window.addEventListener('resize', updateGridSize);
-  window.addEventListener('orientationchange', updateGridSize);
+  updateGridSize(); 
+  const reduceMotionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null; 
+  setReduceMotion(!!(reduceMotionQuery && reduceMotionQuery.matches)); 
+  if (reduceMotionQuery) { 
+    reduceMotionQuery.addEventListener('change', (event) => { 
+      setReduceMotion(!!event.matches); 
+    }); 
+  } 
+  initFxLayer(); 
+  window.addEventListener('resize', updateGridSize); 
+  window.addEventListener('orientationchange', updateGridSize); 
   if ('ResizeObserver' in window) {
     const observedElements = ['bottom-bar', 'messages-panel', 'market-header']
       .map(id => document.getElementById(id))

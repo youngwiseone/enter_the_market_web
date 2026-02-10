@@ -228,10 +228,17 @@
             top: 0;
             z-index: 2;
         }
-        .market-row-selected {
-            outline: 2px solid var(--secondary-color, #0078d7);
-            outline-offset: -2px;
-        }
+        .market-row-selected { 
+            outline: 2px solid var(--secondary-color, #0078d7); 
+            outline-offset: -2px; 
+        } 
+        .market-row-pulse { 
+            animation: fx-row-pulse 220ms ease-out; 
+        } 
+        @keyframes fx-row-pulse { 
+            0% { background-color: #fff4b0; } 
+            100% { background-color: inherit; } 
+        } 
 
         /* Farm styling for the Minesweeper‑like 9×9 board used in the Farmer's Market tab */
         #grid {
@@ -244,8 +251,8 @@
             border: 1px solid var(--header-border, #808080);
             cursor: inherit;
         }
-        .grid-cell {
-            box-sizing: border-box;
+        .grid-cell { 
+            box-sizing: border-box; 
             /* 3D button style reminiscent of Windows 98: light top/left, dark bottom/right */
             background-color: #d4d0c8;
             border-left: 1px solid white;
@@ -259,9 +266,16 @@
             justify-content: center;
             cursor: inherit;
             user-select: none;
-            position: relative;
-            overflow: hidden;
-        }
+            position: relative; 
+            overflow: hidden; 
+            transition: transform 80ms ease-out, box-shadow 80ms ease-out; 
+        } 
+        @media (hover: hover) and (pointer: fine) { 
+            .grid-cell:hover { 
+                transform: translateY(-1px); 
+                box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 0 rgba(0, 0, 0, 0.15); 
+            } 
+        } 
         .grid-cell.revealed {
             /* Invert bevel to appear sunken when revealed */
             background-color: #663931;
@@ -308,14 +322,30 @@
         .rarity-rare {
             --rarity-color: #d4af37;
         }
-        .rarity-mythic {
-            --rarity-color: #a855f7;
-        }
-        .rarity-holo {
-            position: absolute;
-            inset: 1px;
-            pointer-events: none;
-            z-index: 3;
+        .rarity-mythic { 
+            --rarity-color: #a855f7; 
+        } 
+        .grid-cell.rarity-rare::after { 
+            content: ''; 
+            position: absolute; 
+            inset: -20%; 
+            background: linear-gradient( 
+                120deg, 
+                rgba(255, 255, 255, 0), 
+                rgba(255, 255, 255, 0.45), 
+                rgba(255, 255, 255, 0) 
+            ); 
+            opacity: 0.35; 
+            transform: translateX(-60%); 
+            animation: fx-shimmer 3s linear infinite; 
+            pointer-events: none; 
+            mix-blend-mode: screen; 
+        } 
+        .rarity-holo { 
+            position: absolute; 
+            inset: 1px; 
+            pointer-events: none; 
+            z-index: 3; 
             background: linear-gradient(
                 120deg,
                 rgba(168, 85, 247, 0.0),
@@ -328,11 +358,15 @@
             mix-blend-mode: screen;
             animation: holo-shine 3.5s linear infinite;
         }
-        @keyframes holo-shine {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        @keyframes holo-shine { 
+            0% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; } 
+            100% { background-position: 0% 50%; } 
+        } 
+        @keyframes fx-shimmer { 
+            0% { transform: translateX(-70%); } 
+            100% { transform: translateX(70%); } 
+        } 
         .farm-toolbar {
             display: flex;
             gap: 4px;
@@ -623,15 +657,123 @@
                 height: 44px;
             }
         }
-        @media (hover: none) and (pointer: coarse) {
-            :root {
-                --font-ui: clamp(14px, 2.6vw, 18px);
-                --font-table: clamp(13px, 2.2vw, 16px);
-                --font-title: clamp(15px, 3vw, 20px);
-                --font-button: clamp(15px, 3.2vw, 22px);
-            }
-        }
-    </style>
+        @media (hover: none) and (pointer: coarse) { 
+            :root { 
+                --font-ui: clamp(14px, 2.6vw, 18px); 
+                --font-table: clamp(13px, 2.2vw, 16px); 
+                --font-title: clamp(15px, 3vw, 20px); 
+                --font-button: clamp(15px, 3.2vw, 22px); 
+            } 
+        } 
+        .fx-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 30; 
+        } 
+        .fx-pop { 
+            animation: fx-pop 160ms ease-out; 
+        } 
+        .fx-shake { 
+            animation: fx-shake 120ms ease-in-out; 
+        } 
+        .fx-wobble { 
+            animation: fx-wobble 180ms ease-in-out; 
+        } 
+        .fx-pulse-up { 
+            animation: fx-pulse-up 260ms ease-out; 
+        } 
+        .fx-pulse-down { 
+            animation: fx-pulse-down 260ms ease-out; 
+        } 
+        .fx-fade-up { 
+            animation: fx-fade-up 600ms ease-out; 
+        } 
+        .fx-camera-nudge { 
+            animation: fx-camera-nudge 160ms ease-out; 
+        } 
+        .fx-day-wipe { 
+            position: absolute; 
+            inset: 0; 
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.6) 40%, rgba(255, 255, 255, 0) 100%); 
+            opacity: 0; 
+            z-index: 40; 
+            animation: fx-day-wipe 220ms ease-out; 
+            pointer-events: none; 
+        } 
+        .fx-panel-tint { 
+            animation: fx-panel-tint 260ms ease-out; 
+        } 
+        .fx-floating-text { 
+            position: absolute; 
+            pointer-events: none; 
+            font-size: 12px; 
+            color: #ffe680; 
+            text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.45); 
+            z-index: 35; 
+        } 
+        @keyframes fx-pop { 
+            0% { transform: scale(1); } 
+            40% { transform: scale(1.15); } 
+            100% { transform: scale(1); } 
+        } 
+        @keyframes fx-shake { 
+            0% { transform: translate(0, 0); } 
+            20% { transform: translate(-2px, 1px); } 
+            40% { transform: translate(2px, -1px); } 
+            60% { transform: translate(-1px, -2px); } 
+            80% { transform: translate(1px, 2px); } 
+            100% { transform: translate(0, 0); } 
+        } 
+        @keyframes fx-wobble { 
+            0% { transform: rotate(0deg); } 
+            25% { transform: rotate(-2deg); } 
+            50% { transform: rotate(2deg); } 
+            75% { transform: rotate(-1deg); } 
+            100% { transform: rotate(0deg); } 
+        } 
+        @keyframes fx-pulse-up { 
+            0% { transform: translateY(0); color: inherit; } 
+            40% { transform: translateY(-2px); color: #2f9e44; } 
+            100% { transform: translateY(0); color: inherit; } 
+        } 
+        @keyframes fx-pulse-down { 
+            0% { transform: translateY(0); color: inherit; } 
+            40% { transform: translateY(2px); color: #c92a2a; } 
+            100% { transform: translateY(0); color: inherit; } 
+        } 
+        @keyframes fx-fade-up { 
+            0% { opacity: 0; transform: translateY(6px); } 
+            20% { opacity: 1; } 
+            100% { opacity: 0; transform: translateY(-10px); } 
+        } 
+        @keyframes fx-camera-nudge { 
+            0% { transform: translate(0, 0); } 
+            40% { transform: translate(2px, -2px); } 
+            100% { transform: translate(0, 0); } 
+        } 
+        @keyframes fx-day-wipe { 
+            0% { opacity: 0; } 
+            40% { opacity: 1; } 
+            100% { opacity: 0; } 
+        } 
+        @keyframes fx-panel-tint { 
+            0% { filter: none; } 
+            40% { filter: brightness(1.04) saturate(1.08); } 
+            100% { filter: none; } 
+        } 
+        @media (prefers-reduced-motion: reduce) { 
+            .fx-pop, .fx-shake, .fx-wobble, .fx-pulse-up, .fx-pulse-down, .fx-fade-up, .fx-camera-nudge, .fx-day-wipe, .fx-panel-tint { 
+                animation: none !important; 
+            } 
+            .grid-cell.rarity-rare::after, .rarity-holo { 
+                animation: none !important; 
+            } 
+        } 
+    </style> 
 </head>
 <body>    
     <div id="market-layout">
