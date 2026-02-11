@@ -15,6 +15,8 @@
  * and replicate them here in JavaScript.
  */
 
+const BUILD_VERSION = 'Web v0.1';
+
 // ----------- Data Definitions -----------
 
 /*
@@ -264,6 +266,162 @@ let state = {
   goalStats: null,
   dayStartSnapshot: null
 };
+
+const playtestStats = {
+  activeMs: 0,
+  lastActiveAt: null
+};
+
+function startPlaytimeTracking() {
+  playtestStats.lastActiveAt = document.hidden ? null : performance.now();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (playtestStats.lastActiveAt !== null) {
+        playtestStats.activeMs += performance.now() - playtestStats.lastActiveAt;
+        playtestStats.lastActiveAt = null;
+      }
+      return;
+    }
+    if (playtestStats.lastActiveAt === null) {
+      playtestStats.lastActiveAt = performance.now();
+    }
+  });
+}
+
+function getActivePlaytimeMs() {
+  let total = playtestStats.activeMs;
+  if (playtestStats.lastActiveAt !== null) {
+    total += performance.now() - playtestStats.lastActiveAt;
+  }
+  return Math.max(0, total);
+}
+
+function formatPlaytime(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours <= 0) {
+    return `${minutes}m${seconds}s`;
+  }
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function formatMoney(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return 'n/a';
+  return numberValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getGrowablePlantCount() {
+  if (!Array.isArray(state.gridItems)) {
+    // TODO: Replace with actual plant tracking array if gridItems is removed.
+    return null;
+  }
+  if (!Array.isArray(state.items)) {
+    // TODO: Replace with actual item catalog lookup if state.items is unavailable.
+    return null;
+  }
+  const itemById = new Map(state.items.map(item => [item.id, item]));
+  let count = 0;
+  state.gridItems.forEach(itemId => {
+    if (!itemId) return;
+    const item = itemById.get(itemId);
+    const growDays = Number(item?.growDays) || 0;
+    if (growDays > 0) {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+function getGoalsSummary() {
+  if (!Array.isArray(state.goals)) {
+    // TODO: Replace with actual goals list if state.goals is unavailable.
+    return null;
+  }
+  if (!state.goalsClaimed || typeof state.goalsClaimed !== 'object') {
+    // TODO: Replace with actual goal completion map if goalsClaimed is unavailable.
+    return null;
+  }
+  const total = state.goals.length;
+  const completed = Object.keys(state.goalsClaimed).length;
+  return { completed, total };
+}
+
+function buildFeedbackString() {
+  const played = formatPlaytime(getActivePlaytimeMs());
+  const dayValue = Number(state.player?.day);
+  const dayText = Number.isFinite(dayValue) ? String(dayValue) : 'n/a';
+  if (dayText === 'n/a') {
+    // TODO: Replace with actual day variable from game loop if state.player.day is missing.
+  }
+
+  const moneyFormatted = formatMoney(state.player?.cash);
+  const moneyText = moneyFormatted === 'n/a' ? 'n/a' : `$${moneyFormatted}`;
+  if (moneyText === 'n/a') {
+    // TODO: Replace with actual cash variable if state.player.cash is missing.
+  }
+
+  const plantsCount = getGrowablePlantCount();
+  const plantsText = Number.isFinite(plantsCount) ? String(plantsCount) : 'n/a';
+  if (plantsText === 'n/a') {
+    // TODO: Replace with actual plant tracking if growable plant count is unavailable.
+  }
+
+  const goalsSummary = getGoalsSummary();
+  const goalsText = goalsSummary ? `${goalsSummary.completed}/${goalsSummary.total}` : 'n/a';
+  if (goalsText === 'n/a') {
+    // TODO: Replace with actual goals completion tracking if goals data is unavailable.
+  }
+
+  return `EnterTheMarket ${BUILD_VERSION} | Played: ${played} | Day: ${dayText} | Money: ${moneyText} | Plants: ${plantsText} | Goals: ${goalsText}`;
+}
+
+function setFeedbackModalOpen(isOpen) {
+  const modal = document.getElementById('feedback-modal');
+  if (!modal) return;
+  modal.classList.toggle('is-open', isOpen);
+  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function showCopiedMessage() {
+  const copiedEl = document.getElementById('feedback-copied');
+  if (!copiedEl) return;
+  copiedEl.textContent = 'Copied!';
+  window.setTimeout(() => {
+    copiedEl.textContent = '';
+  }, 1500);
+}
+
+async function copyFeedbackText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showCopiedMessage();
+      return true;
+    } catch (err) {
+      console.warn('Clipboard API failed, falling back.', err);
+    }
+  }
+  const textarea = document.getElementById('feedback-textarea');
+  if (!textarea) return false;
+  textarea.focus();
+  textarea.select();
+  try {
+    const didCopy = document.execCommand('copy');
+    if (didCopy) {
+      showCopiedMessage();
+    }
+    return didCopy;
+  } catch (err) {
+    console.warn('execCommand copy failed.', err);
+    return false;
+  }
+}
 
 function getEffectiveWateredCount(index) {
   const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[index] || 0) : 0;
@@ -3367,6 +3525,43 @@ function attachEventHandlers() {
   document.getElementById('tab-market').onclick = () => showTab('market');
   document.getElementById('tab-store').onclick  = () => showTab('store');
   document.getElementById('tab-goals').onclick  = () => showTab('goals');
+  const feedbackButton = document.getElementById('feedbackButton');
+  if (feedbackButton) {
+    feedbackButton.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const text = buildFeedbackString();
+      const textarea = document.getElementById('feedback-textarea');
+      if (textarea) {
+        textarea.value = text;
+      }
+      setFeedbackModalOpen(true);
+      await copyFeedbackText(text);
+      const url = feedbackButton.getAttribute('href');
+      if (url) {
+        window.open(url, '_blank', 'noopener');
+      }
+    });
+  }
+  const feedbackCopy = document.getElementById('feedback-copy');
+  if (feedbackCopy) {
+    feedbackCopy.addEventListener('click', async () => {
+      const textarea = document.getElementById('feedback-textarea');
+      const text = textarea ? textarea.value : buildFeedbackString();
+      await copyFeedbackText(text);
+    });
+  }
+  const feedbackClose = document.getElementById('feedback-close');
+  if (feedbackClose) {
+    feedbackClose.addEventListener('click', () => setFeedbackModalOpen(false));
+  }
+  const feedbackModal = document.getElementById('feedback-modal');
+  if (feedbackModal) {
+    feedbackModal.addEventListener('click', (event) => {
+      if (event.target === feedbackModal) {
+        setFeedbackModalOpen(false);
+      }
+    });
+  }
   document.getElementById('store-cosmetics').onclick = () => {
     currentStoreTab = 'cosmetics';
     renderStore();
@@ -3474,6 +3669,7 @@ async function main() {
   initialiseState();
   evaluateGoals();
   attachEventHandlers();
+  startPlaytimeTracking();
   initialiseMessageUI();
   const header = document.getElementById('market-header');
   if (header) {
