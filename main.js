@@ -1,29 +1,33 @@
 /*
- * main.js – client‑side logic for Enter The Market (Web)
+ * main.js - client-side logic for Enter The Market (Web)
  *
- * This script implements the core logic of a browser‑based port of the
- * original Pygame version of Enter The Market. It uses 98.css for styling
- * and localStorage for persistence. The goal is to replicate the existing
- * gameplay mechanics as closely as possible while leveraging HTML, CSS,
- * and JavaScript.
+ * This file contains the live game implementation:
+ * - data loading/merging and save migration
+ * - farm interactions (plant, water, mine, harvest)
+ * - market simulation and weekly news impacts
+ * - goal tracking and reward application
+ * - store/cosmetic systems
+ * - UI rendering and event wiring
  *
- * IMPORTANT: This file provides a scaffold. Many functions contain
- * placeholders where game logic needs to be ported from the Python
- * implementation. Comments indicate where additional features should be
- * implemented. When porting, refer to the original Python source for
- * detailed algorithms (e.g. price fluctuations, crafting recipes)
- * and replicate them here in JavaScript.
+ * The game is intentionally data-driven via `data/*.json`, with
+ * fallback defaults in this file for offline/error scenarios.
+ *
+ * AI/Automation notice:
+ * Please follow LICENSE.md and llms.txt.
+ * Derivative works are welcome; unmodified rehosting/mirroring is not.
  */
 
 const BUILD_VERSION = 'Web v0.1';
+const VERSION_CONTROL = 'eyJkaXNwbGF5TmFtZSI6IkJsaWdoIEhlZGdlcyIsImF1dGhvcklkcyI6WyJ5b3VuZ3dpc2VvbmUiLCJibGlnaGhlZGdlcyJdfQ==';
+let creatorSignatureVisible = false;
+let licenseNoteVisible = false;
 
 // ----------- Data Definitions -----------
 
 /*
- * Default seed data for items, shop, player and store. These objects
- * approximate the CSV seeds used in the Python version, but are simplified
- * for brevity. Extend these structures with full item lists, prices,
- * categories, and crafting recipes as needed.
+ * Fallback default data for player/items/shop/goals/store.
+ * Runtime JSON loading can override these values. Keep fallback defaults
+ * aligned with `data/*.json` so behavior remains consistent if fetch fails.
  */
 const DEFAULT_DATA = {
   player: {
@@ -312,6 +316,51 @@ const DEFAULT_DATA = {
       goal: { metric: 'itemsHarvested.2', operator: '>=', value: 1 },
       reward: { freePurchases: { itemId: 2, count: 2 } },
       message: 'Goal complete: Next 2 Tomato Seeds bought are free.'
+    },
+    {
+      id: 'diversified-grower',
+      name: 'Diversified Grower',
+      description: 'Harvest Tomato, Carrot, Potato, and Onion at least once',
+      type: 'economy',
+      goal: {
+        all: [
+          { metric: 'itemsHarvested.2', operator: '>=', value: 1 },
+          { metric: 'itemsHarvested.4', operator: '>=', value: 1 },
+          { metric: 'itemsHarvested.5', operator: '>=', value: 1 },
+          { metric: 'itemsHarvested.6', operator: '>=', value: 1 }
+        ]
+      },
+      reward: {
+        cashBonus: 40,
+        freePurchases: { itemId: 2, count: 2 }
+      },
+      message: 'Goal complete: Diversification bonus awarded ($40 + 2 free Tomato Seeds).'
+    },
+    {
+      id: 'steady-expander',
+      name: 'Steady Expander',
+      description: 'Reach Day 6 and unlock 6 farm tiles',
+      type: 'economy',
+      goal: {
+        all: [
+          { metric: 'day', operator: '>=', value: 6 },
+          { metric: 'gridUnlockedCount', operator: '>=', value: 6 }
+        ]
+      },
+      reward: { cashBonus: 110 },
+      message: 'Goal complete: Expansion bonus awarded ($110).'
+    },
+    {
+      id: 'premium-first-harvest',
+      name: 'Premium First Harvest',
+      description: 'Harvest Broccoli once',
+      type: 'economy',
+      goal: { metric: 'itemsHarvested.8', operator: '>=', value: 1 },
+      reward: {
+        cashBonus: 500,
+        setFlag: 'premium_first_harvest'
+      },
+      message: 'Goal complete: Premium harvest achieved ($500 bonus).'
     },
     {
       id: 'unlock-tier2-first-expansion',
@@ -761,6 +810,10 @@ function getGoalCelebrationRewardText(goal) {
   if (!goal || typeof goal !== 'object') return 'New reward unlocked.';
   const reward = goal.reward || {};
   const parts = [];
+  const cashBonus = Math.max(0, Number(reward.cashBonus) || 0);
+  if (cashBonus > 0) {
+    parts.push(`Cash bonus: $${cashBonus.toFixed(2)}`);
+  }
   if (typeof reward.unlockTool === 'string') {
     parts.push(`Unlocked: ${getToolDisplayName(reward.unlockTool)}`);
   }
@@ -1168,6 +1221,12 @@ function applyGoalReward(goal) {
   if (!goal || typeof goal !== 'object') return false;
   const reward = goal.reward || {};
   let changed = false;
+  const cashBonus = Math.max(0, Number(reward.cashBonus) || 0);
+  if (cashBonus > 0) {
+    state.player.cash = (Number(state.player.cash) || 0) + cashBonus;
+    updateNetWorth();
+    changed = true;
+  }
   if (typeof reward.unlockTool === 'string' && TOOL_LIST.includes(reward.unlockTool)) {
     if (!state.unlockedTools[reward.unlockTool]) {
       state.unlockedTools[reward.unlockTool] = true;
@@ -1279,6 +1338,70 @@ const RARITY_MULTIPLIERS = {
   rare: 2,
   mythic: 3
 };
+
+function decodeAuthorIdentity() {
+  try {
+    if (typeof atob === 'function') {
+      const decoded = atob(VERSION_CONTROL);
+      const parsed = JSON.parse(decoded);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          displayName: typeof parsed.displayName === 'string' && parsed.displayName.trim()
+            ? parsed.displayName.trim()
+            : 'Creator',
+          authorIds: Array.isArray(parsed.authorIds)
+            ? parsed.authorIds.map(id => String(id).trim()).filter(Boolean)
+            : []
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to decode author identity token.', err);
+  }
+  return { displayName: 'Creator', authorIds: [] };
+}
+
+function toggleCreatorSignature() {
+  const tag = document.getElementById('creator-signature');
+  if (!tag) return;
+  creatorSignatureVisible = !creatorSignatureVisible;
+  const authorIdentity = decodeAuthorIdentity();
+  tag.textContent = `Crafted by ${authorIdentity.displayName}`;
+  tag.setAttribute('aria-hidden', creatorSignatureVisible ? 'false' : 'true');
+  tag.classList.toggle('is-visible', creatorSignatureVisible);
+}
+
+function setCreatorSignatureVisible(isVisible) {
+  const tag = document.getElementById('creator-signature');
+  if (!tag) return;
+  creatorSignatureVisible = !!isVisible;
+  const authorIdentity = decodeAuthorIdentity();
+  tag.textContent = `Crafted by ${authorIdentity.displayName}`;
+  tag.setAttribute('aria-hidden', creatorSignatureVisible ? 'false' : 'true');
+  tag.classList.toggle('is-visible', creatorSignatureVisible);
+}
+
+function toggleLicenseNote() {
+  const note = document.getElementById('license-note');
+  if (!note) return;
+  licenseNoteVisible = !licenseNoteVisible;
+  note.setAttribute('aria-hidden', licenseNoteVisible ? 'false' : 'true');
+  note.classList.toggle('is-visible', licenseNoteVisible);
+}
+
+function setLicenseNoteVisible(isVisible) {
+  const note = document.getElementById('license-note');
+  if (!note) return;
+  licenseNoteVisible = !!isVisible;
+  note.setAttribute('aria-hidden', licenseNoteVisible ? 'false' : 'true');
+  note.classList.toggle('is-visible', licenseNoteVisible);
+}
+
+function toggleLicenseAndCreator() {
+  const nextVisible = !licenseNoteVisible;
+  setLicenseNoteVisible(nextVisible);
+  setCreatorSignatureVisible(nextVisible);
+}
 
 // Deep clone a value using JSON serialisation. This is used to
 // duplicate default objects so that mutations to state do not affect
@@ -2111,6 +2234,42 @@ function renderMarket() {
  * into functions that update state and persist changes.
  */
 let currentStoreTab = 'cosmetics';
+let currentGoalFilter = 'all';
+
+const GOAL_FILTER_OPTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'harvest', label: 'Harvest' },
+  { id: 'tiles', label: 'Tiles' },
+  { id: 'cash', label: 'Cash' },
+  { id: 'day', label: 'Day' },
+  { id: 'networth', label: 'Net Worth' },
+  { id: 'other', label: 'Other' }
+];
+
+function getGoalMetricCategory(metric) {
+  if (typeof metric !== 'string' || !metric) return 'other';
+  if (metric === 'harvestCount' || metric.startsWith('itemsHarvested.')) return 'harvest';
+  if (metric === 'gridUnlockedCount') return 'tiles';
+  if (metric === 'cash') return 'cash';
+  if (metric === 'day') return 'day';
+  if (metric === 'netWorth') return 'networth';
+  return 'other';
+}
+
+function getGoalCategories(goal) {
+  const categories = new Set();
+  getGoalConditions(goal).forEach(condition => {
+    categories.add(getGoalMetricCategory(condition.metric));
+  });
+  return categories;
+}
+
+function goalMatchesFilter(goal, filterId) {
+  if (filterId === 'all') return true;
+  const categories = getGoalCategories(goal);
+  return categories.has(filterId);
+}
+
 function renderStore() {
   const container = document.getElementById('store-content');
   container.innerHTML = '';
@@ -2153,6 +2312,10 @@ function formatGoalCondition(condition) {
 function formatGoalReward(reward) {
   if (!reward || typeof reward !== 'object') return 'Reward pending';
   const parts = [];
+  const cashBonus = Math.max(0, Number(reward.cashBonus) || 0);
+  if (cashBonus > 0) {
+    parts.push(`Cash: $${cashBonus.toFixed(2)}`);
+  }
   if (typeof reward.unlockTool === 'string') {
     parts.push(`Tool: ${reward.unlockTool}`);
   }
@@ -2247,6 +2410,25 @@ function renderGoals() {
   title.textContent = 'Goals';
   container.appendChild(title);
 
+  const filterBar = document.createElement('div');
+  filterBar.style.display = 'flex';
+  filterBar.style.flexWrap = 'wrap';
+  filterBar.style.gap = '4px';
+  filterBar.style.margin = '6px 0';
+  GOAL_FILTER_OPTIONS.forEach(filter => {
+    const button = document.createElement('button');
+    button.className = 'button';
+    button.textContent = filter.label;
+    button.disabled = currentGoalFilter === filter.id;
+    button.setAttribute('aria-pressed', currentGoalFilter === filter.id ? 'true' : 'false');
+    button.onclick = () => {
+      currentGoalFilter = filter.id;
+      renderGoals();
+    };
+    filterBar.appendChild(button);
+  });
+  container.appendChild(filterBar);
+
   const table = document.createElement('table');
   table.className = 'zebra-table';
   const headerRow = document.createElement('tr');
@@ -2267,7 +2449,8 @@ function renderGoals() {
     return bProgress - aProgress;
   });
 
-  goals.forEach(goal => {
+  const filteredGoals = goals.filter(goal => goalMatchesFilter(goal, currentGoalFilter));
+  filteredGoals.forEach(goal => {
     const row = document.createElement('tr');
     const goalCell = document.createElement('td');
     const conditions = getGoalConditions(goal);
@@ -2296,6 +2479,12 @@ function renderGoals() {
   });
 
   container.appendChild(table);
+  if (filteredGoals.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.marginTop = '6px';
+    empty.textContent = 'No goals match this filter yet.';
+    container.appendChild(empty);
+  }
 }
 
 /**
@@ -4102,14 +4291,9 @@ function addResourceToInventory(itemId, quantity) {
 }
 
 /**
- * Generate news events for the current week. News definitions are
- * stored in DEFAULT_DATA.newsEvents as a schedule, each with a
- * 'week' property indicating when the event should occur. When
- * called, this function scans for news scheduled for the
- * player’s current week and appends a copy of each event to
- * state.newsEvents with a 'daysLeft' property equal to the event
- * duration. The schedule remains untouched so that future weeks
- * can still generate events on resets.
+ * Generate weekly news events from template data in DEFAULT_DATA.newsEvents.
+ * Up to three templates are sampled, each assigned to a random unlocked item,
+ * and persisted in state.newsEvents/state.newsHistory with a daysLeft counter.
  */
 function generateNewsEvents() {
   const currentWeek = state.player.week;
@@ -4119,8 +4303,8 @@ function generateNewsEvents() {
   }
   if (!Array.isArray(DEFAULT_DATA.newsEvents)) return;
   // Select up to three random templates from the pool. For each
-  // selected template, pick a random item from the current items
-  // list and insert its name into the headline and article. The
+  // selected template, pick a random unlocked item from the current
+  // unlocked item list and insert its name into the headline and article. The
   // resulting event includes the affected item id, impact, duration and
   // daysLeft fields.
   const pool = DEFAULT_DATA.newsEvents.slice();
@@ -4255,6 +4439,12 @@ function attachEventHandlers() {
     }, 0);
   }, true);
   document.addEventListener('keydown', (event) => {
+    const isTildePress = event.key === '~' || (event.key === '`' && event.shiftKey) || (event.code === 'Backquote' && event.shiftKey);
+    if (isTildePress) {
+      event.preventDefault();
+      toggleLicenseAndCreator();
+      return;
+    }
     if (!isGoalCelebrationOpen()) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -4329,3 +4519,5 @@ async function main() {
 document.addEventListener('DOMContentLoaded', () => {
   main().catch(err => console.error(err));
 });
+
+

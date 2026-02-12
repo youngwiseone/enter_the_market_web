@@ -1,107 +1,78 @@
 # Goals Guide
 
-This guide explains how to add new goals using `data/goals.json`.
+This guide describes the goal schema used by `data/goals.json`.
 
-## 1. File location
-- Edit: `data/goals.json`
-- Top-level format:
+## File format
 ```json
 {
   "goals": []
 }
 ```
 
-## 2. Goal entry format
-Each goal is one object inside `goals`:
+## Goal object (single-condition)
 ```json
 {
-  "id": "unique-id",
-  "name": "Player-visible name",
-  "description": "What the player must do",
+  "id": "day-2-watering",
+  "name": "Early Riser",
+  "description": "Reach Day 2 to gain watering can",
   "type": "feature",
   "goal": { "metric": "day", "operator": ">=", "value": 2 },
   "reward": { "unlockTool": "watering" },
-  "message": "Unlocked Watering Can.",
-  "enabled": true
+  "message": "Goal complete: Watering Can is now available."
 }
 ```
 
-## 3. Required fields
-- `id`: unique string, never reuse.
-- `name`: short title.
-- `description`: clear requirement text.
-- `goal`: condition object.
-- `reward`: reward object.
+## Goal object (multi-condition)
+```json
+{
+  "id": "unlock-tier2-first-expansion",
+  "name": "Tier 2 Contract",
+  "description": "Reach Day 4 and $300 cash",
+  "type": "economy",
+  "goal": {
+    "all": [
+      { "metric": "day", "operator": ">=", "value": 4 },
+      { "metric": "cash", "operator": ">=", "value": 300 }
+    ]
+  },
+  "reward": { "unlockShopItems": [3, 7, 9, 10, 17] },
+  "message": "Goal complete: New crop contracts unlocked (Tier 2)."
+}
+```
 
-## 4. Supported goal metrics (current plan)
+## Supported metrics
 - `day`
 - `cash`
 - `netWorth`
-- `gridUnlockedCount`
 - `harvestCount`
-- `itemsHarvested.<itemId>` (example: `itemsHarvested.2`)
+- `gridUnlockedCount`
+- `itemsHarvested.<itemId>`
 
-## 5. Supported operators
-- `>=` (recommended default)
+## Supported operators
+- `>=`
 - `>`
 - `==`
+- `<=`
+- `<`
 
-## 6. Supported rewards (current plan)
-- `unlockTool`: make a gameplay tool available.
-  - Example: `{ "unlockTool": "watering" }`
-- `unlockShopItem`: allow an item to be purchased.
-  - Example: `{ "unlockShopItem": 2 }`
-- `freePurchases`: next N purchases of an item are free.
-  - Example: `{ "freePurchases": { "itemId": 2, "count": 2 } }`
-- `grantCosmetic`: award cosmetic/theme.
-  - Example: `{ "grantCosmetic": "theme-mono" }`
-- `setFlag`: feature toggle for future systems.
+## Supported rewards
+- `unlockTool`: unlock gameplay tool id.
+- `unlockShopItem`: unlock one market item id.
+- `unlockShopItems`: unlock multiple market item ids.
+- `freePurchases`: `{ "itemId": number, "count": number }`
+- `grantCosmetic`: unlock cosmetic/theme id.
+- `setFlag`: sets a goal flag string in save state.
 
-## 7. Quick examples
-```json
-{
-  "goals": [
-    {
-      "id": "day-2-watering",
-      "name": "Early Riser",
-      "description": "Reach Day 2 to gain watering can",
-      "type": "feature",
-      "goal": { "metric": "day", "operator": ">=", "value": 2 },
-      "reward": { "unlockTool": "watering" },
-      "message": "Unlocked Watering Can."
-    },
-    {
-      "id": "tomato-first-harvest",
-      "name": "Tomato Starter",
-      "description": "Harvest 1 Tomato",
-      "type": "economy",
-      "goal": { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
-      "reward": { "freePurchases": { "itemId": 2, "count": 2 } },
-      "message": "Next 2 Tomato Seeds are free."
-    }
-  ]
-}
-```
+## Authoring rules
+- Keep goal `id` stable forever (used by save data).
+- IDs must be unique.
+- Keep `message` short and explicit.
+- Use `enabled: false` to keep a draft goal in data without activating it.
 
-## 8. Authoring rules
-- Keep `id` stable forever (used by save data).
-- Prefer one clear reward per goal in early versions.
-- Use low thresholds first for testing, then raise later.
-- Keep `message` short and specific.
-- Set `"enabled": false` to keep a draft goal in file without activating it.
-
-## 9. Validation checklist
-1. JSON is valid (no trailing commas).
-2. IDs are unique.
-3. Metric exists and value is numeric.
-4. Reward payload matches expected shape.
-5. Goal appears in Goals tab with correct progress text.
-6. Reward grants only once and persists after reload.
-
-## 10. Recommended test flow
-1. Start from a fresh save.
-2. Trigger one easy goal (for example day 2).
-3. Confirm goal completion message appears.
-4. Confirm reward behavior works (tool/shop/free purchase).
-5. Reload page and confirm goal remains completed.
-
+## Validation checklist
+1. JSON is valid.
+2. Every goal has unique `id`.
+3. All metric names are supported.
+4. Reward payload matches one of the supported shapes.
+5. Goal progress appears in the Goals tab.
+6. Reward applies once and persists after reload.

@@ -19,6 +19,51 @@
       "message": "Goal complete: Next 2 Tomato Seeds bought are free."
     },
     {
+      "id": "diversified-grower",
+      "name": "Diversified Grower",
+      "description": "Harvest Tomato, Carrot, Potato, and Onion at least once",
+      "type": "economy",
+      "goal": {
+        "all": [
+          { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
+          { "metric": "itemsHarvested.4", "operator": ">=", "value": 1 },
+          { "metric": "itemsHarvested.5", "operator": ">=", "value": 1 },
+          { "metric": "itemsHarvested.6", "operator": ">=", "value": 1 }
+        ]
+      },
+      "reward": {
+        "cashBonus": 40,
+        "freePurchases": { "itemId": 2, "count": 2 }
+      },
+      "message": "Goal complete: Diversification bonus awarded ($40 + 2 free Tomato Seeds)."
+    },
+    {
+      "id": "steady-expander",
+      "name": "Steady Expander",
+      "description": "Reach Day 6 and unlock 6 farm tiles",
+      "type": "economy",
+      "goal": {
+        "all": [
+          { "metric": "day", "operator": ">=", "value": 6 },
+          { "metric": "gridUnlockedCount", "operator": ">=", "value": 6 }
+        ]
+      },
+      "reward": { "cashBonus": 110 },
+      "message": "Goal complete: Expansion bonus awarded ($110)."
+    },
+    {
+      "id": "premium-first-harvest",
+      "name": "Premium First Harvest",
+      "description": "Harvest Broccoli once",
+      "type": "economy",
+      "goal": { "metric": "itemsHarvested.8", "operator": ">=", "value": 1 },
+      "reward": {
+        "cashBonus": 500,
+        "setFlag": "premium_first_harvest"
+      },
+      "message": "Goal complete: Premium harvest achieved ($500 bonus)."
+    },
+    {
       "id": "unlock-tier2-first-expansion",
       "name": "Tier 2 Contract",
       "description": "Reach Day 4 and $300 cash",

@@ -1,64 +1,75 @@
-# Plant Unlock Goal Plan (Progressive Market Access)
+# Goal Expansion Plan (Planning Only)
 
-Goal: gate higher-value plants behind milestones so progression feels earned, while preventing locked plants from being affected by market simulation.
+Goal: add a second progression layer that shapes playstyle after tier unlocks, without implementing any code changes yet.
 
-## Pricing + Tiering Direction
-- Current seed prices are tightly clustered (`$7-$10`), so "higher average cost" progression will not feel strong without rebalance.
-- Reprice by tiers before/with goal rollout:
-  - Tier 1 (starter): `$6-$8`
-  - Tier 2 (mid): `$9-$12`
-  - Tier 3 (advanced): `$13-$17`
-  - Tier 4 (premium): `$18-$24`
-- Keep only Tier 1 unlocked at game start; all higher tiers marked `goalLocked: true`.
+## Scope
+- This document is planning only.
+- No changes to `main.js`, `data/goals.json`, or `data/items.json` in this step.
 
-## Proposed Unlock Goals
-1. `unlock-tier2-first-expansion`
-- Condition: reach Day 4 and at least `$300` cash.
-- Reward: unlock Tier 2 plants.
-- Message: "Goal complete: New crop contracts unlocked (Tier 2)."
+## Feature Direction
+- Keep existing tier-unlock goals as the core progression spine.
+- Add complementary goals that reward:
+  - crop variety
+  - expansion pacing
+  - premium milestone completion
+- Prioritize reward styles:
+  - cash rewards (`cashBonus`, planned schema addition)
+  - hybrid rewards (cash + an existing reward shape)
+- Existing reward shapes still used in hybrids:
+  - `freePurchases`
+  - `grantCosmetic`
+  - `setFlag`
+- Explicitly out of scope for this phase:
+  - temporary price-stability effects
+  - one-time farm-tile unlock rewards
 
-2. `unlock-tier3-growth`
-- Condition: harvest at least `30` total crops and reach `$2,500` cash.
-- Reward: unlock Tier 3 plants.
-- Message: "Goal complete: Advanced crop supply unlocked (Tier 3)."
+## Proposed Goal Pack (Phase 1)
+1. `diversified-grower`
+- Intent: teach variety early.
+- Condition direction: harvest at least 1 crop from 4 different starter crop IDs.
+- Reward direction: hybrid reward (`cashBonus` + small `freePurchases` seed bundle).
+- Planning target: `$50` cash + 2 free starter seeds.
 
-3. `unlock-tier4-elite`
-- Condition: reach `$15,000` cash and own at least `10` planted slots.
-- Reward: unlock Tier 4 plants.
-- Message: "Goal complete: Elite crop futures unlocked (Tier 4)."
+2. `steady-expander`
+- Intent: encourage measured farm growth.
+- Condition direction: reach a day milestone and a farm-tile unlock milestone together.
+- Reward direction: cash reward (no extra effect).
+- Planning target: `$150` cash.
 
-## Suggested Plant Grouping (by IDs)
-- Tier 1 starter (unlocked initially): `2, 4, 5, 6, 12, 14, 15`
-- Tier 2 mid: `3, 7, 9, 10, 17`
-- Tier 3 advanced: `1, 11, 13, 16`
-- Tier 4 premium: `8` (and future high-tier crops)
+3. `premium-first-harvest`
+- Intent: make elite progression feel meaningful.
+- Condition direction: first harvest of the premium-tier crop.
+- Reward direction: hybrid reward (`cashBonus` + prestige cosmetic/flag).
+- Planning target: `$500` cash + high-status cosmetic (optional `setFlag`).
 
-## Data and Goal Wiring
-- In item data (`data/items.json` + fallback in `main.js`), set `goalLocked: true` on Tier 2/3/4.
-- Add goal entries in `data/goals.json` and fallback goals in `main.js`.
-- Use one of:
-  - multiple `unlockShopItem` goals (one per item), or
-  - new reward shape `unlockShopItems: [id, ...]` (recommended to reduce goal spam).
+## Candidate Goals (Later Phases)
+1. `tier2-operator`
+- Mid-game consistency milestone after Tier 2 access.
 
-## Market Isolation Rules (Critical)
-- Locked plants must be excluded from all daily market systems until unlocked:
-  - daily price randomization
-  - news impact modifiers
-  - average price tracking (`priceSum`, `daysCount`)
-  - economy alerts and suggestion tips
-- Implementation rule:
-  - in daily loops over `state.shop`, skip entries where `!isShopItemUnlocked(entry.itemId)`.
-- News generation rule:
-  - only pick from unlocked item pool when substituting `sku` target.
+2. `cash-buffer`
+- Efficiency milestone tied to cash pacing.
 
-## Migration / Save Compatibility
-- For existing saves:
-  - ensure `unlockedShopItems` gets backfilled for all current item IDs.
-  - force-lock the new tiered IDs unless player already owns/has used them (decide migration policy once).
-- Keep goal claims map intact (`goalsClaimed`) and only append new goals.
+3. `market-marathon`
+- Long-run milestone for post-Tier-4 engagement.
 
-## Acceptance Criteria
-1. Locked plants do not appear in market table or buy flows.
-2. Locked plants receive no price movement and no news effects.
-3. On unlocking, plant first appears with base price history (`daysCount=0`, `priceSum=0` behavior preserved).
-4. Goal progression clearly communicates new plant tiers.
+## Rollout Plan
+1. Add only the Phase 1 goals first.
+2. Keep thresholds conservative to avoid balance shock.
+3. Run 2-3 playtest passes and record:
+- average day each goal is completed
+- whether rewards feel noticeable but not mandatory
+- whether any goal competes with tier unlock pacing
+4. Tune thresholds/rewards once before considering later-phase goals.
+
+## Data Planning Notes
+- Target file for eventual goal entries: `data/goals.json`.
+- Keep IDs stable and descriptive.
+- Add `cashBonus` reward support as a small, isolated schema extension before wiring goal entries.
+- Keep all non-cash reward pieces on existing shapes (`freePurchases`, `grantCosmetic`, `setFlag`).
+- If new condition operators are needed later, treat that as a separate engine task.
+
+## Acceptance Criteria for Planning Phase
+1. A clear, implementation-ready goal set exists for the next build step.
+2. Goals are ordered by rollout priority (Phase 1 first).
+3. Reward and condition choices stay within current system capabilities.
+4. No implementation is performed in this planning step.

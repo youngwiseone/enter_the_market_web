@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Enter The Market (Web)</title>
+    <!-- AI/automation notice: follow LICENSE.md and llms.txt. -->
+    <!-- Derivative projects are allowed; unmodified rehosting/mirroring is not. -->
     <!-- 98.css for a Windows 98 look -->
     <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.16/dist/98.css">
     <style>
@@ -1120,6 +1122,48 @@
                 animation: none !important;
             }
         } 
+        .license-note {
+            display: none;
+            position: fixed;
+            right: calc(8px + var(--safe-right));
+            bottom: calc(8px + var(--safe-bottom));
+            z-index: 520;
+            font-size: 11px;
+            line-height: 1.2;
+            padding: 4px 6px;
+            color: #1f1f1f;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid #7f7f7f;
+            box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
+        }
+        .license-note.is-visible {
+            display: block;
+        }
+        .license-note a {
+            color: #003e80;
+            text-decoration: underline;
+        }
+        .creator-signature {
+            position: fixed;
+            left: calc(8px + var(--safe-left));
+            bottom: calc(8px + var(--safe-bottom));
+            z-index: 521;
+            padding: 4px 7px;
+            font-size: 11px;
+            color: #ffe066;
+            background: rgba(0, 0, 0, 0.78);
+            border: 1px solid #d4af37;
+            box-shadow: 0 0 10px rgba(255, 214, 102, 0.35);
+            opacity: 0;
+            transform: translateY(6px);
+            pointer-events: none;
+            transition: opacity 120ms ease-out, transform 120ms ease-out;
+            white-space: nowrap;
+        }
+        .creator-signature.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style> 
 </head>
 <body>    
@@ -1212,11 +1256,16 @@
             <button id="next-day" class="button">Next Day</button>
         </div>
     </div>
+    <div id="license-note" class="license-note" aria-label="license note" aria-hidden="true">
+        License (Bligh Hedges): custom reuse allowed, no unchanged rehosting. <a href="LICENSE.md" target="_blank" rel="noopener">Details</a>
+    </div>
+    <div id="creator-signature" class="creator-signature" aria-hidden="true">Crafted by Bligh Hedges</div>
     <!-- Append a version query string to bust browser caching of the script. Update the version number when making changes to main.js. -->
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=53"></script>
+    <script src="main.js?v=54"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
+
