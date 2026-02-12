@@ -10,13 +10,13 @@
       "message": "Goal complete: Watering Can is now available."
     },
     {
-      "id": "tomatoe-first-harvest",
-      "name": "Tomatoe Starter",
-      "description": "Harvest 1 Tomatoe",
+      "id": "tomato-first-harvest",
+      "name": "Tomato Starter",
+      "description": "Harvest 1 Tomato",
       "type": "economy",
       "goal": { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
       "reward": { "freePurchases": { "itemId": 2, "count": 2 } },
-      "message": "Goal complete: Next 2 Tomatoe Seeds bought are free."
+      "message": "Goal complete: Next 2 Tomato Seeds bought are free."
     },
     {
       "id": "cash-150-theme",

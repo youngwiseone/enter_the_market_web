@@ -71,13 +71,13 @@ Each goal is one object inside `goals`:
       "message": "Unlocked Watering Can."
     },
     {
-      "id": "tomatoe-first-harvest",
-      "name": "Tomatoe Starter",
-      "description": "Harvest 1 Tomatoe",
+      "id": "tomato-first-harvest",
+      "name": "Tomato Starter",
+      "description": "Harvest 1 Tomato",
       "type": "economy",
       "goal": { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
       "reward": { "freePurchases": { "itemId": 2, "count": 2 } },
-      "message": "Next 2 Tomatoe Seeds are free."
+      "message": "Next 2 Tomato Seeds are free."
     }
   ]
 }
