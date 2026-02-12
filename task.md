@@ -1,104 +1,91 @@
-# Goal Unlock Celebration Banner Plan
+# Messages UI Simplification Plan (Today / Past Tabs)
 
 ## Objective
-Make goal completion feel highly rewarding with a full-screen celebration overlay that:
-- Covers the game screen.
-- Shows `resources/profiles/player_goal_unlocked.png` large at top-center.
-- Shows goal title below.
-- Shows unlocked reward text below title.
-- Uses existing sparkle effects.
-- Pops in with a strong entrance animation.
-- Requires user click on a `Continue` button to dismiss.
+Replace the current message filtering and summary system with a simple two-tab message view:
+- `Today`: all messages from the current day, shown as normal chat entries.
+- `Past`: all messages from previous days.
 
-## UX Flow
-1. Player completes a goal.
-2. Normal goal logic still applies immediately (reward granted, state saved).
-3. Celebration overlay appears on top of all UI and pauses normal click interactions behind it.
-4. Overlay plays:
-- Backdrop fade-in.
-- Panel pop-in (scale + slight upward settle).
-- Sparkle burst + drifting sparkles.
-5. Player reads unlock details.
-6. Player clicks `Continue`.
-7. Overlay fades out and gameplay input resumes.
+No category filters, no grouped summaries, no collapsible day summaries.
 
-## Visual / Motion Direction
-- Backdrop: dark translucent layer to focus attention.
-- Card/Panel: centered, bright, celebratory styling.
-- Image: `player_goal_unlocked.png` prominently sized (desktop target ~220-280px wide, responsive on mobile).
-- Title: goal name (large, bold, centered).
-- Reward line: clear unlocked benefit text.
-- Sparkles:
-- Immediate burst on entry near image/panel center.
-- Secondary ambient sparkles around edges for ~1.5-2.5s.
-- Pop-in timing target:
-- Backdrop: 120-180ms.
-- Panel: 380-500ms spring-like ease.
-- Sparkles start at ~120ms and overlap panel entrance.
+## Requested Behavior
+1. Messages panel has two tabs only: `Today` and `Past`.
+2. New messages generated during the current day appear in `Today`.
+3. Messages from earlier days appear in `Past`.
+4. Messages are not grouped or collapsed.
+5. Existing profile image behavior and chat entry style should continue to work.
+
+## Scope of Change
+
+### Remove
+- Category filter controls (`Progress`, `Economy`, `Goals`, `Tips`) and their state persistence.
+- Message filtering logic by category.
+- Summary grouping/collapse behavior (including per-day summary replacement logic).
+
+### Add
+- Messages tab controls (`Today`, `Past`) in the Messages panel header.
+- Active tab state (runtime + optional persistence).
+- Rendering logic that hides/shows entries by day boundary:
+  - `entry.dayIndex === currentDay` => `Today`
+  - `entry.dayIndex < currentDay` => `Past`
 
 ## Technical Plan
-1. Add a dedicated overlay renderer/state:
-- `state.goalCelebrationQueue` (queue of pending celebrations).
-- `state.activeGoalCelebration` (currently displayed celebration or null).
-2. Hook goal completion pipeline:
-- When a goal completes, push a celebration payload:
-- `{ goalId, goalName, rewardText, messageText }`
-- If no active celebration, open next from queue.
-3. Create overlay DOM + lifecycle methods:
-- `showGoalCelebration(payload)`
-- `hideGoalCelebration()`
-- `advanceGoalCelebrationQueue()`
-4. Add sparkle emitter integration:
-- Reuse existing sparkle effect assets/helpers already used in project.
-- Trigger burst + timed ambient sparkles bound to overlay lifetime.
-5. Input locking:
-- While overlay active, block farm/market clicks and keyboard shortcuts behind modal.
-6. Continue button:
-- Primary button centered at bottom of panel.
-- Click: dismiss current celebration and show next queued one (if any).
-7. Responsive behavior:
-- Maintain visual hierarchy on mobile (smaller image, tighter spacing).
-- Keep button always visible without scrolling.
+1. **UI update in `index.html`**
+- Replace filter checkbox row with a compact tab bar:
+  - `button#messages-tab-today`
+  - `button#messages-tab-past`
+- Keep unread chip placement consistent with current layout.
 
-## Content Rules
-- Title text: goal `name`.
-- Unlock text: derive from reward type:
-- `unlockTool` -> "Unlocked: Watering Can" (map tool id to label).
-- `unlockShopItem` -> "Unlocked in shop: <Item Name>".
-- `freePurchases` -> "Unlocked: Next N <Item Name> purchases are free".
-- `grantCosmetic` -> "Unlocked cosmetic: <Cosmetic Name>".
-- Fallback to goal `message` when reward mapping is unavailable.
+2. **State model update in `main.js`**
+- Remove `MESSAGE_FILTERS_DEFAULT` and `messageFilters`.
+- Introduce `activeMessagesTab` with values: `'today' | 'past'`.
+- Optional persistence key: `messagesTab`.
 
-## Queue / Edge Cases
-- Multiple goals completed at once:
-- Queue celebrations and show sequentially.
-- Save/load safety:
-- Queue should not replay already shown celebrations after reload unless intentionally pending.
-- If goal data missing:
-- Show safe fallback title/reward text and allow continue.
+3. **Visibility logic refactor**
+- Replace `isMessageVisibleByFilters(payload)` with `isMessageVisibleByTab(payload)`.
+- Base visibility strictly on `payload.dayIndex` compared to current day.
+- Keep unread logic compatible with active tab.
 
-## Accessibility
-- Focus should move to `Continue` button on open.
-- `Enter`/`Space` activates continue.
-- `Escape` optional (only if desired) to continue.
-- Ensure contrast for title/reward text over backdrop.
+4. **Message emission path cleanup**
+- Keep `emitMessage()` entry creation/timestamp behavior.
+- Remove category-based visibility decisions.
+- Preserve row dataset metadata used for day checks.
+
+5. **Remove summary system**
+- Remove summary generation/update functions and calls used for grouped day output.
+- Ensure day transitions do not convert messages into grouped blocks.
+- Keep all historical entries as plain message rows.
+
+6. **Event handlers**
+- Remove filter toggle listeners.
+- Add listeners for today/past tab buttons.
+- Re-run visibility refresh on:
+  - tab change
+  - new message
+  - day change
+
+7. **Styling**
+- Reuse existing tab button styling patterns for consistency.
+- Add active/inactive styles for message tabs.
+
+## Data / Migration Notes
+- Existing saved message filter settings become obsolete; safe to ignore.
+- Existing chat log entries should continue to display based on stored `dayIndex`.
+- No destructive migration needed.
 
 ## Acceptance Criteria
-- Completing any goal always opens celebration overlay.
-- Overlay blocks background interaction until dismissed.
-- `player_goal_unlocked.png` is large and visually dominant.
-- Goal title and unlock description are clearly visible.
-- Sparkle effects play during entry and are noticeable.
-- Pop-in animation feels energetic (not flat fade-only).
-- `Continue` dismisses reliably and resumes gameplay.
-- Back-to-back goal completions display all celebrations in order.
-- Works on desktop and mobile layouts.
+1. Messages panel shows only `Today` and `Past` tabs (no category filters).
+2. `Today` shows all messages for current day only.
+3. `Past` shows all older messages.
+4. No grouped summary blocks appear.
+5. New messages appear immediately in the active tab if relevant.
+6. Switching tabs updates visible entries instantly.
+7. No console errors from removed filter/summary code paths.
 
 ## Implementation Checklist (Next Step)
-- [ ] Add celebration state + queue.
-- [ ] Implement reward text formatter.
-- [ ] Build overlay DOM/CSS + pop-in animation.
-- [ ] Integrate sparkle effects into overlay lifecycle.
-- [ ] Lock/unlock background input while active.
-- [ ] Wire continue button + queue advancement.
-- [ ] Test single goal, multi-goal chain, and reload behavior.
+- [ ] Replace Messages controls UI with Today/Past tabs.
+- [ ] Refactor message visibility logic to day-based tabs.
+- [ ] Remove filter state and filter handlers.
+- [ ] Remove summary/grouping behaviors and related functions.
+- [ ] Wire tab events + optional persistence.
+- [ ] Validate unread behavior still makes sense with tabbed view.
+- [ ] Test day rollover and historic message visibility.

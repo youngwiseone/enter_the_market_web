@@ -2511,17 +2511,13 @@ let messageJustEmitted = false;
 let lastClickToken = 0;
 const MESSAGE_LIMIT = 150;
 const ECONOMY_ALERT_THRESHOLD = 0.15;
-const MESSAGE_FILTERS_DEFAULT = {
-  progress: true,
-  economy: true,
-  goals: true,
-  tips: true
-};
-let messageFilters = null; 
-let unreadMessageCount = 0; 
-let lastUnreadCount = 0; 
 let lowEnergyNoticeDay = null; 
 const messageReplaceMap = new Map();
+const typingTimersByEntry = new WeakMap();
+const TYPEWRITER_MIN_DURATION_MS = 180;
+const TYPEWRITER_MAX_DURATION_MS = 1400;
+const TYPEWRITER_MAX_STEP_MS = 42;
+const TYPEWRITER_MIN_STEP_MS = 12;
 
 function getProfileImage(speaker, emotion) {
   const speakerMap = PROFILE_IMAGES[speaker] || PROFILE_IMAGES.player;
@@ -2533,32 +2529,6 @@ function setChatProfile(speaker, emotion) {
   if (!profile) return;
   profile.src = getProfileImage(speaker, emotion);
   profile.alt = `${speaker} ${emotion}`;
-}
-
-function normaliseMessageFilters(raw) {
-  const base = { ...MESSAGE_FILTERS_DEFAULT };
-  if (!raw || typeof raw !== 'object') return base;
-  Object.keys(base).forEach(key => {
-    if (typeof raw[key] === 'boolean') {
-      base[key] = raw[key];
-    }
-  });
-  return base;
-}
-
-function updateFilterLabelState(filterKey, enabled) {
-  const label = document.getElementById(`filter-${filterKey}-label`);
-  if (!label) return;
-  label.classList.toggle('filter-on', !!enabled);
-  label.classList.toggle('filter-off', !enabled);
-}
-
-function getFilterNameFromId(id) {
-  if (id === 'filter-progress') return 'Progress';
-  if (id === 'filter-economy') return 'Economy';
-  if (id === 'filter-goals') return 'Goals';
-  if (id === 'filter-tips') return 'Tips';
-  return 'Filter';
 }
 
 function getMessageDayIndex() {
@@ -2579,29 +2549,6 @@ function buildMessageEntryText(payload) {
   return `[${getMessageDayPrefix(dayIndex)} ${timeString}] ${payload.text}`;
 }
 
-function isMessageVisibleByFilters(payload) {
-  if ((payload.priority || 'normal') === 'high') return true;
-  if (!messageFilters) messageFilters = normaliseMessageFilters(loadFromStorage('messageFilters', MESSAGE_FILTERS_DEFAULT));
-  const category = payload.category || 'system';
-  if (category === 'tips') return !!messageFilters.tips;
-  if (category === 'economy') return !!messageFilters.economy;
-  if (category === 'goal') return !!messageFilters.goals;
-  return !!messageFilters.progress;
-}
-
-function refreshMessageVisibility() {
-  const chatLog = document.getElementById('chat-log');
-  if (!chatLog) return;
-  const rows = chatLog.querySelectorAll('.chat-entry');
-  rows.forEach(row => {
-    const payload = {
-      priority: row.dataset.priority || 'normal',
-      category: row.dataset.category || 'system'
-    };
-    row.style.display = isMessageVisibleByFilters(payload) ? '' : 'none';
-  });
-}
-
 function isChatNearBottom() {
   const chatLog = document.getElementById('chat-log');
   if (!chatLog) return true;
@@ -2609,26 +2556,14 @@ function isChatNearBottom() {
   return (chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight) <= threshold;
 }
 
-function updateUnreadIndicator() { 
-  const chip = document.getElementById('chat-unread-chip'); 
-  if (!chip) return; 
-  if (unreadMessageCount > 0) { 
-    chip.style.display = 'inline-block'; 
-    chip.textContent = `${unreadMessageCount} new message${unreadMessageCount === 1 ? '' : 's'}`; 
-    if (unreadMessageCount > lastUnreadCount) { 
-      triggerFxClass(chip, 'fx-pulse-up'); 
-    } 
-  } else { 
-    chip.style.display = 'none'; 
-    chip.textContent = ''; 
-  } 
-  lastUnreadCount = unreadMessageCount; 
-} 
-
 function pruneChatLog() {
   const chatLog = document.getElementById('chat-log');
   if (!chatLog) return;
   while (chatLog.children.length > MESSAGE_LIMIT) {
+    const first = chatLog.firstChild;
+    if (first && first.nodeType === 1) {
+      stopTypingAnimationForEntry(first);
+    }
     chatLog.removeChild(chatLog.firstChild);
   }
   messageReplaceMap.forEach((entry, key) => {
@@ -2638,44 +2573,57 @@ function pruneChatLog() {
   });
 }
 
-function clearNonSummaryMessagesForDay(dayIndex) {
-  const chatLog = document.getElementById('chat-log');
-  if (!chatLog) return;
-  const targetDay = String(dayIndex);
-  const rows = Array.from(chatLog.querySelectorAll('.chat-entry'));
-  rows.forEach(row => {
-    const isSummary = row.classList.contains('chat-summary-entry');
-    const rowDay = row.dataset.day || '';
-    if (!isSummary && rowDay === targetDay) {
-      row.remove();
-    }
-  });
-  messageReplaceMap.forEach((entry, key) => {
-    if (!entry || !entry.element || !chatLog.contains(entry.element)) {
-      messageReplaceMap.delete(key);
-    }
-  });
-  unreadMessageCount = 0;
-  updateUnreadIndicator();
+function stopTypingAnimationForEntry(entry) {
+  if (!entry) return;
+  const timerId = typingTimersByEntry.get(entry);
+  if (timerId) {
+    window.clearInterval(timerId);
+    typingTimersByEntry.delete(entry);
+  }
+  entry.classList.remove('typing');
 }
 
-function createSummaryEntry(payload) {
-  const entry = document.createElement('div');
-  entry.className = 'chat-entry chat-summary-entry';
-  const details = document.createElement('details');
-  details.className = 'chat-summary';
-  const summary = document.createElement('summary');
-  summary.textContent = buildMessageEntryText(payload);
-  details.appendChild(summary);
-  const list = document.createElement('ul');
-  (payload.summaryLines || []).forEach(line => {
-    const li = document.createElement('li');
-    li.textContent = line;
-    list.appendChild(li);
-  });
-  details.appendChild(list);
-  entry.appendChild(details);
-  return entry;
+function startTypingAnimationForEntry(entry, fullText, shouldFollowScroll) {
+  if (!entry) return;
+  stopTypingAnimationForEntry(entry);
+  const targetText = String(fullText ?? '');
+  const chatLog = document.getElementById('chat-log');
+  if (FX_STATE.reduceMotion || targetText.length <= 1) {
+    entry.textContent = targetText;
+    if (shouldFollowScroll && chatLog) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    return;
+  }
+
+  const duration = Math.max(
+    TYPEWRITER_MIN_DURATION_MS,
+    Math.min(TYPEWRITER_MAX_DURATION_MS, targetText.length * 16)
+  );
+  const stepMs = Math.max(
+    TYPEWRITER_MIN_STEP_MS,
+    Math.min(TYPEWRITER_MAX_STEP_MS, Math.round(duration / targetText.length))
+  );
+
+  let currentIndex = 0;
+  entry.classList.add('typing');
+  entry.textContent = '';
+  const timerId = window.setInterval(() => {
+    currentIndex += 1;
+    if (currentIndex >= targetText.length) {
+      entry.textContent = targetText;
+      if (shouldFollowScroll && chatLog) {
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+      stopTypingAnimationForEntry(entry);
+      return;
+    }
+    entry.textContent = targetText.slice(0, currentIndex);
+    if (shouldFollowScroll && chatLog) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+  }, stepMs);
+  typingTimersByEntry.set(entry, timerId);
 }
 
 function emitMessage(payload) {
@@ -2689,9 +2637,7 @@ function emitMessage(payload) {
     category: payload?.category || 'system',
     timestamp: Number(payload?.timestamp) || Date.now(),
     dayIndex: Number(payload?.dayIndex) || getMessageDayIndex(),
-    replaceKey: payload?.replaceKey || '',
-    isSummary: !!payload?.isSummary,
-    summaryLines: Array.isArray(payload?.summaryLines) ? payload.summaryLines : []
+    replaceKey: payload?.replaceKey || ''
   };
   if (!normalized.text) return null;
   const wasNearBottom = isChatNearBottom();
@@ -2708,20 +2654,13 @@ function emitMessage(payload) {
  
   if (entry) { 
     entry.dataset.ts = String(normalized.timestamp);
-    if (normalized.isSummary) {
-      entry.innerHTML = '';
-      entry.appendChild(createSummaryEntry(normalized).firstChild);
-    } else {
-      entry.textContent = buildMessageEntryText(normalized);
-    }
+    entry.textContent = buildMessageEntryText(normalized);
+    stopTypingAnimationForEntry(entry);
   } else {
-    if (normalized.isSummary) {
-      entry = createSummaryEntry(normalized);
-    } else {
-      entry = document.createElement('div');
-      entry.className = 'chat-entry';
-      entry.textContent = buildMessageEntryText(normalized);
-    }
+    entry = document.createElement('div');
+    entry.className = 'chat-entry';
+    const fullEntryText = buildMessageEntryText(normalized);
+    startTypingAnimationForEntry(entry, fullEntryText, wasNearBottom);
     chatLog.appendChild(entry);
     if (scopedReplaceKey) {
       messageReplaceMap.set(scopedReplaceKey, { element: entry });
@@ -2730,48 +2669,22 @@ function emitMessage(payload) {
 
   entry.dataset.priority = normalized.priority;
   entry.dataset.category = normalized.category;
-  entry.dataset.day = String(normalized.dayIndex); 
   entry.dataset.replaceKey = scopedReplaceKey; 
   if (wasReplace) { 
     triggerFxClass(entry, 'fx-pulse-up'); 
-  } else { 
-    triggerFxClass(entry, 'fx-fade-up'); 
   } 
-
-  const visible = isMessageVisibleByFilters(normalized);
-  entry.style.display = visible ? '' : 'none';
 
   pruneChatLog();
 
-  if (visible) {
-    if (wasNearBottom) {
-      chatLog.scrollTop = chatLog.scrollHeight;
-      unreadMessageCount = 0;
-    } else if (!existingReplaceEntry) {
-      unreadMessageCount += 1;
-    }
-    updateUnreadIndicator();
+  if (wasNearBottom) {
+    chatLog.scrollTop = chatLog.scrollHeight;
   }
   updateGridSize();
   return entry;
 }
 
 function initialiseMessageUI() {
-  messageFilters = normaliseMessageFilters(loadFromStorage('messageFilters', MESSAGE_FILTERS_DEFAULT));
-  const progressToggle = document.getElementById('filter-progress');
-  const economyToggle = document.getElementById('filter-economy');
-  const goalsToggle = document.getElementById('filter-goals');
-  const tipsToggle = document.getElementById('filter-tips');
-  if (progressToggle) progressToggle.checked = !!messageFilters.progress;
-  if (economyToggle) economyToggle.checked = !!messageFilters.economy;
-  if (goalsToggle) goalsToggle.checked = !!messageFilters.goals;
-  if (tipsToggle) tipsToggle.checked = !!messageFilters.tips;
-  updateFilterLabelState('progress', !!messageFilters.progress);
-  updateFilterLabelState('economy', !!messageFilters.economy);
-  updateFilterLabelState('goals', !!messageFilters.goals);
-  updateFilterLabelState('tips', !!messageFilters.tips);
-  refreshMessageVisibility();
-  updateUnreadIndicator();
+  // No-op for now; reserved for future chat bootstrapping.
 }
 
 function addMessage(text, meta) {
@@ -2783,8 +2696,6 @@ function addMessage(text, meta) {
     priority: metadata.priority || 'normal',
     category: metadata.category || 'system',
     replaceKey: metadata.replaceKey || '',
-    isSummary: !!metadata.isSummary,
-    summaryLines: Array.isArray(metadata.summaryLines) ? metadata.summaryLines : [],
     dayIndex: metadata.dayIndex
   });
 }
@@ -2940,28 +2851,6 @@ function emitEconomyAlert(priceMoves) {
   });
 }
 
-function emitDaySummaryForDay(summaryDay, snapshot) {
-  const totalGoals = Array.isArray(state.goals) ? state.goals.length : 0;
-  const completedGoals = state.goalsClaimed ? Object.keys(state.goalsClaimed).length : 0;
-  const summaryText = `Day ${summaryDay} Summary`;
-  const summaryLines = [
-    `Cash: $${(Number(snapshot.cash) || 0).toFixed(2)}`,
-    `Net worth: $${(Number(snapshot.netWorth) || 0).toFixed(2)}`,
-    `Tiles unlocked: ${Math.max(0, Number(snapshot.unlockedTiles) || 0)}`,
-    `Harvest-ready tiles: ${Math.max(0, Number(snapshot.readyTiles) || 0)}`,
-    `Goals complete: ${completedGoals}${totalGoals > 0 ? ` / ${totalGoals}` : ''}`
-  ];
-  addMessage(summaryText, {
-    speaker: 'player',
-    emotion: 'neutral',
-    category: 'system',
-    priority: 'normal',
-    isSummary: true,
-    summaryLines,
-    dayIndex: summaryDay
-  });
-}
-
 /**
  * Advance the game by one day. This function should update item
  * prices (possibly using random fluctuations or news event impacts),
@@ -2970,13 +2859,6 @@ function emitDaySummaryForDay(summaryDay, snapshot) {
 function nextDay() { 
   updateNetWorth(); 
   playDayTransition(); 
-  const summaryDay = state.player.day; 
-  if (!state.dayStartSnapshot || Number(state.dayStartSnapshot.day) !== summaryDay) {
-    state.dayStartSnapshot = getCurrentDaySnapshot();
-  }
-  const endOfDaySnapshot = getCurrentDaySnapshot();
-  emitDaySummaryForDay(summaryDay, endOfDaySnapshot);
-  clearNonSummaryMessagesForDay(summaryDay);
 
   const previousPrices = new Map();
   state.shop.forEach(entry => {
@@ -3995,64 +3877,6 @@ function attachEventHandlers() {
 
   // Next Day button triggers a daily update
   document.getElementById('next-day').onclick = nextDay;
-
-  const progressToggle = document.getElementById('filter-progress');
-  const economyToggle = document.getElementById('filter-economy');
-  const goalsToggle = document.getElementById('filter-goals');
-  const tipsToggle = document.getElementById('filter-tips');
-  const onFilterChange = () => {
-    messageFilters = {
-      progress: !!(progressToggle && progressToggle.checked),
-      economy: !!(economyToggle && economyToggle.checked),
-      goals: !!(goalsToggle && goalsToggle.checked),
-      tips: !!(tipsToggle && tipsToggle.checked)
-    };
-    updateFilterLabelState('progress', messageFilters.progress);
-    updateFilterLabelState('economy', messageFilters.economy);
-    updateFilterLabelState('goals', messageFilters.goals);
-    updateFilterLabelState('tips', messageFilters.tips);
-    saveToStorage('messageFilters', messageFilters);
-    refreshMessageVisibility();
-  };
-  const onFilterToggle = (event) => {
-    onFilterChange();
-    const filterName = getFilterNameFromId(event?.target?.id);
-    const isEnabled = !!event?.target?.checked;
-    const filterKey = filterName.toLowerCase();
-    addMessage(`${filterName} messages turned ${isEnabled ? 'ON' : 'OFF'}.`, {
-      speaker: 'player',
-      emotion: 'neutral',
-      category: 'system',
-      priority: 'high',
-      replaceKey: `filter:${filterKey}`
-    });
-  };
-  if (progressToggle) progressToggle.addEventListener('change', onFilterToggle);
-  if (economyToggle) economyToggle.addEventListener('change', onFilterToggle);
-  if (goalsToggle) goalsToggle.addEventListener('change', onFilterToggle);
-  if (tipsToggle) tipsToggle.addEventListener('change', onFilterToggle);
-
-  const unreadChip = document.getElementById('chat-unread-chip');
-  if (unreadChip) {
-    unreadChip.addEventListener('click', () => {
-      const chatLog = document.getElementById('chat-log');
-      if (chatLog) {
-        chatLog.scrollTop = chatLog.scrollHeight;
-      }
-      unreadMessageCount = 0;
-      updateUnreadIndicator();
-    });
-  }
-
-  const chatLog = document.getElementById('chat-log');
-  if (chatLog) {
-    chatLog.addEventListener('scroll', () => {
-      if (isChatNearBottom()) {
-        unreadMessageCount = 0;
-        updateUnreadIndicator();
-      }
-    });
-  }
 
   document.querySelectorAll('.tool-button').forEach(button => { 
     button.addEventListener('click', () => { 
