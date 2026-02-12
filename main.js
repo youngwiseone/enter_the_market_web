@@ -1621,8 +1621,8 @@ function renderMarket() {
       img.style.visibility = 'hidden';
     }
     img.alt = item.name;
-    img.width = 24;
-    img.height = 24;
+    img.width = 48;
+    img.height = 48;
     imgCell.appendChild(img);
     row.appendChild(imgCell);
     // Item (description)
@@ -2110,9 +2110,9 @@ function updateGridSize() {
   const isMobileLayout = window.matchMedia('(max-width: 900px)').matches;
   const nextDayHeight = nextDay ? nextDay.offsetHeight : 44;
 
-  const minMessages = isMobileLayout ? 56 : 72;
-  const maxMessages = isMobileLayout ? 84 : 120;
-  let targetMessagesHeight = clamp(Math.round(layoutHeight * (isMobileLayout ? 0.18 : 0.2)), minMessages, maxMessages);
+  const minMessages = isMobileLayout ? 84 : 108;
+  const maxMessages = isMobileLayout ? 126 : 180;
+  let targetMessagesHeight = clamp(Math.round(layoutHeight * (isMobileLayout ? 0.27 : 0.30)), minMessages, maxMessages);
   root.style.setProperty('--messages-height', `${targetMessagesHeight}px`);
 
   // Force a layout pass so measurements reflect current message height.
@@ -2120,8 +2120,8 @@ function updateGridSize() {
   const farmChrome = Math.max(0, farmPanel.offsetHeight - gridContainer.offsetHeight);
   const desktopMinimumTarget = Math.floor(window.innerWidth / 3);
   const minGridSize = isMobileLayout ? 160 : Math.max(260, desktopMinimumTarget);
-  const maxGridSize = isMobileLayout ? Math.floor(window.innerWidth - 24) : Math.floor(window.innerWidth * 0.62);
-  const verticalPadding = isMobileLayout ? 24 : 28;
+  const maxGridSize = isMobileLayout ? Math.floor(window.innerWidth - 40) : Math.floor(window.innerWidth * 0.58);
+  const verticalPadding = isMobileLayout ? 30 : 34;
 
   let availableGridByHeight = layoutHeight - measuredBottomBar - farmChrome - verticalPadding;
   if (availableGridByHeight < minGridSize) {
@@ -2132,7 +2132,7 @@ function updateGridSize() {
   }
 
   const maxByWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
-  const size = clamp(Math.floor(Math.min(availableGridByHeight, maxByWidth)), minGridSize, maxGridSize);
+  const size = clamp(Math.floor(Math.min(availableGridByHeight, maxByWidth) * 0.95), minGridSize, maxGridSize);
   root.style.setProperty('--grid-size', `${size}px`);
 
   if (bottomBar) { 

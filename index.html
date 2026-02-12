@@ -13,7 +13,7 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --safe-left: env(safe-area-inset-left, 0px);
             --grid-size: 580px;
-            --messages-height: clamp(72px, 14vh, 112px);
+            --messages-height: clamp(108px, 21vh, 168px);
             --bottom-bar-height: 170px;
             --font-ui: clamp(13px, 1.8vw, 16px);
             --font-table: clamp(12px, 1.6vw, 15px);
@@ -670,6 +670,9 @@
             gap: 8px;
             align-items: stretch;
             pointer-events: none;
+            background-color: #c0c0c0;
+            padding: 1px;
+            box-sizing: border-box;
         }
         #messages-panel {
             margin: 0;
@@ -678,10 +681,13 @@
             align-self: stretch;
             min-height: 0;
             pointer-events: auto;
-            background-color: #000000;
+            background-color: #c0c0c0;
             border: 1px solid #1d7f1d;
             box-shadow: inset 0 0 0 1px #053705;
             font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+            padding: 1px;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         #messages-panel .panel-title {
             background: #000000;
@@ -724,18 +730,15 @@
         }
         #next-day {
             font-size: var(--font-button);
-            min-height: 44px;
+            min-height: 40px;
             align-self: stretch;
             display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: auto;
-            white-space: normal;
-            line-height: 1.1;
+            white-space: nowrap;
+            line-height: 1;
             text-align: center;
-        }
-        #next-day .next-day-label + .next-day-label {
-            margin-left: 0.35em;
         }
         #store {
             margin: 0;
@@ -747,7 +750,7 @@
         }
         @media (max-width: 900px) {
             :root {
-                --messages-height: clamp(56px, 10vh, 78px);
+                --messages-height: clamp(84px, 15vh, 117px);
             }
             #market-layout {
                 grid-template-columns: 1fr;
@@ -765,14 +768,14 @@
                 aspect-ratio: 1 / 1;
             }
             #bottom-bar {
-                grid-template-columns: minmax(0, 1fr) 86px;
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: auto auto;
+                gap: 6px;
             }
             #next-day {
-                flex-direction: column;
-                gap: 0;
-            }
-            #next-day .next-day-label + .next-day-label {
-                margin-left: 0;
+                width: 100%;
+                min-height: 34px;
+                font-size: clamp(13px, 2.6vw, 16px);
             }
             .tool-button {
                 width: 44px;
@@ -997,14 +1000,14 @@
                     <div id="chat-log"></div>
                 </div>
             </div>
-            <button id="next-day" class="button"><span class="next-day-label">Next</span><span class="next-day-label">Day</span></button>
+            <button id="next-day" class="button">Next Day</button>
         </div>
     </div>
     <!-- Append a version query string to bust browser caching of the script. Update the version number when making changes to main.js. -->
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=51"></script>
+    <script src="main.js?v=53"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
