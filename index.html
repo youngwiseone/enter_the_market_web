@@ -516,6 +516,111 @@
             font-size: var(--font-ui);
             color: #2f9e44;
         }
+        .goal-celebration-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, rgba(255, 236, 173, 0.16) 0%, rgba(0, 0, 0, 0.82) 70%);
+            z-index: 450;
+            overflow: hidden;
+        }
+        .goal-celebration-modal.is-open {
+            display: flex;
+            animation: goal-backdrop-fade-in 170ms ease-out;
+        }
+        .goal-celebration-sparkles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .goal-celebration-panel {
+            position: relative;
+            width: min(660px, calc(100vw - 26px));
+            min-height: min(520px, calc(100vh - 30px));
+            max-height: calc(100vh - 30px);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 12px;
+            padding: 28px 22px 24px;
+            border-width: 2px;
+            border-color: #ffcb4f;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 20px 48px rgba(0, 0, 0, 0.5);
+            transform-origin: center center;
+            animation: goal-panel-pop 460ms cubic-bezier(0.2, 0.9, 0.2, 1.1);
+        }
+        .goal-celebration-image {
+            width: clamp(180px, 34vw, 280px);
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(0 7px 10px rgba(0, 0, 0, 0.38));
+            animation: goal-image-pop 500ms cubic-bezier(0.15, 0.95, 0.35, 1.08);
+        }
+        .goal-celebration-title {
+            margin: 4px 0 0;
+            font-size: clamp(26px, 5vw, 44px);
+            line-height: 1.05;
+            letter-spacing: 0.02em;
+            color: #5a2f00;
+            text-shadow: 0 1px 0 #fff4d5;
+            max-width: 15ch;
+        }
+        .goal-celebration-unlock {
+            margin: 0;
+            font-size: clamp(16px, 2.5vw, 25px);
+            line-height: 1.25;
+            max-width: 28ch;
+            color: #3f3f3f;
+        }
+        .goal-celebration-continue {
+            margin-top: 10px;
+            min-width: 180px;
+            min-height: 44px;
+            font-size: clamp(16px, 2.2vw, 22px);
+            padding: 6px 14px;
+        }
+        .goal-celebration-sparkle {
+            position: absolute;
+            pointer-events: none;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            will-change: transform, opacity;
+            animation: goal-sparkle-burst var(--sparkle-life, 700ms) ease-out forwards;
+        }
+        .goal-celebration-sparkle.is-ambient {
+            animation-name: goal-sparkle-ambient;
+            animation-timing-function: linear;
+        }
+        @keyframes goal-backdrop-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes goal-panel-pop {
+            0% { opacity: 0; transform: translateY(16px) scale(0.72); }
+            65% { opacity: 1; transform: translateY(-6px) scale(1.06); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes goal-image-pop {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes goal-sparkle-burst {
+            0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.3) rotate(0deg); }
+            12% { opacity: 1; }
+            100% { opacity: 0; transform: translate3d(var(--sparkle-dx, 0px), var(--sparkle-dy, -40px), 0) scale(1) rotate(var(--sparkle-rot, 120deg)); }
+        }
+        @keyframes goal-sparkle-ambient {
+            0% { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.5) rotate(0deg); }
+            16% { opacity: 0.95; }
+            100% { opacity: 0; transform: translate3d(var(--sparkle-dx, 0px), var(--sparkle-dy, -30px), 0) scale(1.1) rotate(var(--sparkle-rot, 80deg)); }
+        }
         #market-layout {
             display: grid;
             grid-template-columns: minmax(max(280px, 33vw), var(--grid-size, 580px)) minmax(0, 1fr);
@@ -810,6 +915,12 @@
             .fx-pop, .fx-shake, .fx-wobble, .fx-pulse-up, .fx-pulse-down, .fx-fade-up, .fx-camera-nudge, .fx-day-wipe, .fx-panel-tint { 
                 animation: none !important; 
             } 
+            .goal-celebration-modal.is-open,
+            .goal-celebration-panel,
+            .goal-celebration-image,
+            .goal-celebration-sparkle {
+                animation: none !important;
+            }
             .grid-cell.rarity-rare::after, .rarity-holo { 
                 animation: none !important; 
             } 
@@ -885,6 +996,15 @@
             </div>
         </div>
     </div>
+    <div id="goal-celebration-modal" class="goal-celebration-modal" aria-hidden="true">
+        <div id="goal-celebration-sparkles" class="goal-celebration-sparkles" aria-hidden="true"></div>
+        <div id="goal-celebration-panel" class="panel goal-celebration-panel" role="dialog" aria-labelledby="goal-celebration-title" aria-modal="true">
+            <img id="goal-celebration-image" class="goal-celebration-image" src="resources/profiles/player_goal_unlocked.png" alt="Goal unlocked">
+            <h2 id="goal-celebration-title" class="goal-celebration-title">Goal Unlocked</h2>
+            <p id="goal-celebration-unlock" class="goal-celebration-unlock">New reward unlocked.</p>
+            <button id="goal-celebration-continue" class="button goal-celebration-continue" type="button">Continue</button>
+        </div>
+    </div>
         <div id="bottom-bar">
             <!-- Messages panel -->
             <div id="messages-panel" class="panel">
@@ -908,7 +1028,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=47"></script>
+    <script src="main.js?v=48"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
