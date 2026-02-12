@@ -1,91 +1,64 @@
-# Messages UI Simplification Plan (Today / Past Tabs)
+# Plant Unlock Goal Plan (Progressive Market Access)
 
-## Objective
-Replace the current message filtering and summary system with a simple two-tab message view:
-- `Today`: all messages from the current day, shown as normal chat entries.
-- `Past`: all messages from previous days.
+Goal: gate higher-value plants behind milestones so progression feels earned, while preventing locked plants from being affected by market simulation.
 
-No category filters, no grouped summaries, no collapsible day summaries.
+## Pricing + Tiering Direction
+- Current seed prices are tightly clustered (`$7-$10`), so "higher average cost" progression will not feel strong without rebalance.
+- Reprice by tiers before/with goal rollout:
+  - Tier 1 (starter): `$6-$8`
+  - Tier 2 (mid): `$9-$12`
+  - Tier 3 (advanced): `$13-$17`
+  - Tier 4 (premium): `$18-$24`
+- Keep only Tier 1 unlocked at game start; all higher tiers marked `goalLocked: true`.
 
-## Requested Behavior
-1. Messages panel has two tabs only: `Today` and `Past`.
-2. New messages generated during the current day appear in `Today`.
-3. Messages from earlier days appear in `Past`.
-4. Messages are not grouped or collapsed.
-5. Existing profile image behavior and chat entry style should continue to work.
+## Proposed Unlock Goals
+1. `unlock-tier2-first-expansion`
+- Condition: reach Day 4 and at least `$300` cash.
+- Reward: unlock Tier 2 plants.
+- Message: "Goal complete: New crop contracts unlocked (Tier 2)."
 
-## Scope of Change
+2. `unlock-tier3-growth`
+- Condition: harvest at least `30` total crops and reach `$2,500` cash.
+- Reward: unlock Tier 3 plants.
+- Message: "Goal complete: Advanced crop supply unlocked (Tier 3)."
 
-### Remove
-- Category filter controls (`Progress`, `Economy`, `Goals`, `Tips`) and their state persistence.
-- Message filtering logic by category.
-- Summary grouping/collapse behavior (including per-day summary replacement logic).
+3. `unlock-tier4-elite`
+- Condition: reach `$15,000` cash and own at least `10` planted slots.
+- Reward: unlock Tier 4 plants.
+- Message: "Goal complete: Elite crop futures unlocked (Tier 4)."
 
-### Add
-- Messages tab controls (`Today`, `Past`) in the Messages panel header.
-- Active tab state (runtime + optional persistence).
-- Rendering logic that hides/shows entries by day boundary:
-  - `entry.dayIndex === currentDay` => `Today`
-  - `entry.dayIndex < currentDay` => `Past`
+## Suggested Plant Grouping (by IDs)
+- Tier 1 starter (unlocked initially): `2, 4, 5, 6, 12, 14, 15`
+- Tier 2 mid: `3, 7, 9, 10, 17`
+- Tier 3 advanced: `1, 11, 13, 16`
+- Tier 4 premium: `8` (and future high-tier crops)
 
-## Technical Plan
-1. **UI update in `index.html`**
-- Replace filter checkbox row with a compact tab bar:
-  - `button#messages-tab-today`
-  - `button#messages-tab-past`
-- Keep unread chip placement consistent with current layout.
+## Data and Goal Wiring
+- In item data (`data/items.json` + fallback in `main.js`), set `goalLocked: true` on Tier 2/3/4.
+- Add goal entries in `data/goals.json` and fallback goals in `main.js`.
+- Use one of:
+  - multiple `unlockShopItem` goals (one per item), or
+  - new reward shape `unlockShopItems: [id, ...]` (recommended to reduce goal spam).
 
-2. **State model update in `main.js`**
-- Remove `MESSAGE_FILTERS_DEFAULT` and `messageFilters`.
-- Introduce `activeMessagesTab` with values: `'today' | 'past'`.
-- Optional persistence key: `messagesTab`.
+## Market Isolation Rules (Critical)
+- Locked plants must be excluded from all daily market systems until unlocked:
+  - daily price randomization
+  - news impact modifiers
+  - average price tracking (`priceSum`, `daysCount`)
+  - economy alerts and suggestion tips
+- Implementation rule:
+  - in daily loops over `state.shop`, skip entries where `!isShopItemUnlocked(entry.itemId)`.
+- News generation rule:
+  - only pick from unlocked item pool when substituting `sku` target.
 
-3. **Visibility logic refactor**
-- Replace `isMessageVisibleByFilters(payload)` with `isMessageVisibleByTab(payload)`.
-- Base visibility strictly on `payload.dayIndex` compared to current day.
-- Keep unread logic compatible with active tab.
-
-4. **Message emission path cleanup**
-- Keep `emitMessage()` entry creation/timestamp behavior.
-- Remove category-based visibility decisions.
-- Preserve row dataset metadata used for day checks.
-
-5. **Remove summary system**
-- Remove summary generation/update functions and calls used for grouped day output.
-- Ensure day transitions do not convert messages into grouped blocks.
-- Keep all historical entries as plain message rows.
-
-6. **Event handlers**
-- Remove filter toggle listeners.
-- Add listeners for today/past tab buttons.
-- Re-run visibility refresh on:
-  - tab change
-  - new message
-  - day change
-
-7. **Styling**
-- Reuse existing tab button styling patterns for consistency.
-- Add active/inactive styles for message tabs.
-
-## Data / Migration Notes
-- Existing saved message filter settings become obsolete; safe to ignore.
-- Existing chat log entries should continue to display based on stored `dayIndex`.
-- No destructive migration needed.
+## Migration / Save Compatibility
+- For existing saves:
+  - ensure `unlockedShopItems` gets backfilled for all current item IDs.
+  - force-lock the new tiered IDs unless player already owns/has used them (decide migration policy once).
+- Keep goal claims map intact (`goalsClaimed`) and only append new goals.
 
 ## Acceptance Criteria
-1. Messages panel shows only `Today` and `Past` tabs (no category filters).
-2. `Today` shows all messages for current day only.
-3. `Past` shows all older messages.
-4. No grouped summary blocks appear.
-5. New messages appear immediately in the active tab if relevant.
-6. Switching tabs updates visible entries instantly.
-7. No console errors from removed filter/summary code paths.
-
-## Implementation Checklist (Next Step)
-- [ ] Replace Messages controls UI with Today/Past tabs.
-- [ ] Refactor message visibility logic to day-based tabs.
-- [ ] Remove filter state and filter handlers.
-- [ ] Remove summary/grouping behaviors and related functions.
-- [ ] Wire tab events + optional persistence.
-- [ ] Validate unread behavior still makes sense with tabbed view.
-- [ ] Test day rollover and historic message visibility.
+1. Locked plants do not appear in market table or buy flows.
+2. Locked plants receive no price movement and no news effects.
+3. On unlocking, plant first appears with base price history (`daysCount=0`, `priceSum=0` behavior preserved).
+4. Goal progression clearly communicates new plant tiers.

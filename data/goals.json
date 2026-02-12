@@ -19,6 +19,48 @@
       "message": "Goal complete: Next 2 Tomato Seeds bought are free."
     },
     {
+      "id": "unlock-tier2-first-expansion",
+      "name": "Tier 2 Contract",
+      "description": "Reach Day 4 and $300 cash",
+      "type": "economy",
+      "goal": {
+        "all": [
+          { "metric": "day", "operator": ">=", "value": 4 },
+          { "metric": "cash", "operator": ">=", "value": 300 }
+        ]
+      },
+      "reward": { "unlockShopItems": [3, 7, 9, 10, 17] },
+      "message": "Goal complete: New crop contracts unlocked (Tier 2)."
+    },
+    {
+      "id": "unlock-tier3-growth",
+      "name": "Tier 3 Supply",
+      "description": "Harvest 30 crops and reach $2,500 cash",
+      "type": "economy",
+      "goal": {
+        "all": [
+          { "metric": "harvestCount", "operator": ">=", "value": 30 },
+          { "metric": "cash", "operator": ">=", "value": 2500 }
+        ]
+      },
+      "reward": { "unlockShopItems": [1, 11, 13, 16] },
+      "message": "Goal complete: Advanced crop supply unlocked (Tier 3)."
+    },
+    {
+      "id": "unlock-tier4-elite",
+      "name": "Tier 4 Elite Futures",
+      "description": "Reach $15,000 cash and unlock 10 farm tiles",
+      "type": "economy",
+      "goal": {
+        "all": [
+          { "metric": "cash", "operator": ">=", "value": 15000 },
+          { "metric": "gridUnlockedCount", "operator": ">=", "value": 10 }
+        ]
+      },
+      "reward": { "unlockShopItems": [8] },
+      "message": "Goal complete: Elite crop futures unlocked (Tier 4)."
+    },
+    {
       "id": "cash-150-theme",
       "name": "Pocket Profit",
       "description": "Reach $150 cash",
@@ -26,6 +68,45 @@
       "goal": { "metric": "cash", "operator": ">=", "value": 150 },
       "reward": { "grantCosmetic": "theme-mono" },
       "message": "Goal complete: Monochrome Green theme awarded."
+    },
+    {
+      "id": "cash-1000-boost",
+      "name": "Four Figures",
+      "description": "Reach $1,000 cash",
+      "type": "cosmetic",
+      "goal": { "metric": "cash", "operator": ">=", "value": 1000 },
+      "reward": { "grantCosmetic": "theme-sophisticated" },
+      "message": "Goal complete: Sophisticated theme awarded."
+    },
+    {
+      "id": "cash-10000-boost",
+      "name": "Market Veteran",
+      "description": "Reach $10,000 cash",
+      "type": "cosmetic",
+      "goal": { "metric": "cash", "operator": ">=", "value": 10000 },
+      "reward": { "grantCosmetic": "theme-marble" },
+      "message": "Goal complete: Marble theme awarded."
+    },
+    {
+      "id": "cash-100000-boost",
+      "name": "Tycoon",
+      "description": "Reach $100,000 cash",
+      "type": "cosmetic",
+      "goal": { "metric": "cash", "operator": ">=", "value": 100000 },
+      "reward": { "grantCosmetic": "theme-gold" },
+      "message": "Goal complete: Gold theme awarded."
+    },
+    {
+      "id": "cash-1000000-boost",
+      "name": "Legendary Broker",
+      "description": "Reach $1,000,000 cash",
+      "type": "cosmetic",
+      "goal": { "metric": "cash", "operator": ">=", "value": 1000000 },
+      "reward": {
+        "grantCosmetic": "theme-diamond",
+        "setFlag": "cash_millionaire"
+      },
+      "message": "Goal complete: Diamond theme awarded and Millionaire status unlocked."
     }
   ]
 }

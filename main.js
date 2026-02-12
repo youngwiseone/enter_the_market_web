@@ -52,7 +52,7 @@ const DEFAULT_DATA = {
       id: 1,
       name: 'Pumpkin Seeds',
       description: 'Pumpkin seeds.',
-      price: 10,
+      price: 18,
       rarity: 'common',
       image: 'seeds/pumpkin_seeds.png',
       seedImage: 'seeds/pumpkin_seeds.png',
@@ -66,13 +66,14 @@ const DEFAULT_DATA = {
       ],
       harvestImage: 'items/pumpkin.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 2,
       name: 'Tomato Seeds',
       description: 'Tomato seeds.',
-      price: 8,
+      price: 2,
       rarity: 'common',
       image: 'seeds/tomato_seeds.png',
       seedImage: 'seeds/tomato_seeds.png',
@@ -84,19 +85,20 @@ const DEFAULT_DATA = {
       id: 3,
       name: 'Corn Seeds',
       description: 'Corn seeds.',
-      price: 9,
+      price: 8,
       rarity: 'common',
       image: 'seeds/corn_seeds.png',
       seedImage: 'seeds/corn_seeds.png',
       harvestImage: 'items/corn.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 4,
       name: 'Carrot Seeds',
       description: 'Carrot seeds.',
-      price: 8,
+      price: 1,
       rarity: 'common',
       image: 'seeds/carrot_seeds.png',
       seedImage: 'seeds/carrot_seeds.png',
@@ -108,7 +110,7 @@ const DEFAULT_DATA = {
       id: 5,
       name: 'Potato Seeds',
       description: 'Potato seeds.',
-      price: 8,
+      price: 3,
       rarity: 'common',
       image: 'seeds/potato_seeds.png',
       seedImage: 'seeds/potato_seeds.png',
@@ -120,7 +122,7 @@ const DEFAULT_DATA = {
       id: 6,
       name: 'Onion Seeds',
       description: 'Onion seeds.',
-      price: 7,
+      price: 2,
       rarity: 'common',
       image: 'seeds/onion_seeds.png',
       seedImage: 'seeds/onion_seeds.png',
@@ -138,61 +140,66 @@ const DEFAULT_DATA = {
       seedImage: 'seeds/cabbage_seeds.png',
       harvestImage: 'items/cabbage.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 8,
       name: 'Broccoli Seeds',
       description: 'Broccoli seeds.',
-      price: 10,
+      price: 34,
       rarity: 'common',
       image: 'seeds/broccoli_seeds.png',
       seedImage: 'seeds/broccoli_seeds.png',
       harvestImage: 'items/broccoli.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 9,
       name: 'Cucumber Seeds',
       description: 'Cucumber seeds.',
-      price: 8,
+      price: 10,
       rarity: 'common',
       image: 'seeds/cucumber_seeds.png',
       seedImage: 'seeds/cucumber_seeds.png',
       harvestImage: 'items/cucumber.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 10,
       name: 'Zucchini Seeds',
       description: 'Zucchini seeds.',
-      price: 8,
+      price: 11,
       rarity: 'common',
       image: 'seeds/zucchini_seeds.png',
       seedImage: 'seeds/zucchini_seeds.png',
       harvestImage: 'items/zucchini.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 11,
       name: 'Eggplant Seeds',
       description: 'Eggplant seeds.',
-      price: 9,
+      price: 20,
       rarity: 'common',
       image: 'seeds/eggplant_seeds.png',
       seedImage: 'seeds/eggplant_seeds.png',
       harvestImage: 'items/eggplant.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 12,
       name: 'Garlic Seeds',
       description: 'Garlic seeds.',
-      price: 7,
+      price: 4,
       rarity: 'common',
       image: 'seeds/garlic_seeds.png',
       seedImage: 'seeds/garlic_seeds.png',
@@ -204,19 +211,20 @@ const DEFAULT_DATA = {
       id: 13,
       name: 'Lettuce Seeds',
       description: 'Lettuce seeds.',
-      price: 7,
+      price: 22,
       rarity: 'common',
       image: 'seeds/lettuce_seeds.png',
       seedImage: 'seeds/lettuce_seeds.png',
       harvestImage: 'items/lettuce.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 14,
       name: 'Spinach Seeds',
       description: 'Spinach seeds.',
-      price: 7,
+      price: 5,
       rarity: 'common',
       image: 'seeds/spinach_seeds.png',
       seedImage: 'seeds/spinach_seeds.png',
@@ -228,7 +236,7 @@ const DEFAULT_DATA = {
       id: 15,
       name: 'Radish Seeds',
       description: 'Radish seeds.',
-      price: 7,
+      price: 3,
       rarity: 'common',
       image: 'seeds/radish_seeds.png',
       seedImage: 'seeds/radish_seeds.png',
@@ -240,25 +248,27 @@ const DEFAULT_DATA = {
       id: 16,
       name: 'Green Pepper Seeds',
       description: 'Green pepper seeds.',
-      price: 9,
+      price: 24,
       rarity: 'common',
       image: 'seeds/green_pepper_seeds.png',
       seedImage: 'seeds/green_pepper_seeds.png',
       harvestImage: 'items/green_pepper.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     },
     {
       id: 17,
       name: 'Beetroot Seeds',
       description: 'Beetroot seeds.',
-      price: 8,
+      price: 12,
       rarity: 'common',
       image: 'seeds/beetroot_seeds.png',
       seedImage: 'seeds/beetroot_seeds.png',
       harvestImage: 'items/beetroot.png',
       growDays: 6,
-      plantStages: 6
+      plantStages: 6,
+      goalLocked: true
     }
   ],
   // Precompute shop fallback from the fallback items. This ensures
@@ -266,23 +276,23 @@ const DEFAULT_DATA = {
   // to load. These entries are overwritten by loadJSONData() when
   // external data is successfully fetched.
   shop: [
-    { itemId: 1, quantity: 100, price: 10, priceSum: 0, daysCount: 0 },
-    { itemId: 2, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
-    { itemId: 3, quantity: 100, price: 9, priceSum: 0, daysCount: 0 },
-    { itemId: 4, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
-    { itemId: 5, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
-    { itemId: 6, quantity: 100, price: 7, priceSum: 0, daysCount: 0 },
+    { itemId: 1, quantity: 100, price: 18, priceSum: 0, daysCount: 0 },
+    { itemId: 2, quantity: 100, price: 2, priceSum: 0, daysCount: 0 },
+    { itemId: 3, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
+    { itemId: 4, quantity: 100, price: 1, priceSum: 0, daysCount: 0 },
+    { itemId: 5, quantity: 100, price: 3, priceSum: 0, daysCount: 0 },
+    { itemId: 6, quantity: 100, price: 2, priceSum: 0, daysCount: 0 },
     { itemId: 7, quantity: 100, price: 9, priceSum: 0, daysCount: 0 },
-    { itemId: 8, quantity: 100, price: 10, priceSum: 0, daysCount: 0 },
-    { itemId: 9, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
-    { itemId: 10, quantity: 100, price: 8, priceSum: 0, daysCount: 0 },
-    { itemId: 11, quantity: 100, price: 9, priceSum: 0, daysCount: 0 },
-    { itemId: 12, quantity: 100, price: 7, priceSum: 0, daysCount: 0 },
-    { itemId: 13, quantity: 100, price: 7, priceSum: 0, daysCount: 0 },
-    { itemId: 14, quantity: 100, price: 7, priceSum: 0, daysCount: 0 },
-    { itemId: 15, quantity: 100, price: 7, priceSum: 0, daysCount: 0 },
-    { itemId: 16, quantity: 100, price: 9, priceSum: 0, daysCount: 0 },
-    { itemId: 17, quantity: 100, price: 8, priceSum: 0, daysCount: 0 }
+    { itemId: 8, quantity: 100, price: 34, priceSum: 0, daysCount: 0 },
+    { itemId: 9, quantity: 100, price: 10, priceSum: 0, daysCount: 0 },
+    { itemId: 10, quantity: 100, price: 11, priceSum: 0, daysCount: 0 },
+    { itemId: 11, quantity: 100, price: 20, priceSum: 0, daysCount: 0 },
+    { itemId: 12, quantity: 100, price: 4, priceSum: 0, daysCount: 0 },
+    { itemId: 13, quantity: 100, price: 22, priceSum: 0, daysCount: 0 },
+    { itemId: 14, quantity: 100, price: 5, priceSum: 0, daysCount: 0 },
+    { itemId: 15, quantity: 100, price: 3, priceSum: 0, daysCount: 0 },
+    { itemId: 16, quantity: 100, price: 24, priceSum: 0, daysCount: 0 },
+    { itemId: 17, quantity: 100, price: 12, priceSum: 0, daysCount: 0 }
   ],
   goals: [
     {
@@ -304,6 +314,48 @@ const DEFAULT_DATA = {
       message: 'Goal complete: Next 2 Tomato Seeds bought are free.'
     },
     {
+      id: 'unlock-tier2-first-expansion',
+      name: 'Tier 2 Contract',
+      description: 'Reach Day 4 and $300 cash',
+      type: 'economy',
+      goal: {
+        all: [
+          { metric: 'day', operator: '>=', value: 4 },
+          { metric: 'cash', operator: '>=', value: 300 }
+        ]
+      },
+      reward: { unlockShopItems: [3, 7, 9, 10, 17] },
+      message: 'Goal complete: New crop contracts unlocked (Tier 2).'
+    },
+    {
+      id: 'unlock-tier3-growth',
+      name: 'Tier 3 Supply',
+      description: 'Harvest 30 crops and reach $2,500 cash',
+      type: 'economy',
+      goal: {
+        all: [
+          { metric: 'harvestCount', operator: '>=', value: 30 },
+          { metric: 'cash', operator: '>=', value: 2500 }
+        ]
+      },
+      reward: { unlockShopItems: [1, 11, 13, 16] },
+      message: 'Goal complete: Advanced crop supply unlocked (Tier 3).'
+    },
+    {
+      id: 'unlock-tier4-elite',
+      name: 'Tier 4 Elite Futures',
+      description: 'Reach $15,000 cash and unlock 10 farm tiles',
+      type: 'economy',
+      goal: {
+        all: [
+          { metric: 'cash', operator: '>=', value: 15000 },
+          { metric: 'gridUnlockedCount', operator: '>=', value: 10 }
+        ]
+      },
+      reward: { unlockShopItems: [8] },
+      message: 'Goal complete: Elite crop futures unlocked (Tier 4).'
+    },
+    {
       id: 'cash-150-theme',
       name: 'Pocket Profit',
       description: 'Reach $150 cash',
@@ -311,6 +363,45 @@ const DEFAULT_DATA = {
       goal: { metric: 'cash', operator: '>=', value: 150 },
       reward: { grantCosmetic: 'theme-mono' },
       message: 'Goal complete: Monochrome Green theme awarded.'
+    },
+    {
+      id: 'cash-1000-boost',
+      name: 'Four Figures',
+      description: 'Reach $1,000 cash',
+      type: 'cosmetic',
+      goal: { metric: 'cash', operator: '>=', value: 1000 },
+      reward: { grantCosmetic: 'theme-sophisticated' },
+      message: 'Goal complete: Sophisticated theme awarded.'
+    },
+    {
+      id: 'cash-10000-boost',
+      name: 'Market Veteran',
+      description: 'Reach $10,000 cash',
+      type: 'cosmetic',
+      goal: { metric: 'cash', operator: '>=', value: 10000 },
+      reward: { grantCosmetic: 'theme-marble' },
+      message: 'Goal complete: Marble theme awarded.'
+    },
+    {
+      id: 'cash-100000-boost',
+      name: 'Tycoon',
+      description: 'Reach $100,000 cash',
+      type: 'cosmetic',
+      goal: { metric: 'cash', operator: '>=', value: 100000 },
+      reward: { grantCosmetic: 'theme-gold' },
+      message: 'Goal complete: Gold theme awarded.'
+    },
+    {
+      id: 'cash-1000000-boost',
+      name: 'Legendary Broker',
+      description: 'Reach $1,000,000 cash',
+      type: 'cosmetic',
+      goal: { metric: 'cash', operator: '>=', value: 1000000 },
+      reward: {
+        grantCosmetic: 'theme-diamond',
+        setFlag: 'cash_millionaire'
+      },
+      message: 'Goal complete: Diamond theme awarded and Millionaire status unlocked.'
     }
   ],
   // Player inventory starts empty. Each entry holds the item id and
@@ -375,7 +466,11 @@ const DEFAULT_DATA = {
       { id: 'theme-flame',   name: 'Flame Vixen', type: 'theme', price: 500, unlocked: false },
       { id: 'theme-coder',   name: 'Coder Black', type: 'theme', price: 500, unlocked: false },
       { id: 'theme-hotdog',  name: 'Hotdog Stand', type: 'theme', price: 500, unlocked: false },
-      { id: 'theme-teal',    name: 'Teal Breeze', type: 'theme', price: 500, unlocked: false }
+      { id: 'theme-teal',    name: 'Teal Breeze', type: 'theme', price: 500, unlocked: false },
+      { id: 'theme-sophisticated', name: 'Sophisticated Look', type: 'theme', price: 5000, unlocked: false },
+      { id: 'theme-marble',  name: 'Marble Luxe', type: 'theme', price: 20000, unlocked: false },
+      { id: 'theme-gold',    name: 'Gold Dynasty', type: 'theme', price: 200000, unlocked: false },
+      { id: 'theme-diamond', name: 'Diamond Apex', type: 'theme', price: 2000000, unlocked: false }
     ],
     // Future categories: screensavers and UI skins can be added here.
     crafting: [
@@ -673,6 +768,15 @@ function getGoalCelebrationRewardText(goal) {
     const item = state.items.find(it => it.id === reward.unlockShopItem);
     parts.push(`Unlocked in shop: ${item ? item.name : `Item ${reward.unlockShopItem}`}`);
   }
+  if (Array.isArray(reward.unlockShopItems) && reward.unlockShopItems.length > 0) {
+    const labels = reward.unlockShopItems
+      .map(itemId => state.items.find(it => it.id === Number(itemId)))
+      .filter(Boolean)
+      .map(item => item.name);
+    if (labels.length > 0) {
+      parts.push(`Unlocked in shop: ${labels.join(', ')}`);
+    }
+  }
   if (reward.freePurchases && typeof reward.freePurchases === 'object') {
     const itemId = Number(reward.freePurchases.itemId);
     const count = Math.max(0, Number(reward.freePurchases.count) || 0);
@@ -856,6 +960,17 @@ function getDefaultUnlockedTools() {
   };
 }
 
+function resetShopEntryToBasePrice(itemId) {
+  if (!Array.isArray(state.shop) || !Array.isArray(state.items)) return;
+  const shopEntry = state.shop.find(entry => entry && entry.itemId === itemId);
+  const item = state.items.find(it => it && it.id === itemId);
+  if (!shopEntry || !item) return;
+  const basePrice = Math.max(0.01, Number(item.price) || Number(shopEntry.price) || 0.01);
+  shopEntry.price = basePrice;
+  shopEntry.priceSum = 0;
+  shopEntry.daysCount = 0;
+}
+
 function getDefaultUnlockedShopItems(items) {
   const unlocked = {};
   if (!Array.isArray(items)) return unlocked;
@@ -864,6 +979,74 @@ function getDefaultUnlockedShopItems(items) {
     unlocked[item.id] = item.goalLocked !== true;
   });
   return unlocked;
+}
+
+function getGoalRewardUnlockedItemIds(goal) {
+  if (!goal || typeof goal !== 'object') return [];
+  const reward = goal.reward || {};
+  const ids = [];
+  if (typeof reward.unlockShopItem === 'number') {
+    ids.push(reward.unlockShopItem);
+  }
+  if (Array.isArray(reward.unlockShopItems)) {
+    reward.unlockShopItems.forEach(itemId => {
+      const numericId = Number(itemId);
+      if (Number.isInteger(numericId)) {
+        ids.push(numericId);
+      }
+    });
+  }
+  return ids;
+}
+
+function hasPlayerHandledItem(itemId) {
+  const inventoryQty = Array.isArray(state.inventory)
+    ? state.inventory
+      .filter(entry => entry && entry.itemId === itemId)
+      .reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0)
+    : 0;
+  const gridQty = Array.isArray(state.gridItems)
+    ? state.gridItems.reduce((sum, gridItemId) => sum + (gridItemId === itemId ? 1 : 0), 0)
+    : 0;
+  const harvestedQty = Number(state.goalStats?.itemsHarvested?.[String(itemId)]) || 0;
+  return inventoryQty > 0 || gridQty > 0 || harvestedQty > 0;
+}
+
+function syncGoalLockedShopUnlocks() {
+  if (!Array.isArray(state.items)) return false;
+  if (!state.unlockedShopItems || typeof state.unlockedShopItems !== 'object') {
+    state.unlockedShopItems = {};
+  }
+  let changed = false;
+  const claimedUnlocks = new Set();
+  if (state.goalsClaimed && typeof state.goalsClaimed === 'object' && Array.isArray(state.goals)) {
+    state.goals.forEach(goal => {
+      if (!goal || typeof goal.id !== 'string') return;
+      if (!state.goalsClaimed[goal.id]) return;
+      getGoalRewardUnlockedItemIds(goal).forEach(itemId => claimedUnlocks.add(itemId));
+    });
+  }
+  state.items.forEach(item => {
+    if (!item || typeof item.id !== 'number') return;
+    const itemId = item.id;
+    const currentlyUnlocked = !!state.unlockedShopItems[itemId];
+    if (item.goalLocked === true) {
+      const shouldUnlock = claimedUnlocks.has(itemId) || hasPlayerHandledItem(itemId);
+      if (currentlyUnlocked !== shouldUnlock) {
+        state.unlockedShopItems[itemId] = shouldUnlock;
+        if (!shouldUnlock) {
+          resetShopEntryToBasePrice(itemId);
+        }
+        changed = true;
+      }
+      return;
+    }
+    if (!currentlyUnlocked) {
+      state.unlockedShopItems[itemId] = true;
+      changed = true;
+    }
+  });
+  return changed;
 }
 
 function isToolUnlocked(tool) {
@@ -950,14 +1133,35 @@ function getGoalMetricValue(metric) {
   return 0;
 }
 
-function doesGoalMeetCondition(goal) {
-  if (!goal || typeof goal !== 'object' || !goal.goal) return false;
-  const metricValue = getGoalMetricValue(goal.goal.metric);
-  const targetValue = Number(goal.goal.value) || 0;
-  const operator = goal.goal.operator || '>=';
+function getGoalConditions(goal) {
+  if (!goal || typeof goal !== 'object' || !goal.goal || typeof goal.goal !== 'object') {
+    return [];
+  }
+  if (Array.isArray(goal.goal.all)) {
+    return goal.goal.all.filter(condition => condition && typeof condition.metric === 'string');
+  }
+  if (typeof goal.goal.metric === 'string') {
+    return [goal.goal];
+  }
+  return [];
+}
+
+function doesConditionMeet(condition) {
+  if (!condition || typeof condition !== 'object' || typeof condition.metric !== 'string') return false;
+  const metricValue = getGoalMetricValue(condition.metric);
+  const targetValue = Number(condition.value) || 0;
+  const operator = condition.operator || '>=';
+  if (operator === '<') return metricValue < targetValue;
+  if (operator === '<=') return metricValue <= targetValue;
   if (operator === '>') return metricValue > targetValue;
   if (operator === '==') return metricValue === targetValue;
   return metricValue >= targetValue;
+}
+
+function doesGoalMeetCondition(goal) {
+  const conditions = getGoalConditions(goal);
+  if (!conditions.length) return false;
+  return conditions.every(condition => doesConditionMeet(condition));
 }
 
 function applyGoalReward(goal) {
@@ -974,8 +1178,20 @@ function applyGoalReward(goal) {
     const itemId = reward.unlockShopItem;
     if (!state.unlockedShopItems[itemId]) {
       state.unlockedShopItems[itemId] = true;
+      resetShopEntryToBasePrice(itemId);
       changed = true;
     }
+  }
+  if (Array.isArray(reward.unlockShopItems)) {
+    reward.unlockShopItems.forEach(itemIdRaw => {
+      const itemId = Number(itemIdRaw);
+      if (!Number.isInteger(itemId)) return;
+      if (!state.unlockedShopItems[itemId]) {
+        state.unlockedShopItems[itemId] = true;
+        resetShopEntryToBasePrice(itemId);
+        changed = true;
+      }
+    });
   }
   if (reward.freePurchases && typeof reward.freePurchases === 'object') {
     const itemId = reward.freePurchases.itemId;
@@ -1162,6 +1378,72 @@ function mergeItemAssetsWithDefaults(items, defaultItems) {
   return { items: mergedItems, changed };
 }
 
+function mergeStoreCosmeticsWithDefaults(store, defaultStore) {
+  if (!store || typeof store !== 'object' || !defaultStore || typeof defaultStore !== 'object') {
+    return { store, changed: false };
+  }
+  if (!Array.isArray(defaultStore.cosmetics)) {
+    return { store, changed: false };
+  }
+  const savedCosmetics = Array.isArray(store.cosmetics) ? store.cosmetics : [];
+  const savedById = new Map(savedCosmetics.map(item => [item?.id, item]));
+  let changed = false;
+  const mergedCosmetics = defaultStore.cosmetics.map(defaultItem => {
+    if (!defaultItem || typeof defaultItem !== 'object' || typeof defaultItem.id !== 'string') {
+      return defaultItem;
+    }
+    const saved = savedById.get(defaultItem.id);
+    if (!saved || typeof saved !== 'object') {
+      changed = true;
+      return { ...defaultItem };
+    }
+    const merged = { ...defaultItem, unlocked: !!saved.unlocked };
+    if (
+      merged.name !== saved.name ||
+      merged.type !== saved.type ||
+      merged.price !== saved.price
+    ) {
+      changed = true;
+    }
+    return merged;
+  });
+  if (!Array.isArray(store.cosmetics) || store.cosmetics.length !== mergedCosmetics.length) {
+    changed = true;
+  }
+  return { store: { ...store, cosmetics: mergedCosmetics }, changed };
+}
+
+function mergeGoalsWithDefaults(goals, defaultGoals) {
+  if (!Array.isArray(defaultGoals)) {
+    return { goals, changed: false };
+  }
+  const savedGoals = Array.isArray(goals) ? goals : [];
+  const savedById = new Map(savedGoals.map(goal => [goal?.id, goal]));
+  let changed = false;
+  const mergedGoals = defaultGoals.map(defaultGoal => {
+    if (!defaultGoal || typeof defaultGoal !== 'object' || typeof defaultGoal.id !== 'string') {
+      return defaultGoal;
+    }
+    const saved = savedById.get(defaultGoal.id);
+    if (!saved || typeof saved !== 'object') {
+      changed = true;
+      return clone(defaultGoal);
+    }
+    const mergedGoal = clone(defaultGoal);
+    if (saved.enabled === false) {
+      mergedGoal.enabled = false;
+    }
+    if (JSON.stringify(saved) !== JSON.stringify(mergedGoal)) {
+      changed = true;
+    }
+    return mergedGoal;
+  });
+  if (savedGoals.length !== mergedGoals.length) {
+    changed = true;
+  }
+  return { goals: mergedGoals, changed };
+}
+
 function normalizeRarity(value) {
   if (typeof value !== 'string') return 'common';
   const trimmed = value.trim().toLowerCase();
@@ -1274,6 +1556,16 @@ function initialiseState() {
     state.items = itemMergeResult.items;
     saveToStorage('items', state.items);
   }
+  const storeMergeResult = mergeStoreCosmeticsWithDefaults(state.store, DEFAULT_DATA.store);
+  if (storeMergeResult.changed) {
+    state.store = storeMergeResult.store;
+    saveToStorage('store', state.store);
+  }
+  const goalMergeResult = mergeGoalsWithDefaults(state.goals, DEFAULT_DATA.goals);
+  if (goalMergeResult.changed) {
+    state.goals = goalMergeResult.goals;
+    saveToStorage('goals', state.goals);
+  }
   if (Array.isArray(state.items)) {
     let rarityChanged = false;
     const normalized = state.items.map(item => {
@@ -1361,6 +1653,10 @@ function initialiseState() {
       state.unlockedShopItems[itemId] = defaultShopUnlocks[itemId];
     }
   });
+  if (syncGoalLockedShopUnlocks()) {
+    saveToStorage('unlockedShopItems', state.unlockedShopItems);
+    saveToStorage('shop', state.shop);
+  }
   if (!state.freePurchasesByItem || typeof state.freePurchasesByItem !== 'object') {
     state.freePurchasesByItem = {};
   }
@@ -1844,6 +2140,16 @@ function formatGoalMetric(metric) {
   return metric;
 }
 
+function formatGoalCondition(condition) {
+  if (!condition || typeof condition !== 'object') return '';
+  const metricLabel = formatGoalMetric(condition.metric);
+  const target = Math.max(0, Number(condition.value) || 0);
+  const operator = condition.operator || '>=';
+  const isMoneyMetric = condition.metric === 'cash' || condition.metric === 'netWorth';
+  const targetText = isMoneyMetric ? `$${target.toFixed(2)}` : `${target}`;
+  return `${metricLabel} ${operator} ${targetText}`;
+}
+
 function formatGoalReward(reward) {
   if (!reward || typeof reward !== 'object') return 'Reward pending';
   const parts = [];
@@ -1853,6 +2159,15 @@ function formatGoalReward(reward) {
   if (typeof reward.unlockShopItem === 'number') {
     const item = state.items.find(it => it.id === reward.unlockShopItem);
     parts.push(`Shop item: ${item ? item.name : reward.unlockShopItem}`);
+  }
+  if (Array.isArray(reward.unlockShopItems) && reward.unlockShopItems.length > 0) {
+    const labels = reward.unlockShopItems
+      .map(itemId => state.items.find(it => it.id === Number(itemId)))
+      .filter(Boolean)
+      .map(item => item.name);
+    if (labels.length > 0) {
+      parts.push(`Shop items: ${labels.join(', ')}`);
+    }
   }
   if (reward.freePurchases && typeof reward.freePurchases === 'object') {
     const itemId = Number(reward.freePurchases.itemId);
@@ -1871,26 +2186,56 @@ function formatGoalReward(reward) {
 }
 
 function getGoalProgress(goal) {
-  if (!goal || typeof goal !== 'object' || !goal.goal) {
+  const conditions = getGoalConditions(goal);
+  if (!conditions.length) {
     return { current: 0, target: 0, percent: 0, progressText: '0 / 0' };
   }
-  const metric = goal.goal.metric;
-  const target = Math.max(0, Number(goal.goal.value) || 0);
-  const current = Math.max(0, getGoalMetricValue(metric));
-  const operator = goal.goal.operator || '>=';
-  let percent = 0;
-  if (target <= 0) {
-    percent = 100;
-  } else if (operator === '==') {
-    percent = current === target ? 100 : Math.min(99, Math.round((current / target) * 100));
-  } else {
-    percent = Math.min(100, Math.round((current / target) * 100));
+  if (conditions.length === 1) {
+    const metric = conditions[0].metric;
+    const target = Math.max(0, Number(conditions[0].value) || 0);
+    const current = Math.max(0, getGoalMetricValue(metric));
+    const operator = conditions[0].operator || '>=';
+    let percent = 0;
+    if (target <= 0) {
+      percent = 100;
+    } else if (operator === '==') {
+      percent = current === target ? 100 : Math.min(99, Math.round((current / target) * 100));
+    } else {
+      percent = Math.min(100, Math.round((current / target) * 100));
+    }
+    const isMoneyMetric = metric === 'cash' || metric === 'netWorth';
+    const progressText = isMoneyMetric
+      ? `$${current.toFixed(2)} / $${target.toFixed(2)}`
+      : `${current} / ${target}`;
+    return { current, target, percent, progressText };
   }
-  const isMoneyMetric = metric === 'cash' || metric === 'netWorth';
-  const progressText = isMoneyMetric
-    ? `$${current.toFixed(2)} / $${target.toFixed(2)}`
-    : `${current} / ${target}`;
-  return { current, target, percent, progressText };
+  let totalPercent = 0;
+  let metCount = 0;
+  conditions.forEach(condition => {
+    const metric = condition.metric;
+    const target = Math.max(0, Number(condition.value) || 0);
+    const current = Math.max(0, getGoalMetricValue(metric));
+    const operator = condition.operator || '>=';
+    let percent = 0;
+    if (target <= 0) {
+      percent = 100;
+    } else if (operator === '==') {
+      percent = current === target ? 100 : Math.min(99, Math.round((current / target) * 100));
+    } else {
+      percent = Math.min(100, Math.round((current / target) * 100));
+    }
+    totalPercent += percent;
+    if (doesConditionMeet(condition)) {
+      metCount += 1;
+    }
+  });
+  const avgPercent = Math.round(totalPercent / conditions.length);
+  return {
+    current: metCount,
+    target: conditions.length,
+    percent: avgPercent,
+    progressText: `${metCount} / ${conditions.length} conditions`
+  };
 }
 
 function renderGoals() {
@@ -1925,7 +2270,10 @@ function renderGoals() {
   goals.forEach(goal => {
     const row = document.createElement('tr');
     const goalCell = document.createElement('td');
-    const metricLabel = formatGoalMetric(goal.goal?.metric);
+    const conditions = getGoalConditions(goal);
+    const metricLabel = conditions.length > 1
+      ? conditions.map(condition => formatGoalCondition(condition)).join(' + ')
+      : formatGoalMetric(goal.goal?.metric);
     goalCell.textContent = `${goal.name || goal.id} - ${goal.description || metricLabel}`;
     row.appendChild(goalCell);
 
@@ -2862,6 +3210,7 @@ function nextDay() {
 
   const previousPrices = new Map();
   state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
     previousPrices.set(entry.itemId, Number(entry.price) || 0);
   });
   // Advance day counter
@@ -2883,6 +3232,7 @@ function nextDay() {
   }
   // Update item prices – accumulate for average, apply random fluctuation and news impact
   state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
     // Accumulate the current price into priceSum and increment daysCount
     entry.priceSum = (entry.priceSum || 0) + entry.price;
     entry.daysCount = (entry.daysCount || 0) + 1;
@@ -2920,6 +3270,7 @@ function nextDay() {
   updateNetWorth();
   const priceMoves = [];
   state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
     const previous = previousPrices.get(entry.itemId);
     if (typeof previous !== 'number' || previous <= 0) return;
     const current = Number(entry.price) || 0;
@@ -2986,6 +3337,7 @@ function generateDailyTip(dowIndex) {
   let bestBuy = null;
   let bestBuyDiff = 0;
   state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
     const item = state.items.find(it => it.id === entry.itemId);
     if (!item) return;
     const avgPrice = (entry.daysCount && entry.priceSum) ? (entry.priceSum / entry.daysCount) : null;
@@ -3006,6 +3358,7 @@ function generateDailyTip(dowIndex) {
   state.inventory.forEach(entry => {
     const item = state.items.find(it => it.id === entry.itemId);
     if (!item) return;
+    if (!isShopItemUnlocked(entry.itemId)) return;
     const shopEntry = state.shop.find(s => s.itemId === entry.itemId);
     if (!shopEntry) return;
     const sellPrice = shopEntry.price;
@@ -3776,11 +4129,14 @@ function generateNewsEvents() {
   for (let i = 0; i < count; i++) {
     const templateIndex = Math.floor(Math.random() * pool.length);
     const baseEvent = pool.splice(templateIndex, 1)[0];
-    // Choose a random item from the current items list
+    // Choose a random unlocked shop item only.
     let selectedItem = null;
-    if (Array.isArray(state.items) && state.items.length > 0) {
-      const itemIndex = Math.floor(Math.random() * state.items.length);
-      selectedItem = state.items[itemIndex];
+    const unlockedItems = Array.isArray(state.items)
+      ? state.items.filter(item => item && isShopItemUnlocked(item.id))
+      : [];
+    if (unlockedItems.length > 0) {
+      const itemIndex = Math.floor(Math.random() * unlockedItems.length);
+      selectedItem = unlockedItems[itemIndex];
     }
     // Build the event's text using the selected item; if no item available, use generic placeholder
     const itemName = selectedItem ? selectedItem.name : 'Unknown Item';
