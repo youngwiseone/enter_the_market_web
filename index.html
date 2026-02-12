@@ -620,11 +620,48 @@
             align-items: stretch;
             height: var(--messages-height, 88px);
         }
-        .chat-avatar {
-            width: var(--messages-height, 88px);
+        .chat-profile-column {
+            width: clamp(82px, 12vw, 120px);
+            flex: 0 0 clamp(82px, 12vw, 120px);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #1d7f1d;
+            background: #020902;
+        }
+        .player-level-info {
+            padding: 2px 4px;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #7eff9d;
+            border-bottom: 1px solid rgba(29, 127, 29, 0.7);
+        }
+        .player-level-label {
+            font-weight: bold;
+        }
+        .player-xp-bar {
+            margin-top: 2px;
+            height: 6px;
+            border: 1px solid #1d7f1d;
+            background: #001a00;
+            position: relative;
+            overflow: hidden;
+        }
+        .player-xp-fill {
             height: 100%;
-            flex: 0 0 var(--messages-height, 88px);
+            width: 0%;
+            background: linear-gradient(90deg, #1f8f3a, #7eff9d);
+            transition: width 120ms ease-out;
+        }
+        .player-xp-text {
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+        .chat-avatar {
+            width: 100%;
+            height: 100%;
+            flex: 1 1 auto;
             display: block;
+            object-fit: cover;
         }
         .market-header {
             margin-bottom: 6px;
@@ -1249,7 +1286,16 @@
             <div id="messages-panel" class="panel">
                 <div class="panel-title">C:\MARKET\MESSAGES></div>
                 <div class="chat-row">
-                    <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
+                    <div class="chat-profile-column">
+                        <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
+                        <div class="player-level-info">
+                            <div id="player-level-label" class="player-level-label">Level: 1</div>
+                            <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
+                                <div id="player-xp-fill" class="player-xp-fill"></div>
+                            </div>
+                            <div id="player-xp-text" class="player-xp-text">0 / 30 XP</div>
+                        </div>
+                    </div>
                     <div id="chat-log"></div>
                 </div>
             </div>
@@ -1264,7 +1310,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=54"></script>
+    <script src="main.js?v=55"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

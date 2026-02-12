@@ -41,8 +41,10 @@ const DEFAULT_DATA = {
     theme: 'default',      // selected theme
     uiSkin: 'classic',     // selected UI skin
     screensaver: 'default', // selected screensaver
-    energy: 10,
-    energyMax: 10
+    energy: 5,
+    energyMax: 5,
+    playerLevel: 1,
+    playerXp: 0
     ,
     // Tracks whether the welcome message has been shown on first load
     welcomeShown: false
@@ -943,8 +945,13 @@ function showNextGoalCelebration() {
 
   const titleEl = document.getElementById('goal-celebration-title');
   const unlockEl = document.getElementById('goal-celebration-unlock');
+  const imageEl = document.getElementById('goal-celebration-image');
   if (titleEl) titleEl.textContent = next.title;
   if (unlockEl) unlockEl.textContent = next.rewardText;
+  if (imageEl) {
+    imageEl.src = next.imageSrc || 'resources/profiles/player_goal_unlocked.png';
+    imageEl.alt = next.imageAlt || 'Goal unlocked';
+  }
 
   setGoalCelebrationOpen(true);
   startGoalCelebrationSparkles();
@@ -962,7 +969,9 @@ function enqueueGoalCelebration(goal) {
   state.goalCelebrationQueue.push({
     id: goal.id || '',
     title: goal.name || 'Goal Complete',
-    rewardText: getGoalCelebrationRewardText(goal)
+    rewardText: getGoalCelebrationRewardText(goal),
+    imageSrc: 'resources/profiles/player_goal_unlocked.png',
+    imageAlt: 'Goal unlocked'
   });
   showNextGoalCelebration();
 }
@@ -1168,6 +1177,92 @@ function updateNetWorth() {
   return state.player.netWorth;
 }
 
+function clampPlayerLevel(levelRaw) {
+  const numeric = Math.floor(Number(levelRaw) || 1);
+  return Math.max(1, Math.min(PLAYER_LEVEL_CAP, numeric));
+}
+
+function getXpToNextLevel(levelRaw) {
+  const level = clampPlayerLevel(levelRaw);
+  return Math.max(1, Math.round(30 * Math.pow(1.18, Math.max(0, level - 1))));
+}
+
+function getEnergyMaxForLevel(levelRaw) {
+  const level = clampPlayerLevel(levelRaw);
+  if (level >= 10) return 10;
+  if (level >= 8) return 9;
+  if (level >= 6) return 8;
+  if (level >= 4) return 7;
+  if (level >= 2) return 6;
+  return 5;
+}
+
+function ensurePlayerProgressState() {
+  if (!state.player || typeof state.player !== 'object') return;
+  state.player.playerLevel = clampPlayerLevel(state.player.playerLevel);
+  const atCap = state.player.playerLevel >= PLAYER_LEVEL_CAP;
+  const xp = Math.max(0, Math.floor(Number(state.player.playerXp) || 0));
+  state.player.playerXp = atCap ? 0 : Math.min(xp, getXpToNextLevel(state.player.playerLevel) - 1);
+  state.player.energyMax = getEnergyMaxForLevel(state.player.playerLevel);
+  if (typeof state.player.energy !== 'number') {
+    state.player.energy = state.player.energyMax;
+  }
+  state.player.energy = Math.max(0, Math.min(Math.floor(state.player.energy), state.player.energyMax));
+}
+
+function enqueueLevelUpCelebration(level, changeText) {
+  if (!Array.isArray(state.goalCelebrationQueue)) {
+    state.goalCelebrationQueue = [];
+  }
+  state.goalCelebrationQueue.push({
+    id: `level-up-${level}-${Date.now()}`,
+    title: 'Level Up',
+    rewardText: `Level ${level} reached | ${changeText}`,
+    imageSrc: 'resources/profiles/player_level_up.png',
+    imageAlt: 'Level up'
+  });
+  showNextGoalCelebration();
+}
+
+function awardPlayerXp(amount, options = {}) {
+  ensurePlayerProgressState();
+  const xpGain = Math.max(0, Math.floor(Number(amount) || 0));
+  if (xpGain <= 0 || state.player.playerLevel >= PLAYER_LEVEL_CAP) return 0;
+
+  state.player.playerXp += xpGain;
+  let levelsGained = 0;
+  while (state.player.playerLevel < PLAYER_LEVEL_CAP) {
+    const xpToNext = getXpToNextLevel(state.player.playerLevel);
+    if (state.player.playerXp < xpToNext) break;
+    state.player.playerXp -= xpToNext;
+    const previousEnergyMax = getEnergyMaxForLevel(state.player.playerLevel);
+    state.player.playerLevel += 1;
+    levelsGained += 1;
+    const currentEnergyMax = getEnergyMaxForLevel(state.player.playerLevel);
+    state.player.energyMax = currentEnergyMax;
+    state.player.energy = currentEnergyMax;
+    const changeText = currentEnergyMax > previousEnergyMax
+      ? `Max energy increased to ${currentEnergyMax}. Energy fully refilled.`
+      : `Energy fully refilled to ${currentEnergyMax}.`;
+    addMessage(`Level up! Reached Level ${state.player.playerLevel}. ${changeText}`, {
+      speaker: 'player',
+      emotion: 'level_up',
+      category: 'progress',
+      priority: 'high'
+    });
+    enqueueLevelUpCelebration(state.player.playerLevel, changeText);
+  }
+
+  if (state.player.playerLevel >= PLAYER_LEVEL_CAP) {
+    state.player.playerXp = 0;
+  }
+
+  if (options && options.center) {
+    showXpGainFeedback(xpGain, options.center);
+  }
+  return levelsGained;
+}
+
 function getGoalMetricValue(metric) {
   if (typeof metric !== 'string') return 0;
   if (metric === 'cash') return Number(state.player?.cash) || 0;
@@ -1303,6 +1398,7 @@ function evaluateGoals() {
 
     if (!doesGoalMeetCondition(goal)) return;
     applyGoalReward(goal);
+    awardPlayerXp(XP_REWARDS.goal);
     state.goalsClaimed[goal.id] = true;
     completedCount += 1;
     const message = goal.message || `Goal complete: ${goal.name || goal.id}.`;
@@ -1324,6 +1420,14 @@ const TOOL_GLOVE = 'glove';
 const TOOL_WATERING = 'watering';
 const TOOL_PICKAXE = 'pickaxe';
 const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
+const PLAYER_LEVEL_CAP = 20;
+const XP_REWARDS = {
+  plant: 2,
+  water: 1,
+  mine: 4,
+  harvest: 6,
+  goal: 20
+};
 
 const RARITY_TYPES = ['common', 'uncommon', 'rare', 'mythic'];
 const RARITY_ROLLS = [
@@ -1667,13 +1771,7 @@ function initialiseState() {
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
-  if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
-    state.player.energyMax = DEFAULT_DATA.player.energyMax;
-  }
-  if (typeof state.player.energy !== 'number') {
-    state.player.energy = state.player.energyMax;
-  }
-  state.player.energy = Math.max(0, Math.min(state.player.energy, state.player.energyMax));
+  ensurePlayerProgressState();
   const itemMergeResult = mergeItemAssetsWithDefaults(state.items, DEFAULT_DATA.items);
   if (itemMergeResult.changed) {
     state.items = itemMergeResult.items;
@@ -1934,6 +2032,7 @@ async function resetGame() {
  * each game tick or transaction.
  */
 function renderHUD() {
+  ensurePlayerProgressState();
   updateNetWorth();
   const dayElems    = document.querySelectorAll('#hud-day');
   const cashElems   = document.querySelectorAll('#hud-cash');
@@ -1955,6 +2054,7 @@ function renderHUD() {
   netElems.forEach(el => {
     el.textContent = `Net Worth: $${netWorth.toFixed(2)}`;
   });
+  renderPlayerLevelStatus();
 }
 
 function renderEnergyBar() {
@@ -1973,6 +2073,34 @@ function renderEnergyBar() {
   bar.setAttribute('aria-valuemax', String(max));
   if (text) {
     text.textContent = `Energy: ${current}/${max}`;
+  }
+  renderPlayerLevelStatus();
+}
+
+function renderPlayerLevelStatus() {
+  ensurePlayerProgressState();
+  const levelLabel = document.getElementById('player-level-label');
+  const xpText = document.getElementById('player-xp-text');
+  const xpFill = document.getElementById('player-xp-fill');
+  const xpBar = document.getElementById('player-xp-bar');
+  if (!state.player) return;
+  const level = state.player.playerLevel;
+  const atCap = level >= PLAYER_LEVEL_CAP;
+  const currentXp = Math.max(0, Number(state.player.playerXp) || 0);
+  const xpToNext = atCap ? 0 : getXpToNextLevel(level);
+  const percent = atCap ? 100 : Math.min(100, Math.round((currentXp / Math.max(1, xpToNext)) * 100));
+  if (levelLabel) {
+    levelLabel.textContent = `Level: ${level}`;
+  }
+  if (xpText) {
+    xpText.textContent = atCap ? 'MAX LEVEL' : `${currentXp} / ${xpToNext} XP`;
+  }
+  if (xpFill) {
+    xpFill.style.width = `${percent}%`;
+  }
+  if (xpBar) {
+    xpBar.setAttribute('aria-valuenow', String(atCap ? 0 : currentXp));
+    xpBar.setAttribute('aria-valuemax', String(atCap ? 1 : xpToNext));
   }
 }
 
@@ -3009,6 +3137,35 @@ function spawnFloatingText({ x, y, text, color }) {
   node.addEventListener('animationend', () => node.remove(), { once: true }); 
 } 
 
+function showXpGainFeedback(xpGain, center, delayMs = 0) {
+  if (!center) return;
+  const amount = Math.max(0, Math.floor(Number(xpGain) || 0));
+  if (amount <= 0) return;
+  const spawn = () => {
+    spawnBurst({
+      x: center.x,
+      y: center.y - 4,
+      count: 8,
+      imgList: ['resources/effects/xp_01.png', 'resources/effects/xp_02.png'],
+      speedRange: [20, 60],
+      sizeRange: [8, 12],
+      gravity: 12,
+      lifeRange: [260, 520]
+    });
+    spawnFloatingText({
+      x: center.x - 10,
+      y: center.y - 24,
+      text: `+${amount} XP`,
+      color: '#7eff9d'
+    });
+  };
+  if (delayMs > 0) {
+    window.setTimeout(spawn, delayMs);
+  } else {
+    spawn();
+  }
+}
+
 function playDayTransition() { 
   if (FX_STATE.reduceMotion) return; 
   const panel = document.getElementById('farm-panel'); 
@@ -3035,7 +3192,8 @@ const PROFILE_IMAGES = {
     tired: 'resources/profiles/player_tired.png',
     wrong: 'resources/profiles/player_wrong.png',
     money: 'resources/profiles/player_money.png',
-    goal_unlocked: 'resources/profiles/player_goal_unlocked.png'
+    goal_unlocked: 'resources/profiles/player_goal_unlocked.png',
+    level_up: 'resources/profiles/player_level_up.png'
   },
   farmer: {
     neutral: 'resources/profiles/farmer.png'
@@ -3405,9 +3563,7 @@ function nextDay() {
   // Advance day counter
   state.player.day += 1;
   lowEnergyNoticeDay = null;
-  if (typeof state.player.energyMax !== 'number' || state.player.energyMax <= 0) {
-    state.player.energyMax = DEFAULT_DATA.player.energyMax;
-  }
+  ensurePlayerProgressState();
   state.player.energy = state.player.energyMax;
   // Determine the day of week for the new day (0=Mon,..6=Sun)
   const dowIndex = (state.player.day - 1) % 7;
@@ -3730,6 +3886,7 @@ function mineGridTile(index) {
   if (!consumeEnergy(1, 'mine this tile')) { 
     return true; 
   } 
+  awardPlayerXp(XP_REWARDS.mine);
   const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0; 
   const nextHits = currentHits + 1; 
   const didClear = nextHits >= 10; 
@@ -3790,6 +3947,7 @@ function mineGridTile(index) {
       const toolButton = document.querySelector('.tool-button[data-tool=\"pickaxe\"]'); 
       if (toolButton) triggerFxClass(toolButton, 'fx-pop'); 
     } 
+    showXpGainFeedback(XP_REWARDS.mine, center);
   } 
   return didMessage; 
 } 
@@ -3842,6 +4000,7 @@ function waterGridTile(index) {
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
   }
+  awardPlayerXp(XP_REWARDS.water);
 
   const growDays = Math.max(0, Number(item.growDays) || 0);
   const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
@@ -3875,6 +4034,7 @@ function waterGridTile(index) {
     const cell = document.getElementById('grid')?.children[index]; 
     const overlay = cell ? cell.querySelector('img.grid-overlay[src*=\"water.png\"]') : null; 
     if (overlay) triggerFxClass(overlay, 'fx-pop'); 
+    showXpGainFeedback(XP_REWARDS.water, center);
   } 
   return true; 
 } 
@@ -3905,6 +4065,7 @@ function placeItemOnGrid(itemId, cellIndex) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
+  awardPlayerXp(XP_REWARDS.plant);
   saveState(); 
   addMessage(`Placed ${item.name} on the grid.`); 
   renderAll(); 
@@ -3922,6 +4083,7 @@ function placeItemOnGrid(itemId, cellIndex) {
     }); 
     const cell = document.getElementById('grid')?.children[cellIndex]; 
     if (cell) triggerFxClass(cell, 'fx-pop'); 
+    showXpGainFeedback(XP_REWARDS.plant, center);
   } 
 } 
 
@@ -4078,6 +4240,7 @@ function purchaseAndPlaceSelected(cellIndex) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
+  awardPlayerXp(XP_REWARDS.plant);
   updateNetWorth();
   evaluateGoals();
   saveState();
@@ -4107,6 +4270,9 @@ function purchaseAndPlaceSelected(cellIndex) {
   if (center && hudCenters.length > 0) { 
     spawnCoinTravel(hudCenters[0], center, 5); 
   } 
+  if (center) {
+    showXpGainFeedback(XP_REWARDS.plant, center);
+  }
 } 
 
 function harvestPlant(cellIndex) {
@@ -4140,6 +4306,7 @@ function harvestPlant(cellIndex) {
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[cellIndex] = 0;
   }
+  awardPlayerXp(XP_REWARDS.harvest);
   updateNetWorth();
   evaluateGoals();
   saveState(); 
@@ -4178,6 +4345,7 @@ function harvestPlant(cellIndex) {
       text: `+$${saleValue.toFixed(2)}`, 
       color: isMythic ? '#c6b4ff' : '#ffe680' 
     }); 
+    showXpGainFeedback(XP_REWARDS.harvest, center, 340);
   } 
   pulseHud(true); 
   const hudCenters = getHudCenters(); 
