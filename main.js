@@ -605,6 +605,10 @@ let state = {
   freePurchasesByItem: null,
   goalFlags: null,
   goalStats: null,
+  dayActionCount: 0,
+  dailyMarketRollHistory: null,
+  lastRollFatiguePercent: 0,
+  lastRollImpactMultiplier: 1,
   dayStartSnapshot: null,
   goalCelebrationQueue: [],
   activeGoalCelebration: null
@@ -984,6 +988,134 @@ function continueGoalCelebration() {
   window.setTimeout(() => {
     showNextGoalCelebration();
   }, 120);
+}
+
+function isDailyRollOpen() {
+  const modal = document.getElementById('daily-roll-modal');
+  return !!(modal && modal.classList.contains('is-open'));
+}
+
+function setDailyRollOpen(isOpen) {
+  const modal = document.getElementById('daily-roll-modal');
+  if (!modal) return;
+  modal.classList.toggle('is-open', !!isOpen);
+  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function continueDailyRollModal() {
+  setDailyRollOpen(false);
+}
+
+function createDailyRollSlotNode(item, extraClass = '') {
+  const slot = document.createElement('div');
+  slot.className = `daily-roll-reel-slot ${extraClass}`.trim();
+  const icon = document.createElement('img');
+  const label = document.createElement('span');
+  icon.src = item?.harvestImage || '';
+  icon.alt = item?.itemName || 'Item';
+  label.textContent = item?.itemName || 'Unknown';
+  slot.appendChild(icon);
+  slot.appendChild(label);
+  return slot;
+}
+
+function triggerDailyRollDuplicateEffects(reelEl) {
+  if (!reelEl) return;
+  reelEl.classList.remove('duplicate-hit');
+  void reelEl.offsetWidth;
+  reelEl.classList.add('duplicate-hit');
+  reelEl.addEventListener('animationend', () => reelEl.classList.remove('duplicate-hit'), { once: true });
+  const sparkImages = ['resources/effects/sparkle_gold_01.png', 'resources/effects/sparkle_gold_02.png'];
+  for (let i = 0; i < 7; i += 1) {
+    const spark = document.createElement('img');
+    spark.className = 'daily-roll-spark';
+    spark.src = sparkImages[Math.floor(Math.random() * sparkImages.length)];
+    spark.alt = '';
+    spark.style.left = `${10 + Math.random() * (Math.max(10, reelEl.clientWidth - 20))}px`;
+    spark.style.top = `${20 + Math.random() * 40}px`;
+    spark.style.setProperty('--spark-dx', `${Math.round((Math.random() - 0.5) * 60)}px`);
+    spark.style.setProperty('--spark-dy', `${Math.round(-20 - Math.random() * 50)}px`);
+    spark.style.setProperty('--spark-rot', `${Math.round((Math.random() - 0.5) * 260)}deg`);
+    reelEl.appendChild(spark);
+    spark.addEventListener('animationend', () => spark.remove(), { once: true });
+  }
+}
+
+function renderDailyRollStory(storyEl, pick, itemEffect) {
+  if (!storyEl || !pick) return;
+  const sign = (itemEffect?.adjustedImpactPct || 0) >= 0 ? '+' : '';
+  const stackText = (itemEffect?.hits || 0) > 1 ? ` | x${itemEffect.hits} stacked` : '';
+  storyEl.innerHTML = `
+    <h3>${pick.storyHeadline || pick.itemName}</h3>
+    <p>${pick.storyBody || ''}</p>
+    <div class="daily-roll-story-impact">${pick.itemName}: ${sign}${(itemEffect?.adjustedImpactPct || 0).toFixed(0)}%${stackText}</div>
+  `;
+}
+
+function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
+  const modal = document.getElementById('daily-roll-modal');
+  const summaryEl = document.getElementById('daily-roll-summary');
+  const fatigueEl = document.getElementById('daily-roll-fatigue');
+  if (!modal || !Array.isArray(rollResult?.picks) || rollResult.picks.length === 0) return;
+
+  const unlockedItems = getUnlockedRollItems().map(item => ({
+    itemId: item.id,
+    itemName: item.name,
+    harvestImage: getHarvestImagePath(item)
+  }));
+  const reelEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-reel-${i}`)).filter(Boolean);
+  const trackEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-track-${i}`)).filter(Boolean);
+  const reelSummaryEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-reel-summary-${i}`)).filter(Boolean);
+  const storyEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-story-${i}`)).filter(Boolean);
+
+  if (fatigueEl) {
+    fatigueEl.textContent = `Market Fatigue: ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}% Stagnation`;
+  }
+
+  trackEls.forEach((track, index) => {
+    if (!track) return;
+    const reelEl = reelEls[index];
+    const summaryBox = reelSummaryEls[index];
+    const storyEl = storyEls[index];
+    const finalPick = rollResult.picks[index] || rollResult.picks[rollResult.picks.length - 1];
+    const itemEffect = rollResult.byItem.get(finalPick.itemId);
+    track.innerHTML = '';
+    if (reelEl) reelEl.classList.remove('final');
+
+    let spins = 0;
+    const spinIntervalMs = FX_STATE.reduceMotion ? 90 : 56;
+    const spinTarget = FX_STATE.reduceMotion ? 6 + (index * 3) : 14 + (index * 6);
+    const timer = window.setInterval(() => {
+      spins += 1;
+      const midItem = spins >= spinTarget
+        ? finalPick
+        : unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+      const topItem = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+      const bottomItem = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+      track.innerHTML = '';
+      track.appendChild(createDailyRollSlotNode(topItem, 'ghost'));
+      track.appendChild(createDailyRollSlotNode(midItem, 'mid'));
+      track.appendChild(createDailyRollSlotNode(bottomItem, 'ghost'));
+      if (spins >= spinTarget) {
+        window.clearInterval(timer);
+        if (reelEl) reelEl.classList.add('final');
+        if (summaryBox) {
+          const sign = (itemEffect?.adjustedImpactPct || 0) >= 0 ? '+' : '';
+          const stackText = (itemEffect?.hits || 0) > 1 ? `<span class="daily-roll-reel-stack">x${itemEffect.hits} stacked</span>` : '';
+          summaryBox.innerHTML = `${finalPick.itemName} ${sign}${(itemEffect?.adjustedImpactPct || 0).toFixed(0)}% ${stackText}`;
+        }
+        renderDailyRollStory(storyEl, finalPick, itemEffect);
+        if ((itemEffect?.hits || 0) > 1 && reelEl) {
+          triggerDailyRollDuplicateEffects(reelEl);
+        }
+      }
+    }, spinIntervalMs);
+  });
+
+  if (summaryEl) {
+    summaryEl.textContent = summaryText || '';
+  }
+  setDailyRollOpen(true);
 }
 
 function getEffectiveWateredCount(index) {
@@ -1768,6 +1900,10 @@ function initialiseState() {
   state.freePurchasesByItem = loadFromStorage('freePurchasesByItem', null) ?? {};
   state.goalFlags = loadFromStorage('goalFlags', null) ?? {};
   state.goalStats = loadFromStorage('goalStats', null) ?? { harvestCount: 0, itemsHarvested: {} };
+  state.dayActionCount = Math.max(0, Number(loadFromStorage('dayActionCount', null) ?? 0) || 0);
+  state.dailyMarketRollHistory = loadFromStorage('dailyMarketRollHistory', null) ?? [];
+  state.lastRollFatiguePercent = Math.max(0, Math.min(100, Number(loadFromStorage('lastRollFatiguePercent', null) ?? 0) || 0));
+  state.lastRollImpactMultiplier = Math.max(0, Math.min(1, Number(loadFromStorage('lastRollImpactMultiplier', null) ?? 1) || 1));
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
@@ -1899,6 +2035,9 @@ function initialiseState() {
   if (typeof state.goalStats.harvestCount !== 'number') {
     state.goalStats.harvestCount = 0;
   }
+  if (!Array.isArray(state.dailyMarketRollHistory)) {
+    state.dailyMarketRollHistory = [];
+  }
   if (!isToolUnlocked(TOOL_WATERING) && state.activeTool === TOOL_WATERING) {
     state.activeTool = TOOL_GLOVE;
   }
@@ -1936,6 +2075,10 @@ function saveState() {
   saveToStorage('freePurchasesByItem', state.freePurchasesByItem);
   saveToStorage('goalFlags', state.goalFlags);
   saveToStorage('goalStats', state.goalStats);
+  saveToStorage('dayActionCount', state.dayActionCount);
+  saveToStorage('dailyMarketRollHistory', state.dailyMarketRollHistory);
+  saveToStorage('lastRollFatiguePercent', state.lastRollFatiguePercent);
+  saveToStorage('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
   saveToStorage('dayStartSnapshot', state.dayStartSnapshot);
   // Persist grid purchase and placement state. These arrays represent which grid
   // slots have been purchased (gridUnlocked) and which contain items (gridItems).
@@ -1991,6 +2134,10 @@ async function resetGame() {
   state.freePurchasesByItem = {};
   state.goalFlags = {};
   state.goalStats = { harvestCount: 0, itemsHarvested: {} };
+  state.dayActionCount = 0;
+  state.dailyMarketRollHistory = [];
+  state.lastRollFatiguePercent = 0;
+  state.lastRollImpactMultiplier = 1;
   state.goalCelebrationQueue = [];
   state.activeGoalCelebration = null;
   clearGoalCelebrationSparkles();
@@ -2010,8 +2157,10 @@ async function resetGame() {
   saveToStorage('freePurchasesByItem', state.freePurchasesByItem);
   saveToStorage('goalFlags', state.goalFlags);
   saveToStorage('goalStats', state.goalStats);
-  // Start at week 1: schedule any news for week 1
-  generateNewsEvents();
+  saveToStorage('dayActionCount', state.dayActionCount);
+  saveToStorage('dailyMarketRollHistory', state.dailyMarketRollHistory);
+  saveToStorage('lastRollFatiguePercent', state.lastRollFatiguePercent);
+  saveToStorage('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
   renderAll();
   updateToolButtons();
   updateCursorForTool();
@@ -3454,6 +3603,7 @@ function buyItem(itemId, quantity) {
   if (freeQty > 0) {
     consumeFreePurchases(itemId, freeQty);
   }
+  registerDayAction();
   state.player.cash -= totalCost;
   shopEntry.quantity -= quantity;
   let invEntry = state.inventory.find(entry => entry.itemId === itemId);
@@ -3485,6 +3635,7 @@ function sellItem(itemId, quantity) {
   }
   // Compute sale value – currently 100% of shop price (could be less)
   const saleValue = shopEntry.price * quantity;
+  registerDayAction();
   // Increase cash and stock
   state.player.cash += saleValue;
   shopEntry.quantity += quantity;
@@ -3546,10 +3697,119 @@ function emitEconomyAlert(priceMoves) {
   });
 }
 
+function registerDayAction() {
+  state.dayActionCount = Math.max(0, Number(state.dayActionCount) || 0) + 1;
+}
+
+function getUnlockedRollItems() {
+  if (!Array.isArray(state.items)) return [];
+  return state.items.filter(item => item && isShopItemUnlocked(item.id));
+}
+
+function getRollStoryForItem(itemName) {
+  const templates = Array.isArray(DEFAULT_DATA.newsEvents) ? DEFAULT_DATA.newsEvents : [];
+  if (!templates.length) {
+    return {
+      headline: `Market focus: ${itemName}`,
+      article: `${itemName} traders report unusual activity into the next rest cycle.`
+    };
+  }
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  const headline = String(template?.headline || `Market focus: ${itemName}`).replace(/sku/gi, itemName);
+  const article = String(template?.article || `${itemName} traders report unusual activity.`).replace(/sku/gi, itemName);
+  return { headline, article };
+}
+
+function getFatigueFromEnergy() {
+  const energyMax = Math.max(1, Number(state.player?.energyMax) || 1);
+  const energy = Math.max(0, Math.min(energyMax, Number(state.player?.energy) || 0));
+  const energyRatio = energy / energyMax;
+  const impactMultiplier = Math.max(0, 1 - energyRatio);
+  const fatiguePercent = Math.round(energyRatio * 100);
+  return { fatiguePercent, impactMultiplier, energy, energyMax };
+}
+
+function generateDailyMarketRoll(impactMultiplier = 1) {
+  const unlockedItems = getUnlockedRollItems();
+  if (unlockedItems.length === 0) {
+    return { picks: [], byItem: new Map() };
+  }
+  const picks = [];
+  for (let i = 0; i < 3; i += 1) {
+    const target = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    const baseMagnitude = 6 + Math.floor(Math.random() * 8); // 6..13
+    const story = getRollStoryForItem(target.name);
+    picks.push({
+      itemId: target.id,
+      itemName: target.name,
+      harvestImage: getHarvestImagePath(target),
+      impactPct: sign * baseMagnitude,
+      storyHeadline: story.headline,
+      storyBody: story.article,
+      stackCount: 1,
+      finalImpactPct: 0
+    });
+  }
+  const grouped = new Map();
+  picks.forEach(pick => {
+    const key = pick.itemId;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        itemId: pick.itemId,
+        itemName: pick.itemName,
+        hits: 0,
+        baseSumPct: 0,
+        totalImpactPct: 0,
+        adjustedImpactPct: 0
+      });
+    }
+    const row = grouped.get(key);
+    row.hits += 1;
+    row.baseSumPct += pick.impactPct;
+  });
+  grouped.forEach(row => {
+    const bonusMultiplier = 1 + (Math.max(0, row.hits - 1) * 0.25);
+    row.totalImpactPct = row.baseSumPct * bonusMultiplier;
+    row.adjustedImpactPct = row.totalImpactPct * impactMultiplier;
+  });
+  picks.forEach(pick => {
+    const row = grouped.get(pick.itemId);
+    if (!row) return;
+    pick.stackCount = row.hits;
+    pick.finalImpactPct = row.adjustedImpactPct;
+  });
+  return { picks, byItem: grouped };
+}
+
+function applyDailyMarketRollToShop(rollResult) {
+  if (!rollResult || !(rollResult.byItem instanceof Map)) return;
+  state.shop.forEach(entry => {
+    if (!isShopItemUnlocked(entry.itemId)) return;
+    const effect = rollResult.byItem.get(entry.itemId);
+    if (!effect) return;
+    const factor = 1 + (effect.adjustedImpactPct / 100);
+    entry.price *= Math.max(0.1, factor);
+  });
+}
+
+function getDailyRollSummaryText(rollResult, fatiguePercent = 0) {
+  if (!rollResult || !(rollResult.byItem instanceof Map) || rollResult.byItem.size === 0) {
+    return 'No market shifts rolled.';
+  }
+  const parts = [];
+  Array.from(rollResult.byItem.values()).forEach(effect => {
+    const sign = effect.adjustedImpactPct >= 0 ? '+' : '';
+    const stackText = effect.hits > 1 ? ` (x${effect.hits} stacked)` : '';
+    parts.push(`${effect.itemName} ${sign}${effect.adjustedImpactPct.toFixed(0)}%${stackText}`);
+  });
+  const fatigueText = `Market Fatigue: ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}% Stagnation`;
+  return `${fatigueText} | ${parts.join(' | ')}`;
+}
+
 /**
- * Advance the game by one day. This function should update item
- * prices (possibly using random fluctuations or news event impacts),
- * generate new news on a schedule and increment the day/week/year.
+ * Advance the game by one day ("Rest"). Applies energy-based market
+ * fatigue to the daily roll, updates prices and restores energy.
  */
 function nextDay() { 
   updateNetWorth(); 
@@ -3560,22 +3820,39 @@ function nextDay() {
     if (!isShopItemUnlocked(entry.itemId)) return;
     previousPrices.set(entry.itemId, Number(entry.price) || 0);
   });
+  const fatigue = getFatigueFromEnergy();
+  state.lastRollFatiguePercent = fatigue.fatiguePercent;
+  state.lastRollImpactMultiplier = fatigue.impactMultiplier;
+  addMessage(
+    `Market fatigue applied: ${fatigue.fatiguePercent}% reduced roll impact from leftover energy (${fatigue.energy}/${fatigue.energyMax}).`,
+    { speaker: 'farmer', category: 'economy', priority: 'normal' }
+  );
+
+  // Roll the daily market slots before prices are updated.
+  const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier);
+  const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
+  if (dailyRoll.picks.length > 0) {
+    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent);
+    addMessage(`Market roll: ${rollSummary}`, {
+      speaker: 'farmer',
+      category: 'economy',
+      priority: 'high'
+    });
+  }
+
   // Advance day counter
   state.player.day += 1;
   lowEnergyNoticeDay = null;
   ensurePlayerProgressState();
   state.player.energy = state.player.energyMax;
+  state.dayActionCount = 0;
   // Determine the day of week for the new day (0=Mon,..6=Sun)
   const dowIndex = (state.player.day - 1) % 7;
   // Handle start of a new week (Monday) for days beyond the first
   if (dowIndex === 0 && state.player.day !== 1) {
     state.player.week += 1;
   }
-  // On Thursdays (dowIndex 3) generate news events for this week if not already generated
-  if (dowIndex === 3) {
-    generateNewsEvents();
-  }
-  // Update item prices – accumulate for average, apply random fluctuation and news impact
+  // Update item prices – accumulate for average, apply random fluctuation and slot-roll impact.
   state.shop.forEach(entry => {
     if (!isShopItemUnlocked(entry.itemId)) return;
     // Accumulate the current price into priceSum and increment daysCount
@@ -3584,32 +3861,12 @@ function nextDay() {
     // Apply random ±5% fluctuation
     const randomFactor = 1 + (Math.random() * 0.1 - 0.05);
     entry.price *= randomFactor;
-    // Apply active news modifiers. Events may specify 'impact' as a percentage
-    // or a 'multiplier'. Determine the factor accordingly.
-    const item = state.items.find(it => it.id === entry.itemId);
-    if (item) {
-      state.newsEvents.forEach(event => {
-        let factor = 1;
-      if (event.affects && event.affects === item.id) {
-          if (typeof event.impact === 'number') {
-            factor = 1 + (event.impact / 100);
-          } else if (typeof event.multiplier === 'number') {
-            factor = event.multiplier;
-          }
-          entry.price *= factor;
-        }
-      });
-    }
     // Keep price within reasonable bounds
     entry.price = Math.max(0.01, entry.price);
   });
-  // Decrement daysLeft for news events and remove expired ones
-  state.newsEvents = state.newsEvents.filter(event => {
-    if (typeof event.daysLeft === 'number') {
-      event.daysLeft -= 1;
-      return event.daysLeft > 0;
-    }
-    return true;
+  applyDailyMarketRollToShop(dailyRoll);
+  state.shop.forEach(entry => {
+    entry.price = Math.max(0.01, Number(entry.price) || 0.01);
   });
   // Recalculate net worth (cash + inventory + grid item value)
   updateNetWorth();
@@ -3628,10 +3885,18 @@ function nextDay() {
     });
   });
   emitEconomyAlert(priceMoves);
-  // Save active news events and history
-  saveToStorage('newsEvents', state.newsEvents);
-  saveToStorage('newsHistory', state.newsHistory);
-  // Provide a single contextual tip or reminder for the day
+  if (dailyRoll.picks.length > 0) {
+    state.dailyMarketRollHistory.push({
+      day: Number(state.player.day) || 1,
+      week: Number(state.player.week) || 1,
+      picks: dailyRoll.picks,
+      summary: rollSummary
+    });
+    if (state.dailyMarketRollHistory.length > 30) {
+      state.dailyMarketRollHistory = state.dailyMarketRollHistory.slice(-30);
+    }
+  }
+  // Provide a single contextual tip or reminder for the day.
   generateDailyTip(dowIndex);
   evaluateGoals();
   state.dayStartSnapshot = getCurrentDaySnapshot();
@@ -3641,42 +3906,13 @@ function nextDay() {
 
 /**
  * Generate daily tips and facts. Depending on the day of week this will
- * emit messages such as buy/sell recommendations, inventory status,
- * cash on hand and special reminders on Thursdays. To avoid
- * spamming the chat, it selects a few messages each day.
+ * emit messages such as buy/sell recommendations, inventory status and
+ * cash on hand. To avoid spamming the chat, it selects one message each day.
  *
- * @param {number} dowIndex The zero‑based index of the current day of week (0=Mon..6=Sun)
+ * @param {number} dowIndex The zero-based index of the current day of week (0=Mon..6=Sun)
  */
 function generateDailyTip(dowIndex) {
-  // Thursday: show weekly news in messages
-  if (dowIndex === 3) {
-    const events = state.newsHistory[state.player.week] || [];
-    if (events.length === 0) {
-    addMessage('News: No stories this week.', { speaker: 'farmer', category: 'economy', priority: 'normal' });
-      return;
-    }
-    addMessage('News: New market stories are in.', { speaker: 'farmer', category: 'economy', priority: 'normal' });
-    events.forEach(event => {
-      let impactStr = '';
-      if (typeof event.impact === 'number') {
-        impactStr = (event.impact >= 0 ? '+' : '') + event.impact + '%';
-      } else if (typeof event.multiplier === 'number') {
-        const pct = ((event.multiplier - 1) * 100).toFixed(0);
-        impactStr = (pct >= 0 ? '+' : '') + pct + '%';
-      }
-      let itemName = '';
-      if (event.affects) {
-        const it = state.items.find(itm => itm.id === event.affects);
-        itemName = it ? it.name : String(event.affects);
-      }
-      const detail = [event.headline, itemName ? `Affects ${itemName}` : '', impactStr ? `Impact ${impactStr}` : '']
-        .filter(Boolean)
-        .join(' | ');
-      addMessage(detail, { speaker: 'farmer', category: 'economy', priority: 'normal' });
-    });
-    return;
-  }
-  // Otherwise select one random tip from the optional categories
+  // Select one random tip from the optional categories.
   const optionalTips = [];
   // Suggest buying if price below average price
   let bestBuy = null;
@@ -3871,6 +4107,7 @@ function purchaseGridSlot(index) {
   if (!consumeEnergy(1, 'unlock a grid slot')) {
     return;
   }
+  registerDayAction();
   state.player.cash -= cost;
   state.gridUnlocked[index] = true;
   evaluateGoals();
@@ -3886,6 +4123,7 @@ function mineGridTile(index) {
   if (!consumeEnergy(1, 'mine this tile')) { 
     return true; 
   } 
+  registerDayAction();
   awardPlayerXp(XP_REWARDS.mine);
   const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0; 
   const nextHits = currentHits + 1; 
@@ -3995,6 +4233,7 @@ function waterGridTile(index) {
   if (!consumeEnergy(1, 'water this tile')) {
     return true;
   }
+  registerDayAction();
 
   state.gridWateredDay[index] = state.player.day;
   if (Array.isArray(state.gridWateredCount)) {
@@ -4054,6 +4293,7 @@ function placeItemOnGrid(itemId, cellIndex) {
   if (!consumeEnergy(1, 'plant a seed')) {
     return;
   }
+  registerDayAction();
   state.gridItems[cellIndex] = itemId;
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
@@ -4224,6 +4464,7 @@ function purchaseAndPlaceSelected(cellIndex) {
   if (!consumeEnergy(1, 'plant a seed')) {
     return;
   }
+  registerDayAction();
   if (freeQty > 0) {
     consumeFreePurchases(selectedShopItemId, 1);
   }
@@ -4287,6 +4528,7 @@ function harvestPlant(cellIndex) {
   if (!consumeEnergy(1, 'harvest this plant')) {
     return;
   }
+  registerDayAction();
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
   const basePrice = shopEntry ? shopEntry.price : 0;
   const rarity = getGridRarity(cellIndex) || assignGridRarity(cellIndex);
@@ -4572,6 +4814,20 @@ function attachEventHandlers() {
       }
     });
   }
+  const dailyRollContinueButton = document.getElementById('daily-roll-continue');
+  if (dailyRollContinueButton) {
+    dailyRollContinueButton.addEventListener('click', () => {
+      continueDailyRollModal();
+    });
+  }
+  const dailyRollModal = document.getElementById('daily-roll-modal');
+  if (dailyRollModal) {
+    dailyRollModal.addEventListener('click', (event) => {
+      if (event.target === dailyRollModal) {
+        event.preventDefault();
+      }
+    });
+  }
   document.getElementById('store-cosmetics').onclick = () => {
     currentStoreTab = 'cosmetics';
     renderStore();
@@ -4611,6 +4867,17 @@ function attachEventHandlers() {
     if (isTildePress) {
       event.preventDefault();
       toggleLicenseAndCreator();
+      return;
+    }
+    if (isDailyRollOpen()) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        continueDailyRollModal();
+        return;
+      }
+      if (event.key === 'Tab') return;
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
     if (!isGoalCelebrationOpen()) return;

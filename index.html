@@ -820,6 +820,169 @@
             animation-name: goal-sparkle-ambient;
             animation-timing-function: linear;
         }
+        .daily-roll-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(6, 10, 20, 0.56);
+            z-index: 1260;
+        }
+        .daily-roll-modal.is-open {
+            display: flex;
+            animation: goal-backdrop-fade-in 170ms ease-out;
+        }
+        .daily-roll-panel {
+            width: min(760px, calc(100vw - 24px));
+            background: #d4d0c8;
+            border: 1px solid #808080;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 18px 44px rgba(0, 0, 0, 0.4);
+            padding: 12px;
+        }
+        .daily-roll-title {
+            margin: 0 0 8px;
+            font-size: clamp(18px, 3.8vw, 26px);
+            text-align: center;
+        }
+        .daily-roll-reels {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .daily-roll-reel {
+            border: 1px solid #7f7f7f;
+            background: #070d07;
+            color: #7eff9d;
+            overflow: hidden;
+            position: relative;
+            min-height: 120px;
+        }
+        .daily-roll-reel-window {
+            height: 108px;
+            overflow: hidden;
+            position: relative;
+        }
+        .daily-roll-reel-track {
+            display: flex;
+            flex-direction: column;
+            transform: translateY(0);
+            will-change: transform;
+        }
+        .daily-roll-reel-slot {
+            height: 36px;
+            padding: 3px 4px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+            font-size: 10px;
+            line-height: 1.15;
+        }
+        .daily-roll-reel-slot img {
+            width: 18px;
+            height: 18px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            flex: 0 0 18px;
+        }
+        .daily-roll-reel-slot.mid {
+            background: rgba(29, 127, 29, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(126, 255, 157, 0.4);
+        }
+        .daily-roll-reel-slot.ghost {
+            opacity: 0.66;
+        }
+        .daily-roll-reel.final {
+            border-color: #1d7f1d;
+            box-shadow: inset 0 0 0 1px #0a4d0a;
+        }
+        .daily-roll-reel.duplicate-hit {
+            animation: daily-roll-shake 260ms ease-in-out 2;
+        }
+        .daily-roll-reel-summary {
+            padding: 5px 6px;
+            font-size: 10px;
+            border-top: 1px solid rgba(127, 127, 127, 0.45);
+            color: #9fffb7;
+            min-height: 30px;
+        }
+        .daily-roll-reel-stack {
+            color: #ffe680;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        .daily-roll-fatigue {
+            margin: 0 0 6px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #163b16;
+        }
+        .daily-roll-fatigue-note {
+            margin: 0 0 8px;
+            font-size: 11px;
+            color: #2f2f2f;
+        }
+        .daily-roll-stories {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .daily-roll-story {
+            border: 1px solid #7f7f7f;
+            background: #f7f7f7;
+            padding: 6px;
+            font-size: 11px;
+            line-height: 1.25;
+        }
+        .daily-roll-story h3 {
+            margin: 0 0 4px;
+            font-size: 11px;
+            color: #1f2f1f;
+        }
+        .daily-roll-story p {
+            margin: 0;
+            color: #333;
+        }
+        .daily-roll-story-impact {
+            margin-top: 4px;
+            font-weight: bold;
+            color: #234f23;
+        }
+        .daily-roll-summary {
+            margin: 0 0 8px;
+            font-size: 11px;
+            min-height: 24px;
+            line-height: 1.2;
+        }
+        .daily-roll-spark {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            text-shadow: 0 0 4px rgba(126, 255, 157, 0.45);
+            animation: daily-roll-spark-burst 520ms ease-out forwards;
+        }
+        .daily-roll-continue {
+            width: 100%;
+        }
+        @keyframes daily-roll-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            75% { transform: translateX(-1px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes daily-roll-spark-burst {
+            0% { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.4) rotate(0deg); }
+            15% { opacity: 1; }
+            100% { opacity: 0; transform: translate3d(var(--spark-dx, 0px), var(--spark-dy, -22px), 0) scale(1) rotate(var(--spark-rot, 100deg)); }
+        }
         @keyframes goal-backdrop-fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1281,6 +1444,40 @@
             <button id="goal-celebration-continue" class="button goal-celebration-continue" type="button">Continue</button>
         </div>
     </div>
+    <div id="daily-roll-modal" class="daily-roll-modal" aria-hidden="true">
+        <div class="panel daily-roll-panel" role="dialog" aria-labelledby="daily-roll-title" aria-modal="true">
+            <h2 id="daily-roll-title" class="daily-roll-title">Market Roll</h2>
+            <p id="daily-roll-fatigue" class="daily-roll-fatigue"></p>
+            <p class="daily-roll-fatigue-note">Higher leftover energy reduces both upside and downside movement.</p>
+            <div class="daily-roll-reels">
+                <div id="daily-roll-reel-1" class="daily-roll-reel">
+                    <div class="daily-roll-reel-window">
+                        <div id="daily-roll-track-1" class="daily-roll-reel-track"></div>
+                    </div>
+                    <div id="daily-roll-reel-summary-1" class="daily-roll-reel-summary"></div>
+                </div>
+                <div id="daily-roll-reel-2" class="daily-roll-reel">
+                    <div class="daily-roll-reel-window">
+                        <div id="daily-roll-track-2" class="daily-roll-reel-track"></div>
+                    </div>
+                    <div id="daily-roll-reel-summary-2" class="daily-roll-reel-summary"></div>
+                </div>
+                <div id="daily-roll-reel-3" class="daily-roll-reel">
+                    <div class="daily-roll-reel-window">
+                        <div id="daily-roll-track-3" class="daily-roll-reel-track"></div>
+                    </div>
+                    <div id="daily-roll-reel-summary-3" class="daily-roll-reel-summary"></div>
+                </div>
+            </div>
+            <div class="daily-roll-stories">
+                <div id="daily-roll-story-1" class="daily-roll-story"></div>
+                <div id="daily-roll-story-2" class="daily-roll-story"></div>
+                <div id="daily-roll-story-3" class="daily-roll-story"></div>
+            </div>
+            <p id="daily-roll-summary" class="daily-roll-summary"></p>
+            <button id="daily-roll-continue" class="button daily-roll-continue" type="button">Continue</button>
+        </div>
+    </div>
         <div id="bottom-bar">
             <!-- Messages panel -->
             <div id="messages-panel" class="panel">
@@ -1299,7 +1496,7 @@
                     <div id="chat-log"></div>
                 </div>
             </div>
-            <button id="next-day" class="button">Next Day</button>
+            <button id="next-day" class="button">Rest</button>
         </div>
     </div>
     <div id="license-note" class="license-note" aria-label="license note" aria-hidden="true">
@@ -1310,7 +1507,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=55"></script>
+    <script src="main.js?v=57"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
