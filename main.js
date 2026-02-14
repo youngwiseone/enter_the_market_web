@@ -1010,12 +1010,11 @@ function createDailyRollSlotNode(item, extraClass = '') {
   const slot = document.createElement('div');
   slot.className = `daily-roll-reel-slot ${extraClass}`.trim();
   const icon = document.createElement('img');
-  const label = document.createElement('span');
   icon.src = item?.harvestImage || '';
   icon.alt = item?.itemName || 'Item';
-  label.textContent = item?.itemName || 'Unknown';
+  icon.title = item?.itemName || 'Unknown';
+  icon.loading = 'eager';
   slot.appendChild(icon);
-  slot.appendChild(label);
   return slot;
 }
 
@@ -1026,7 +1025,8 @@ function triggerDailyRollDuplicateEffects(reelEl) {
   reelEl.classList.add('duplicate-hit');
   reelEl.addEventListener('animationend', () => reelEl.classList.remove('duplicate-hit'), { once: true });
   const sparkImages = ['resources/effects/sparkle_gold_01.png', 'resources/effects/sparkle_gold_02.png'];
-  for (let i = 0; i < 7; i += 1) {
+  const sparkCount = FX_STATE.reduceMotion ? 5 : 11;
+  for (let i = 0; i < sparkCount; i += 1) {
     const spark = document.createElement('img');
     spark.className = 'daily-roll-spark';
     spark.src = sparkImages[Math.floor(Math.random() * sparkImages.length)];
@@ -1041,15 +1041,39 @@ function triggerDailyRollDuplicateEffects(reelEl) {
   }
 }
 
-function renderDailyRollStory(storyEl, pick, itemEffect) {
-  if (!storyEl || !pick) return;
-  const sign = (itemEffect?.adjustedImpactPct || 0) >= 0 ? '+' : '';
-  const stackText = (itemEffect?.hits || 0) > 1 ? ` | x${itemEffect.hits} stacked` : '';
-  storyEl.innerHTML = `
-    <h3>${pick.storyHeadline || pick.itemName}</h3>
-    <p>${pick.storyBody || ''}</p>
-    <div class="daily-roll-story-impact">${pick.itemName}: ${sign}${(itemEffect?.adjustedImpactPct || 0).toFixed(0)}%${stackText}</div>
-  `;
+function renderDailyRollReelSummary(summaryEl, pick, itemEffect) {
+  if (!summaryEl || !pick) return;
+  const impactPct = Number(itemEffect?.adjustedImpactPct) || 0;
+  const sign = impactPct >= 0 ? '+' : '';
+  const stackCount = Math.max(1, Number(itemEffect?.hits) || 1);
+  const trendClass = impactPct >= 0 ? 'positive' : 'negative';
+
+  summaryEl.innerHTML = '';
+
+  const icon = document.createElement('img');
+  icon.className = 'daily-roll-result-icon';
+  icon.src = pick.harvestImage || '';
+  icon.alt = pick.itemName || 'Item';
+  icon.loading = 'eager';
+
+  const name = document.createElement('span');
+  name.className = 'daily-roll-result-name';
+  name.textContent = pick.itemName || 'Unknown';
+
+  const impact = document.createElement('span');
+  impact.className = `daily-roll-impact-chip ${trendClass}`;
+  impact.textContent = `${sign}${impactPct.toFixed(0)}%`;
+
+  summaryEl.appendChild(icon);
+  summaryEl.appendChild(name);
+  summaryEl.appendChild(impact);
+
+  if (stackCount > 1) {
+    const stack = document.createElement('span');
+    stack.className = 'daily-roll-reel-stack';
+    stack.textContent = `x${stackCount}`;
+    summaryEl.appendChild(stack);
+  }
 }
 
 function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
@@ -1066,7 +1090,6 @@ function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
   const reelEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-reel-${i}`)).filter(Boolean);
   const trackEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-track-${i}`)).filter(Boolean);
   const reelSummaryEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-reel-summary-${i}`)).filter(Boolean);
-  const storyEls = [1, 2, 3].map(i => document.getElementById(`daily-roll-story-${i}`)).filter(Boolean);
 
   if (fatigueEl) {
     fatigueEl.textContent = `Market Fatigue: ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}% Stagnation`;
@@ -1076,11 +1099,14 @@ function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
     if (!track) return;
     const reelEl = reelEls[index];
     const summaryBox = reelSummaryEls[index];
-    const storyEl = storyEls[index];
     const finalPick = rollResult.picks[index] || rollResult.picks[rollResult.picks.length - 1];
     const itemEffect = rollResult.byItem.get(finalPick.itemId);
     track.innerHTML = '';
-    if (reelEl) reelEl.classList.remove('final');
+    if (summaryBox) summaryBox.innerHTML = '';
+    if (reelEl) {
+      reelEl.classList.remove('final');
+      reelEl.classList.remove('duplicate-hit');
+    }
 
     let spins = 0;
     const spinIntervalMs = FX_STATE.reduceMotion ? 90 : 56;
@@ -1100,11 +1126,8 @@ function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
         window.clearInterval(timer);
         if (reelEl) reelEl.classList.add('final');
         if (summaryBox) {
-          const sign = (itemEffect?.adjustedImpactPct || 0) >= 0 ? '+' : '';
-          const stackText = (itemEffect?.hits || 0) > 1 ? `<span class="daily-roll-reel-stack">x${itemEffect.hits} stacked</span>` : '';
-          summaryBox.innerHTML = `${finalPick.itemName} ${sign}${(itemEffect?.adjustedImpactPct || 0).toFixed(0)}% ${stackText}`;
+          renderDailyRollReelSummary(summaryBox, finalPick, itemEffect);
         }
-        renderDailyRollStory(storyEl, finalPick, itemEffect);
         if ((itemEffect?.hits || 0) > 1 && reelEl) {
           triggerDailyRollDuplicateEffects(reelEl);
         }
@@ -3800,10 +3823,10 @@ function getDailyRollSummaryText(rollResult, fatiguePercent = 0) {
   const parts = [];
   Array.from(rollResult.byItem.values()).forEach(effect => {
     const sign = effect.adjustedImpactPct >= 0 ? '+' : '';
-    const stackText = effect.hits > 1 ? ` (x${effect.hits} stacked)` : '';
+    const stackText = effect.hits > 1 ? ` x${effect.hits}` : '';
     parts.push(`${effect.itemName} ${sign}${effect.adjustedImpactPct.toFixed(0)}%${stackText}`);
   });
-  const fatigueText = `Market Fatigue: ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}% Stagnation`;
+  const fatigueText = `Fatigue ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}%`;
   return `${fatigueText} | ${parts.join(' | ')}`;
 }
 

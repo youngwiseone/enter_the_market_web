@@ -1,95 +1,82 @@
-# Daily Roll + Market Fatigue Plan (Planning Only)
+# Task Plan: Cleaner Rest Day Market Roll UX (Planning Only)
 
-Goal: improve the Rest/day-roll experience so it is exciting, clearly communicated, and story-rich, while keeping anti-skip behavior intuitive.
+## Objective
+Refine the Rest Day market roll so it is fast to read and visually exciting:
+- Bigger item images
+- Remove long story text and duplicates
+- Show concise impact tags like `+20%` / `-8%` beside each item icon
+- Keep or increase animation juice while maintaining readability
 
-## Scope
-- Planning only for this update.
-- Do not implement code changes in this step.
+No implementation in this task; planning only.
 
-## Locked Direction
-1. Keep **Market Fatigue** (no cash fee).
-2. Keep **news/story articles** visible under roll outcomes.
-3. Use **item harvest icons** (not seed icons) in the roll UI.
-4. Upgrade roll presentation with stronger reel animation and duplicate-hit celebration effects.
+## Current Pain Points
+- Modal currently shows both per-reel summaries and full story cards (`headline` + `article`), creating too much text.
+- News templates can repeat wording and feel duplicated between reels.
+- Important information (actual percent change) is diluted by paragraph text.
 
-## Market Fatigue (Energy-Based)
+## Target UX (What "Better" Means)
+- Primary focus is icon + impact number.
+- Each reel resolves clearly, with energetic presentation.
+- Text is minimal and non-redundant.
+- Player can identify all 3 outcomes at a glance, even with richer animation.
 
-### Rules
-- Market Fatigue is driven by **remaining energy percent at Rest**.
-- Formula direction:
-  - `energyRatio = energy / energyMax` at end of day.
-  - roll impact multiplier becomes `1 - energyRatio`.
-- Example:
-  - `5 / 10` energy left => `50%` less roll impact.
-  - `0 / 10` energy left => full roll impact (no stagnation).
-  - `10 / 10` energy left => `100%` stagnation (no roll impact change).
-- Important behavior:
-  - This does **not** force negative outcomes.
-  - It dampens both positive and negative effects equally (more stagnant market).
+## Proposed UI Direction
+- Keep 3 reels, but simplify each result to:
+  - Large item icon
+  - Item name (short)
+  - Impact chip: `+20%`, `-12%`, and optional stack marker `x2`
+- Remove long story blocks from the modal body.
+- Keep one short top-level line for fatigue only.
+- Keep one short bottom summary line (optional), no full article text.
+- Keep strong visual payoff: clearer settle effects, highlight pulses, and impact emphasis.
 
-### Communication Requirements
-- Must always show the computed stagnation in the modal:
-  - badge: `Market Fatigue: XX% Stagnation`
-  - subtext: `Higher leftover energy reduces both upside and downside movement.`
-- Must log a clear chat line on rest with exact value:
-  - `Market fatigue applied: XX% reduced roll impact from leftover energy.`
+## Data/Logic Direction
+- Keep underlying roll math unchanged for this pass (impact generation, stacking, fatigue scaling).
+- Change display model only:
+  - Stop rendering `storyHeadline`/`storyBody` in modal.
+  - Use percent impact from existing `itemEffect.adjustedImpactPct`.
+- If duplicates occur (same item rolled multiple times), show one clear stack indicator near impact.
 
-### Optional Streak Variant (if needed)
-- Not required for current direction.
-- Player mastery/abuse at later levels is acceptable by design.
+## Planned Implementation Steps (Next Task)
+1. `main.js`: simplify modal rendering
+- Update `showDailyMarketRollModal(...)` to render concise result-only UI.
+- Remove/disable `renderDailyRollStory(...)` usage in modal flow.
+- Ensure final text per reel is short: `<Item> <+/-X%> [xN]`.
 
-## News Story Layer (Required)
+2. `index.html`: simplify modal structure
+- Remove or hide `daily-roll-stories` section.
+- Keep fatigue line + reels + continue button.
+- Keep accessibility labels intact for dialog and button.
 
-### Requirement
-- Keep/restore story text under roll results so market changes feel narrative, not purely mechanical.
+3. `index.html` CSS block: visual rebalance
+- Increase reel item image size.
+- Reduce visual weight of paragraph text elements.
+- Add clear impact-chip style (positive/negative colors).
+- Maintain responsive layout for mobile.
 
-### Format
-- Under each rolled item, show:
-  - headline (short)
-  - 1 sentence article/body
-  - impact summary (`+12%`, `-8%`, stacked note if applicable)
+4. `main.js`: increase animation juice without text noise
+- Keep current timing unless pacing feels slow after UI cleanup.
+- Enhance settle/pulse/highlight moments so results feel impactful.
+- Keep reduced-motion branch readable and less intense.
 
-### Source
-- Use existing news templates/data where possible, mapped to rolled items.
-- If same item is rolled multiple times, article can mention compounding pressure.
+5. Optional (if still noisy): tighten message log output
+- Shorten `addMessage("Market roll: ...")` format to avoid long chat spam.
 
-## Roll UI Content (Icon + Text)
+## Acceptance Criteria
+- Rest Day roll modal shows no paragraph story text.
+- Each resolved reel prominently shows icon + `%` impact.
+- Duplicate item rolls do not produce repeated long text; stack shown as compact marker.
+- Animation feels at least as lively as current version, ideally richer.
+- No change to economic calculations (only presentation and pacing).
 
-### Visual Content Per Reel
-- Harvest item icon (from `harvestImage` path).
-- Item name.
-- Impact direction/value.
+## Risks / Watchouts
+- Removing stories may reduce flavor; can reintroduce as optional tooltip later.
+- Larger icons could overflow on small screens if reel sizing is not clamped.
+- Extra effects can become noisy if not visually prioritized around final `%` result.
 
-### Why
-- Faster recognition than text-only.
-- More exciting result reveal.
-
-## Roll Animation Upgrade
-
-### Reel Motion
-- Show vertical reel illusion with items visible above and below center.
-- Reel should decelerate into final result (not instant swap text).
-
-### Duplicate-Hit Feedback
-- If same item appears multiple times:
-  - final result cards shake briefly.
-  - burst/sparkle effect triggers.
-  - stacked indicator appears (`x2`/`x3 stacked`).
-
-### Priority
-- Motion must remain readable on desktop and mobile.
-- Respect reduced-motion preference with simplified fallback.
-
-## Data/State Planning
-- Add/track:
-  - `lastRollFatiguePercent` (derived from end-of-day energy ratio).
-  - `lastRollImpactMultiplier` (e.g. `0.5` when 50% stagnation).
-  - rolled item presentation data:
-    - `itemId`, `itemName`, `harvestImage`, `impactPct`, `stackCount`, `storyHeadline`, `storyBody`
-
-## Acceptance Criteria (Planning)
-1. Market Fatigue is computed from end-of-day energy percent and clearly shown to player.
-2. Roll modal includes narrative news text for each result.
-3. Reels display harvest icons and not seed icons.
-4. Reel animation clearly shows scrolling items above/below center.
-5. Duplicate rolls produce distinct shake/effect/stack feedback.
+## QA Checklist (After Implementation)
+- Trigger multiple rests and confirm short, readable outcomes each time.
+- Validate positive/negative impact labels match actual applied price changes.
+- Validate duplicate rolls show stack indicator and correct final impact.
+- Check mobile width behavior for icon size and text wrapping.
+- Check reduced-motion mode still works and remains clear with toned-down effects.
