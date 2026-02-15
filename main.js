@@ -5335,17 +5335,44 @@ function clearShopSelection() {
 } 
 
 function updateToolButtons() {
+  const desktopShortcuts = !!(
+    window.matchMedia
+    && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !window.matchMedia('(max-width: 900px)').matches
+  );
+  const shortcutByTool = {
+    [TOOL_GLOVE]: 'Z',
+    [TOOL_WATERING]: 'X',
+    [TOOL_PICKAXE]: 'C'
+  };
+  if (document.body) {
+    document.body.classList.toggle('has-desktop-shortcuts', desktopShortcuts);
+  }
   document.querySelectorAll('.tool-button').forEach(button => {
     const tool = button.getAttribute('data-tool');
     const unlocked = isToolUnlocked(tool);
+    const baseTitle = getToolDisplayName(tool);
+    const shortcut = shortcutByTool[tool] || '';
+    let keyLabel = button.querySelector('.tool-key-label');
+    if (!keyLabel) {
+      keyLabel = document.createElement('span');
+      keyLabel.className = 'tool-key-label';
+      button.appendChild(keyLabel);
+    }
+    keyLabel.textContent = shortcut ? `(${shortcut})` : '';
     button.disabled = !unlocked;
-    button.title = unlocked ? (button.title || '') : 'Locked by goal';
+    button.title = unlocked ? baseTitle : `${baseTitle} (Locked by goal)`;
     if (tool === state.activeTool) {
       button.classList.add('active');
     } else {
       button.classList.remove('active');
     }
   });
+  const restButton = document.getElementById('next-day');
+  if (restButton) {
+    restButton.textContent = desktopShortcuts ? 'Rest (Space)' : 'Rest';
+    restButton.title = 'Rest';
+  }
 }
 
 function updateCursorForTool() {
@@ -5851,6 +5878,12 @@ function attachEventHandlers() {
     messageJustEmitted = false;
   }, true);
   document.addEventListener('keydown', (event) => {
+    const target = event.target;
+    const isTextInputTarget = target instanceof Element && (
+      target.closest('input, textarea, select') !== null
+      || target.getAttribute('contenteditable') === 'true'
+    );
+    const desktopShortcuts = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
     const isTildePress = event.key === '~' || (event.key === '`' && event.shiftKey) || (event.code === 'Backquote' && event.shiftKey);
     if (isTildePress) {
       event.preventDefault();
@@ -5868,15 +5901,42 @@ function attachEventHandlers() {
       event.stopPropagation();
       return;
     }
-    if (!isGoalCelebrationOpen()) return;
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (isGoalCelebrationOpen()) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        continueGoalCelebration();
+        return;
+      }
+      if (event.key === 'Tab') return;
       event.preventDefault();
-      continueGoalCelebration();
+      event.stopPropagation();
       return;
     }
-    if (event.key === 'Tab') return;
-    event.preventDefault();
-    event.stopPropagation();
+    if (!desktopShortcuts || isTextInputTarget) return;
+    const summaryModal = document.getElementById('day-summary-modal');
+    const isDaySummaryOpen = !!(summaryModal && summaryModal.classList.contains('is-open'));
+    if (isDaySummaryOpen) return;
+    const key = String(event.key || '').toLowerCase();
+    if (key === 'z') {
+      event.preventDefault();
+      setActiveTool(TOOL_GLOVE);
+      return;
+    }
+    if (key === 'x') {
+      event.preventDefault();
+      setActiveTool(TOOL_WATERING);
+      return;
+    }
+    if (key === 'c') {
+      event.preventDefault();
+      setActiveTool(TOOL_PICKAXE);
+      return;
+    }
+    if (event.code === 'Space' || event.key === ' ') {
+      event.preventDefault();
+      nextDay();
+      return;
+    }
   }, true);
 
 }
@@ -5928,8 +5988,14 @@ async function main() {
     }); 
   } 
   initFxLayer(); 
-  window.addEventListener('resize', updateGridSize); 
-  window.addEventListener('orientationchange', updateGridSize); 
+  window.addEventListener('resize', () => {
+    updateGridSize();
+    updateToolButtons();
+  }); 
+  window.addEventListener('orientationchange', () => {
+    updateGridSize();
+    updateToolButtons();
+  }); 
   if ('ResizeObserver' in window) {
     const observedElements = ['market-header', 'market-table-container', 'messages-history-panel']
       .map(id => document.getElementById(id))
