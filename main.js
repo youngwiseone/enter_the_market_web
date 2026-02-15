@@ -1575,6 +1575,8 @@ const TOOL_GLOVE = 'glove';
 const TOOL_WATERING = 'watering';
 const TOOL_PICKAXE = 'pickaxe';
 const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
+const GRID_DIMENSION = 7;
+const GRID_CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION;
 const PLAYER_LEVEL_CAP = 20;
 const XP_REWARDS = {
   plant: 2,
@@ -1976,7 +1978,7 @@ function initialiseState() {
     state.inventory = clone(DEFAULT_DATA.inventory);
     saveState();
   }
-  // Initialise the Minesweeper grid state. A 9×9 grid has 81 cells,
+  // Initialise the Minesweeper grid state. A 7x7 grid has 49 cells,
   // each represented by whether it has been purchased/unlocked and what item it contains.
   // Earlier versions stored a 'grid' boolean array indicating revealed cells. To support
   // purchased grid slots and items, we now maintain two parallel arrays:
@@ -1993,30 +1995,56 @@ function initialiseState() {
   state.gridMiningHits = loadFromStorage('gridMiningHits', null);
   state.gridRarity = loadFromStorage('gridRarity', null);
   state.activeTool = loadFromStorage('activeTool', null);
-  if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== 81) {
-    if (Array.isArray(oldGrid) && oldGrid.length === 81) {
-      state.gridUnlocked = oldGrid.map(val => !!val);
+  if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridUnlocked) && state.gridUnlocked.length >= GRID_CELL_COUNT) {
+      state.gridUnlocked = state.gridUnlocked.slice(0, GRID_CELL_COUNT).map(val => !!val);
+    } else if (Array.isArray(oldGrid) && oldGrid.length >= GRID_CELL_COUNT) {
+      state.gridUnlocked = oldGrid.slice(0, GRID_CELL_COUNT).map(val => !!val);
     } else {
-      state.gridUnlocked = Array(81).fill(false);
+      state.gridUnlocked = Array(GRID_CELL_COUNT).fill(false);
     }
   }
-  if (!Array.isArray(state.gridItems) || state.gridItems.length !== 81) {
-    state.gridItems = Array(81).fill(null);
+  if (!Array.isArray(state.gridItems) || state.gridItems.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridItems) && state.gridItems.length >= GRID_CELL_COUNT) {
+      state.gridItems = state.gridItems.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridItems = Array(GRID_CELL_COUNT).fill(null);
+    }
   }
-  if (!Array.isArray(state.gridPlantedDay) || state.gridPlantedDay.length !== 81) {
-    state.gridPlantedDay = Array(81).fill(null);
+  if (!Array.isArray(state.gridPlantedDay) || state.gridPlantedDay.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridPlantedDay) && state.gridPlantedDay.length >= GRID_CELL_COUNT) {
+      state.gridPlantedDay = state.gridPlantedDay.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridPlantedDay = Array(GRID_CELL_COUNT).fill(null);
+    }
   }
-  if (!Array.isArray(state.gridWateredDay) || state.gridWateredDay.length !== 81) {
-    state.gridWateredDay = Array(81).fill(null);
+  if (!Array.isArray(state.gridWateredDay) || state.gridWateredDay.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridWateredDay) && state.gridWateredDay.length >= GRID_CELL_COUNT) {
+      state.gridWateredDay = state.gridWateredDay.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridWateredDay = Array(GRID_CELL_COUNT).fill(null);
+    }
   }
-  if (!Array.isArray(state.gridWateredCount) || state.gridWateredCount.length !== 81) {
-    state.gridWateredCount = Array(81).fill(0);
+  if (!Array.isArray(state.gridWateredCount) || state.gridWateredCount.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridWateredCount) && state.gridWateredCount.length >= GRID_CELL_COUNT) {
+      state.gridWateredCount = state.gridWateredCount.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridWateredCount = Array(GRID_CELL_COUNT).fill(0);
+    }
   }
-  if (!Array.isArray(state.gridMiningHits) || state.gridMiningHits.length !== 81) {
-    state.gridMiningHits = Array(81).fill(0);
+  if (!Array.isArray(state.gridMiningHits) || state.gridMiningHits.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridMiningHits) && state.gridMiningHits.length >= GRID_CELL_COUNT) {
+      state.gridMiningHits = state.gridMiningHits.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridMiningHits = Array(GRID_CELL_COUNT).fill(0);
+    }
   }
-  if (!Array.isArray(state.gridRarity) || state.gridRarity.length !== 81) {
-    state.gridRarity = Array(81).fill(null);
+  if (!Array.isArray(state.gridRarity) || state.gridRarity.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridRarity) && state.gridRarity.length >= GRID_CELL_COUNT) {
+      state.gridRarity = state.gridRarity.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
+    }
   }
   if (!TOOL_LIST.includes(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
@@ -2142,13 +2170,13 @@ async function resetGame() {
   // entries from previous sessions could persist if state was not fully
   // reinitialised. Ensure both the unlocked flags and placed items
   // arrays are fresh for a new game.
-  state.gridUnlocked = Array(81).fill(false);
-  state.gridItems    = Array(81).fill(null);
-  state.gridPlantedDay = Array(81).fill(null);
-  state.gridWateredDay = Array(81).fill(null);
-  state.gridWateredCount = Array(81).fill(0);
-  state.gridMiningHits = Array(81).fill(0);
-  state.gridRarity = Array(81).fill(null);
+  state.gridUnlocked = Array(GRID_CELL_COUNT).fill(false);
+  state.gridItems    = Array(GRID_CELL_COUNT).fill(null);
+  state.gridPlantedDay = Array(GRID_CELL_COUNT).fill(null);
+  state.gridWateredDay = Array(GRID_CELL_COUNT).fill(null);
+  state.gridWateredCount = Array(GRID_CELL_COUNT).fill(0);
+  state.gridMiningHits = Array(GRID_CELL_COUNT).fill(0);
+  state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
   state.activeTool = TOOL_GLOVE;
   state.goals = clone(DEFAULT_DATA.goals);
   state.goalsClaimed = {};
@@ -2270,6 +2298,13 @@ function renderPlayerLevelStatus() {
   if (xpFill) {
     xpFill.style.width = `${percent}%`;
   }
+  const xpHoverText = atCap ? 'MAX LEVEL' : `${currentXp} / ${xpToNext} XP`;
+  if (levelLabel) {
+    levelLabel.title = xpHoverText;
+  }
+  if (xpBar) {
+    xpBar.title = xpHoverText;
+  }
   if (xpBar) {
     xpBar.setAttribute('aria-valuenow', String(atCap ? 0 : currentXp));
     xpBar.setAttribute('aria-valuemax', String(atCap ? 1 : xpToNext));
@@ -2384,8 +2419,8 @@ function renderMarket() {
   if (selectionPulseId !== null) { 
     selectionPulseId = null; 
   } 
-  // Build the 9×9 farm. Each cell may be locked (unpurchased), unlocked and empty, or contain an item.
-  for (let i = 0; i < 81; i++) { 
+  // Build the 7x7 farm. Each cell may be locked (unpurchased), unlocked and empty, or contain an item.
+  for (let i = 0; i < GRID_CELL_COUNT; i++) { 
     const cell = document.createElement('div'); 
     cell.className = 'grid-cell'; 
     cell.dataset.index = String(i); 
@@ -2752,6 +2787,10 @@ function renderGoals() {
   const filteredGoals = goals.filter(goal => goalMatchesFilter(goal, currentGoalFilter));
   filteredGoals.forEach(goal => {
     const row = document.createElement('tr');
+    row.dataset.goalId = goal.id || '';
+    if (highlightedGoalId && goal.id === highlightedGoalId) {
+      row.classList.add('goal-row-highlight');
+    }
     const goalCell = document.createElement('td');
     const conditions = getGoalConditions(goal);
     const metricLabel = conditions.length > 1
@@ -2784,6 +2823,12 @@ function renderGoals() {
     empty.style.marginTop = '6px';
     empty.textContent = 'No goals match this filter yet.';
     container.appendChild(empty);
+  }
+  if (highlightedGoalId) {
+    const highlightedRow = table.querySelector(`tr[data-goal-id="${highlightedGoalId}"]`);
+    if (highlightedRow) {
+      highlightedRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
   }
 }
 
@@ -2874,19 +2919,28 @@ function renderCraftingStore(container) {
  *
  * @param {string} tabName The identifier of the tab to display
  */
-function showTab(tabName) {
-    const marketTable = document.getElementById('market-table-container');
-    const storePanel = document.getElementById('store');
-    const goalsPanel = document.getElementById('goals-panel');
+function updateMainViewVisibility() {
+  const marketTable = document.getElementById('market-table-container');
+  const storePanel = document.getElementById('store');
+  const goalsPanel = document.getElementById('goals-panel');
+  const messagesPanel = document.getElementById('messages-history-panel');
+  const isMarket = activeMainTab === 'market';
+  const isStore = activeMainTab === 'store';
+  const isGoals = activeMainTab === 'goals';
+  const isMessages = activeMainTab === 'messages';
+  if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
+  if (storePanel) storePanel.style.display = isStore ? 'block' : 'none';
+  if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
+  if (messagesPanel) messagesPanel.style.display = isMessages ? 'flex' : 'none';
+}
+
+function updateMainTabButtons() {
   const marketTab = document.getElementById('tab-market');
   const storeTab = document.getElementById('tab-store');
   const goalsTab = document.getElementById('tab-goals');
-  const isMarket = tabName === 'market';
-  const isStore = tabName === 'store';
-  const isGoals = tabName === 'goals';
-    if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
-  if (storePanel) storePanel.style.display = isStore ? 'block' : 'none';
-  if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
+  const isMarket = activeMainTab === 'market';
+  const isStore = activeMainTab === 'store';
+  const isGoals = activeMainTab === 'goals';
   if (marketTab) {
     marketTab.classList.toggle('active', isMarket);
     marketTab.setAttribute('aria-selected', isMarket ? 'true' : 'false');
@@ -2899,14 +2953,43 @@ function showTab(tabName) {
     goalsTab.classList.toggle('active', isGoals);
     goalsTab.setAttribute('aria-selected', isGoals ? 'true' : 'false');
   }
+}
+
+function toggleMessagesPanel() {
+  if (activeMainTab === 'messages') {
+    showTab(tabBeforeMessages || 'market');
+    return;
+  }
+  tabBeforeMessages = activeMainTab;
+  activeMainTab = 'messages';
+  updateMainViewVisibility();
+  updateMainTabButtons();
+  const chatLog = document.getElementById('chat-log');
+  if (chatLog) {
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+  updateGridSize();
+}
+
+function showTab(tabName) {
+  if (tabName !== 'messages') {
+    tabBeforeMessages = tabName;
+  }
+  activeMainTab = tabName;
+  if (tabName === 'store') {
+    markStoreUnlocksSeen();
+  }
+  updateMainViewVisibility();
+  updateMainTabButtons();
   renderMarket();
   renderEnergyBar();
-  if (isStore) {
+  if (tabName === 'store') {
     renderStore();
   }
-  if (isGoals) {
+  if (tabName === 'goals') {
     renderGoals();
   }
+  updateTabNotificationBadges();
   updateGridSize();
 }
 
@@ -2919,6 +3002,7 @@ function showTab(tabName) {
 function renderAll() {
   renderHUD();
   renderEnergyBar();
+  renderProfileGoalSummary();
   // Always update market to keep grid/table in sync, even if hidden.
   renderMarket();
   // Update store only when visible.
@@ -2930,7 +3014,26 @@ function renderAll() {
   if (goalsEl && window.getComputedStyle(goalsEl).display !== 'none') {
     renderGoals();
   }
+  updateMainViewVisibility();
+  updateMainTabButtons();
+  updateTabNotificationBadges();
   updateGridSize();
+}
+
+function updateSidePanelScrollArea() {
+  const panelIds = ['market-table-container', 'store', 'goals-panel', 'messages-history-panel'];
+  panelIds.forEach(id => {
+    const panel = document.getElementById(id);
+    if (!panel) return;
+    panel.style.height = '';
+    panel.style.maxHeight = '';
+    panel.style.overflowY = '';
+  });
+}
+
+function installSidePanelScrollHandlers() {
+  // Native overflow scrolling is more reliable than manual wheel/touch handling
+  // once panel sizing is constrained correctly by CSS.
 }
 
 function updateGridSize() { 
@@ -2938,43 +3041,36 @@ function updateGridSize() {
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value)); 
   const gridContainer = document.getElementById('grid-container'); 
   const farmPanel = document.getElementById('farm-panel'); 
-  const bottomBar = document.getElementById('bottom-bar'); 
-  const nextDay = document.getElementById('next-day');
+  const marketLayout = document.getElementById('market-layout');
 
   if (!gridContainer || !farmPanel) return;
 
-  const layoutHeight = Math.max(320, window.innerHeight - 20);
+  const layoutHeight = Math.max(320, (marketLayout ? marketLayout.clientHeight : window.innerHeight) - 8);
   const isMobileLayout = window.matchMedia('(max-width: 900px)').matches;
-  const nextDayHeight = nextDay ? nextDay.offsetHeight : 44;
-
-  const minMessages = isMobileLayout ? 84 : 108;
-  const maxMessages = isMobileLayout ? 126 : 180;
-  let targetMessagesHeight = clamp(Math.round(layoutHeight * (isMobileLayout ? 0.27 : 0.30)), minMessages, maxMessages);
-  root.style.setProperty('--messages-height', `${targetMessagesHeight}px`);
-
-  // Force a layout pass so measurements reflect current message height.
-  const measuredBottomBar = bottomBar ? bottomBar.offsetHeight : (targetMessagesHeight + nextDayHeight + 12);
   const farmChrome = Math.max(0, farmPanel.offsetHeight - gridContainer.offsetHeight);
-  const desktopMinimumTarget = Math.floor(window.innerWidth / 3);
-  const minGridSize = isMobileLayout ? 160 : Math.max(260, desktopMinimumTarget);
-  const maxGridSize = isMobileLayout ? Math.floor(window.innerWidth - 40) : Math.floor(window.innerWidth * 0.58);
-  const verticalPadding = isMobileLayout ? 30 : 34;
-
-  let availableGridByHeight = layoutHeight - measuredBottomBar - farmChrome - verticalPadding;
-  if (availableGridByHeight < minGridSize) {
-    const deficit = minGridSize - availableGridByHeight;
-    targetMessagesHeight = clamp(targetMessagesHeight - deficit, minMessages, maxMessages);
-    root.style.setProperty('--messages-height', `${targetMessagesHeight}px`);
-    availableGridByHeight = layoutHeight - (bottomBar ? bottomBar.offsetHeight : measuredBottomBar) - farmChrome - verticalPadding;
-  }
-
-  const maxByWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
-  const size = clamp(Math.floor(Math.min(availableGridByHeight, maxByWidth) * 0.95), minGridSize, maxGridSize);
+  const desktopMinimumTarget = Math.floor(window.innerWidth / 3.2);
+  const parentWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
+  const maxByWidth = Math.max(140, parentWidth - (isMobileLayout ? 8 : 12));
+  const minGridSize = isMobileLayout ? 180 : Math.max(260, desktopMinimumTarget);
+  const verticalPadding = isMobileLayout ? 28 : 34;
+  const availableGridByHeight = Math.max(140, layoutHeight - farmChrome - verticalPadding);
+  const mobileSideReserve = isMobileLayout
+    ? Math.round(Math.min(320, Math.max(190, layoutHeight * 0.34)))
+    : 0;
+  const mobileMaxByHeight = Math.max(140, availableGridByHeight - mobileSideReserve);
+  const maxGridSize = isMobileLayout
+    ? Math.floor(Math.min(maxByWidth, mobileMaxByHeight))
+    : Math.floor(Math.min(window.innerWidth * 0.58, window.innerHeight * 0.78));
+  const lowerBound = Math.min(minGridSize, maxGridSize);
+  const upperBound = Math.max(minGridSize, maxGridSize);
+  const baseTarget = isMobileLayout
+    ? Math.floor(maxByWidth * 0.99)
+    : Math.floor(Math.min(availableGridByHeight, maxByWidth) * 0.97);
+  const size = clamp(baseTarget, lowerBound, upperBound);
   root.style.setProperty('--grid-size', `${size}px`);
-
-  if (bottomBar) { 
-    root.style.setProperty('--bottom-bar-height', `${bottomBar.offsetHeight}px`); 
-  } 
+  root.style.setProperty('--messages-height', '0px');
+  root.style.setProperty('--bottom-bar-height', '0px');
+  updateSidePanelScrollArea();
   resizeFxCanvas(); 
 } 
 
@@ -3375,8 +3471,8 @@ const PROFILE_IMAGES = {
   }
 };
 let messageJustEmitted = false;
-let lastClickToken = 0;
 const MESSAGE_LIMIT = 150;
+const PROFILE_BUBBLE_HIDE_MS = 3000;
 const ECONOMY_ALERT_THRESHOLD = 0.15;
 let lowEnergyNoticeDay = null; 
 const messageReplaceMap = new Map();
@@ -3385,6 +3481,11 @@ const TYPEWRITER_MIN_DURATION_MS = 180;
 const TYPEWRITER_MAX_DURATION_MS = 1400;
 const TYPEWRITER_MAX_STEP_MS = 42;
 const TYPEWRITER_MIN_STEP_MS = 12;
+let profileBubbleHideTimerId = null;
+let activeMainTab = 'market';
+let tabBeforeMessages = 'market';
+let highlightedGoalId = null;
+const seenStoreUnlockIds = new Set();
 
 function getProfileImage(speaker, emotion) {
   const speakerMap = PROFILE_IMAGES[speaker] || PROFILE_IMAGES.player;
@@ -3396,6 +3497,114 @@ function setChatProfile(speaker, emotion) {
   if (!profile) return;
   profile.src = getProfileImage(speaker, emotion);
   profile.alt = `${speaker} ${emotion}`;
+}
+
+function showProfileMessageBubble(text) {
+  const bubble = document.getElementById('profile-message-bubble');
+  if (!bubble) return;
+  const value = String(text || '').trim();
+  if (!value) return;
+  bubble.textContent = value;
+  bubble.classList.remove('is-hidden');
+  if (profileBubbleHideTimerId) {
+    window.clearTimeout(profileBubbleHideTimerId);
+    profileBubbleHideTimerId = null;
+  }
+  profileBubbleHideTimerId = window.setTimeout(() => {
+    bubble.classList.add('is-hidden');
+    profileBubbleHideTimerId = null;
+  }, PROFILE_BUBBLE_HIDE_MS);
+}
+
+function getPendingGoalsCount() {
+  if (!Array.isArray(state.goals)) return 0;
+  return state.goals.reduce((count, goal) => {
+    if (!goal || typeof goal !== 'object' || typeof goal.id !== 'string') return count;
+    if (goal.enabled === false) return count;
+    if (state.goalsClaimed?.[goal.id]) return count;
+    return doesGoalMeetCondition(goal) ? count + 1 : count;
+  }, 0);
+}
+
+function getCurrentStoreUnlockIds() {
+  const ids = [];
+  if (Array.isArray(state.items)) {
+    state.items.forEach(item => {
+      if (!item || typeof item.id !== 'number') return;
+      if (isShopItemUnlocked(item.id)) ids.push(`shop:${item.id}`);
+    });
+  }
+  if (state.store && Array.isArray(state.store.cosmetics)) {
+    state.store.cosmetics.forEach(cosmetic => {
+      if (!cosmetic || typeof cosmetic.id !== 'string') return;
+      if (cosmetic.unlocked) ids.push(`cosmetic:${cosmetic.id}`);
+    });
+  }
+  return ids;
+}
+
+function markStoreUnlocksSeen() {
+  seenStoreUnlockIds.clear();
+  getCurrentStoreUnlockIds().forEach(id => seenStoreUnlockIds.add(id));
+}
+
+function getNewStoreUnlockCount() {
+  let count = 0;
+  getCurrentStoreUnlockIds().forEach(id => {
+    if (!seenStoreUnlockIds.has(id)) count += 1;
+  });
+  return count;
+}
+
+function setTabBadgeCount(badgeId, count) {
+  const badge = document.getElementById(badgeId);
+  if (!badge) return;
+  const value = Math.max(0, Number(count) || 0);
+  badge.textContent = String(value);
+  badge.classList.toggle('has-count', value > 0);
+}
+
+function updateTabNotificationBadges() {
+  if (activeMainTab === 'store') {
+    markStoreUnlocksSeen();
+  }
+  setTabBadgeCount('tab-goals-badge', getPendingGoalsCount());
+  setTabBadgeCount('tab-store-badge', getNewStoreUnlockCount());
+}
+
+function renderProfileGoalSummary() {
+  const list = document.getElementById('profile-goals-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!Array.isArray(state.goals)) return;
+  const rows = state.goals
+    .filter(goal => goal && typeof goal.id === 'string' && goal.enabled !== false && !state.goalsClaimed?.[goal.id])
+    .map(goal => {
+      const progress = getGoalProgress(goal);
+      return { goal, percent: progress.percent };
+    })
+    .sort((a, b) => b.percent - a.percent)
+    .slice(0, 2);
+  if (rows.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'No pending goals';
+    list.appendChild(li);
+    return;
+  }
+  rows.forEach(row => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'button profile-goal-button';
+    button.textContent = `${row.goal.name || row.goal.id} ${row.percent}%`;
+    button.addEventListener('click', () => {
+      highlightedGoalId = row.goal.id;
+      currentGoalFilter = 'all';
+      showTab('goals');
+    });
+    li.appendChild(button);
+    list.appendChild(li);
+  });
 }
 
 function getMessageDayIndex() {
@@ -3509,6 +3718,7 @@ function emitMessage(payload) {
   if (!normalized.text) return null;
   const wasNearBottom = isChatNearBottom();
   setChatProfile(normalized.speaker, normalized.emotion);
+  showProfileMessageBubble(normalized.text);
   messageJustEmitted = true;
 
   let scopedReplaceKey = '';
@@ -3551,7 +3761,16 @@ function emitMessage(payload) {
 }
 
 function initialiseMessageUI() {
-  // No-op for now; reserved for future chat bootstrapping.
+  const profile = document.getElementById('chat-profile');
+  if (profile) {
+    profile.style.cursor = 'pointer';
+    profile.addEventListener('click', () => toggleMessagesPanel());
+  }
+  const closeButton = document.getElementById('messages-history-close');
+  if (closeButton) {
+    closeButton.addEventListener('click', () => toggleMessagesPanel());
+  }
+  updateTabNotificationBadges();
 }
 
 function addMessage(text, meta) {
@@ -4878,12 +5097,6 @@ function attachEventHandlers() {
 
   document.addEventListener('click', () => {
     messageJustEmitted = false;
-    const token = ++lastClickToken;
-    setTimeout(() => {
-      if (!messageJustEmitted && lastClickToken === token) {
-        setChatProfile('player', 'neutral');
-      }
-    }, 0);
   }, true);
   document.addEventListener('keydown', (event) => {
     const isTildePress = event.key === '~' || (event.key === '`' && event.shiftKey) || (event.code === 'Backquote' && event.shiftKey);
@@ -4930,6 +5143,7 @@ async function main() {
   attachEventHandlers();
   startPlaytimeTracking();
   initialiseMessageUI();
+  markStoreUnlocksSeen();
   const header = document.getElementById('market-header');
   if (header) {
     Array.from(header.children).forEach(child => {
@@ -4940,6 +5154,7 @@ async function main() {
   }
   updateToolButtons();
   updateCursorForTool();
+  installSidePanelScrollHandlers();
   // Show welcome message on first launch
   if (!state.player.welcomeShown) {
     addMessage('Welcome to the market!');
@@ -4963,7 +5178,7 @@ async function main() {
   window.addEventListener('resize', updateGridSize); 
   window.addEventListener('orientationchange', updateGridSize); 
   if ('ResizeObserver' in window) {
-    const observedElements = ['bottom-bar', 'messages-panel', 'market-header']
+    const observedElements = ['market-header', 'market-table-container', 'messages-history-panel']
       .map(id => document.getElementById(id))
       .filter(Boolean);
     if (observedElements.length > 0) {

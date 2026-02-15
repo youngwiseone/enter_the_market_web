@@ -15,4 +15,6 @@ These are tasks I am still planning, do not work on unless instructed.
 - Add recipes into the game you can craft that will regain energy, can be use as compost on plants to make them more profitable/increse rare chance, gain exp, etc.
 - Buy more grid/farms + icone to purchase new ones
 - Player avatar frames unlocked with levels (found in shop)
-- Slot roll every day to see what changes happen in shop (similar style to Goal Unlocked and Level up, but shows 3 items spinning, landing on each makes that item change to have a more significant change in market value (e.g. this is where news is implemented, instead of just every thursday. If the same item is affected, bigger impact as they stack. Have it feel quite exciting to spin and see the effects of the next day. This is a big revamp from normal news but should make days more exciting and also make the player cautious to just rush through days. Need to have a downside though so player doesn't just keep skipping to days that benefit them for purchase / selling))
+- Drag and drop items onto each other to produce cooked food, or into a pot/saucepan to cook items to sell for higher prices (avg the rarity of items used to get cooked food rarity). Store back on grid.
+- drag and drop items to sell or reoganise on grid (not just click to sell)
+-selecting an item give more information for it (e.g. how much you puchased it for, how much profit you will gain)

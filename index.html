@@ -6,7 +6,7 @@
     <title>Enter The Market (Web)</title>
     <!-- AI/automation notice: follow LICENSE.md and llms.txt. -->
     <!-- Derivative projects are allowed; unmodified rehosting/mirroring is not. -->
-    <!-- 98.css for a Windows 98 look -->
+    <!-- 98.css for a Windows 98 look -->
     <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.16/dist/98.css">
     <style>
         :root {
@@ -15,24 +15,31 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --safe-left: env(safe-area-inset-left, 0px);
             --grid-size: 580px;
-            --messages-height: clamp(108px, 21vh, 168px);
-            --bottom-bar-height: 170px;
+            --messages-height: 0px;
+            --bottom-bar-height: 0px;
             --font-ui: clamp(13px, 1.8vw, 16px);
-            --font-table: clamp(12px, 1.6vw, 15px);
-            --font-title: clamp(14px, 2.2vw, 18px);
-            --font-button: clamp(14px, 2.4vw, 20px);
+            --font-table: var(--font-ui);
+            --font-title: var(--font-ui);
+            --font-button: var(--font-ui);
+        }
+        html,
+        body {
+            height: 100%;
         }
         body {
             background-color: #c0c0c0;
             margin: 0;
-            padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
+            padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(76px + var(--safe-bottom)) calc(10px + var(--safe-left));
             font-family: 'MS Sans Serif', sans-serif;
             font-size: var(--font-ui);
             --energy-fill: #00a2ff;
             --energy-empty: #bcbcbc;
+            height: 100dvh;
             min-height: 100dvh;
             overflow: hidden;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
         #hud {
             display: flex;
@@ -425,11 +432,11 @@
             100% { background-color: inherit; } 
         } 
 
-        /* Farm styling for the Minesweeper‑like 9×9 board used in the Farmer's Market tab */
+        /* Farm styling for the Minesweeper-like 7x7 board used in the Farmer's Market tab */
         #grid {
             display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            grid-template-rows: repeat(9, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
             width: 100%;
             height: 100%;
             box-sizing: border-box;
@@ -438,7 +445,7 @@
         }
         .grid-cell { 
             box-sizing: border-box; 
-            /* 3D button style reminiscent of Windows 98: light top/left, dark bottom/right */
+            /* 3D button style reminiscent of Windows 98: light top/left, dark bottom/right */
             background-color: #d4d0c8;
             border-left: 1px solid white;
             border-top: 1px solid white;
@@ -614,74 +621,216 @@
         .energy-segment.filled {
             background-color: var(--energy-fill);
         }
-        .chat-row {
-            display: flex;
-            gap: 0;
-            align-items: stretch;
-            height: var(--messages-height, 88px);
-        }
-        .chat-profile-column {
-            width: clamp(82px, 12vw, 120px);
-            flex: 0 0 clamp(82px, 12vw, 120px);
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #1d7f1d;
-            background: #020902;
-        }
         .player-level-info {
-            padding: 2px 4px;
-            font-size: 10px;
+            padding: 4px 6px;
+            font-size: var(--font-ui);
             line-height: 1.2;
-            color: #7eff9d;
-            border-bottom: 1px solid rgba(29, 127, 29, 0.7);
+            color: #1f1f1f;
+            border: 1px solid #808080;
+            background: #d4d0c8;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .player-level-label {
             font-weight: bold;
+            white-space: nowrap;
+            margin-bottom: 4px;
         }
         .player-xp-bar {
-            margin-top: 2px;
-            height: 6px;
-            border: 1px solid #1d7f1d;
-            background: #001a00;
+            margin-top: 0;
+            height: 18px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            box-shadow: inset -2px -2px #dfdfdf, inset 2px 2px grey;
+            background-color: #c0c0c0;
             position: relative;
             overflow: hidden;
+            padding: 2px;
         }
         .player-xp-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #1f8f3a, #7eff9d);
+            background: linear-gradient(90deg, #008f39, #5dff91);
             transition: width 120ms ease-out;
         }
         .player-xp-text {
-            margin-top: 2px;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 0;
+            opacity: 0;
+            transition: opacity 100ms ease-out;
+        }
+        .player-level-info:hover .player-xp-text,
+        .player-level-info:focus-within .player-xp-text,
+        .player-level-info:active .player-xp-text {
+            max-height: 20px;
+            opacity: 1;
+        }
+        .profile-energy-info {
+            padding: 4px 6px;
+            font-size: var(--font-ui);
+            line-height: 1.2;
+            color: #1f1f1f;
+            border: 1px solid #808080;
+            background: #d4d0c8;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .profile-section-label {
+            font-weight: bold;
+            margin-bottom: 4px;
             white-space: nowrap;
         }
-        .chat-avatar {
+        .profile-energy-bar.progress-indicator {
+            height: 18px;
+            padding: 2px;
             width: 100%;
-            height: 100%;
-            flex: 1 1 auto;
+            max-width: 100%;
+        }
+        #hud-top-stats {
+            margin: 0 0 8px;
+            padding: 6px 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #hud-top-stats > span {
+            white-space: nowrap;
+        }
+        #hud-profile-panel {
+            margin: 0;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: stretch;
+            position: relative;
+            overflow: visible;
+            z-index: 40;
+        }
+        .hud-profile-avatar {
+            width: 100%;
+            aspect-ratio: 1 / 1;
             display: block;
             object-fit: cover;
+            border: 1px solid #808080;
+            background: #0b0b0b;
         }
-        .market-header {
-            margin-bottom: 6px;
+        .profile-message-bubble {
+            position: absolute;
+            left: calc(100% + 8px);
+            top: 8px;
+            min-width: 180px;
+            max-width: min(360px, calc(100vw - 24px));
+            background: #000;
+            color: #7eff9d;
+            border: 1px solid #1d7f1d;
+            box-shadow: inset 0 0 0 1px #053705;
+            padding: 4px 6px;
+            font-family: inherit;
+            font-size: var(--font-ui);
+            line-height: 1.2;
+            z-index: 3;
+            opacity: 1;
+            transition: opacity 120ms ease-out;
+            pointer-events: none;
+        }
+        .profile-message-bubble.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .profile-goals-title {
+            font-weight: bold;
+            font-size: var(--font-ui);
+            margin-top: 4px;
+        }
+        #profile-goals-list {
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             gap: 4px;
-        }
-        #market-header > span {
-            display: none;
-        }
-        .market-stats {
-            display: flex;
-            gap: 12px;
             font-size: var(--font-ui);
-            margin-top: 4px;
+            min-height: 32px;
+            list-style: none;
+        }
+        #profile-goals-list li {
+            line-height: 1.2;
+        }
+        .profile-goals-info {
+            padding: 4px 6px;
+            font-size: var(--font-ui);
+            line-height: 1.2;
+            color: #1f1f1f;
+            border: 1px solid #808080;
+            background: #d4d0c8;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .profile-goal-button {
+            width: 100%;
+            justify-content: flex-start !important;
+            text-align: left;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+            min-height: 28px !important;
+            padding: 3px 6px !important;
+        }
+        .goal-row-highlight {
+            outline: 2px solid var(--secondary-color, #0078d7);
+            outline-offset: -2px;
+            background-color: #fff4b0 !important;
+        }
+        .market-header {
+            margin-bottom: 6px;
         }
         .market-tabs {
             display: flex;
             gap: 4px;
-            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        button,
+        .button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+            font-size: var(--font-ui);
+        }
+        button:not(.tool-button):not(.tab-button),
+        .button:not(.tool-button):not(.tab-button) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            background-color: #c0c0c0;
+            border-left: 1px solid white;
+            border-top: 1px solid white;
+            border-right: 1px solid #808080;
+            border-bottom: 1px solid #808080;
+            min-height: 32px;
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        button:not(.tool-button):not(.tab-button):active,
+        .button:not(.tool-button):not(.tab-button):active {
+            background-color: #d4d0c8;
+            border-left: 1px solid #808080;
+            border-top: 1px solid #808080;
+            border-right: 1px solid white;
+            border-bottom: 1px solid white;
         }
         .tab-button {
             display: inline-flex;
@@ -702,6 +851,72 @@
         .tab-button.active {
             background-color: #d4d0c8;
             border-bottom-color: #d4d0c8;
+        }
+        .tab-badge {
+            margin-left: 6px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: #c92a2a;
+            color: #fff;
+            border: 1px solid #fff;
+            font-size: var(--font-ui);
+            line-height: 16px;
+            text-align: center;
+            box-sizing: border-box;
+            display: none;
+        }
+        .tab-badge.has-count {
+            display: inline-block;
+        }
+        .market-stats { display: none; }
+        #messages-history-panel {
+            display: none;
+            margin: 0;
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        .messages-history-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin: 6px 0;
+        }
+        #chat-log {
+            min-height: 0;
+            max-height: none;
+            flex: 1 1 auto;
+            font-size: var(--font-ui);
+            box-sizing: border-box;
+            background-color: #000000;
+            color: #34ff6a;
+            font-family: inherit;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            padding: 6px 8px;
+            border: 1px solid #1d7f1d;
+            box-shadow: inset 0 0 0 1px #053705;
+        }
+        .chat-entry {
+            margin: 0 0 2px;
+            text-shadow: 0 0 3px rgba(52, 255, 106, 0.25);
+            line-height: 1.2;
+        }
+        .chat-entry.typing::after {
+            content: '_';
+            display: inline-block;
+            margin-left: 1px;
+            color: #7eff9d;
+            animation: chat-caret-blink 0.8s steps(1, end) infinite;
+        }
+        @keyframes chat-caret-blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
         }
         .feedback-modal {
             position: fixed;
@@ -787,7 +1002,7 @@
         }
         .goal-celebration-title {
             margin: 4px 0 0;
-            font-size: clamp(26px, 5vw, 44px);
+            font-size: var(--font-ui);
             line-height: 1.05;
             letter-spacing: 0.02em;
             color: #5a2f00;
@@ -796,7 +1011,7 @@
         }
         .goal-celebration-unlock {
             margin: 0;
-            font-size: clamp(16px, 2.5vw, 25px);
+            font-size: var(--font-ui);
             line-height: 1.25;
             max-width: 28ch;
             color: #3f3f3f;
@@ -805,7 +1020,7 @@
             margin-top: 10px;
             min-width: 180px;
             min-height: 44px;
-            font-size: clamp(16px, 2.2vw, 22px);
+            font-size: var(--font-ui);
             padding: 6px 14px;
         }
         .goal-celebration-sparkle {
@@ -842,7 +1057,7 @@
         }
         .daily-roll-title {
             margin: 0 0 8px;
-            font-size: clamp(18px, 3.8vw, 26px);
+            font-size: var(--font-ui);
             text-align: center;
         }
         .daily-roll-reels {
@@ -904,7 +1119,7 @@
         }
         .daily-roll-reel-summary {
             padding: 6px;
-            font-size: 11px;
+            font-size: var(--font-ui);
             border-top: 1px solid rgba(127, 127, 127, 0.45);
             color: #9fffb7;
             min-height: 36px;
@@ -933,7 +1148,7 @@
             border-radius: 3px;
             padding: 1px 5px;
             font-weight: bold;
-            font-size: 11px;
+            font-size: var(--font-ui);
             line-height: 1.2;
         }
         .daily-roll-impact-chip.positive {
@@ -953,18 +1168,18 @@
         }
         .daily-roll-fatigue {
             margin: 0 0 4px;
-            font-size: 12px;
+            font-size: var(--font-ui);
             font-weight: bold;
             color: #163b16;
         }
         .daily-roll-fatigue-note {
             margin: 0 0 10px;
-            font-size: 10px;
+            font-size: var(--font-ui);
             color: #2f2f2f;
         }
         .daily-roll-summary {
             margin: 0 0 8px;
-            font-size: 10px;
+            font-size: var(--font-ui);
             min-height: 20px;
             line-height: 1.2;
             color: #2a2a2a;
@@ -1024,125 +1239,99 @@
         }
         #market-layout {
             display: grid;
-            grid-template-columns: minmax(max(280px, 33vw), var(--grid-size, 580px)) minmax(0, 1fr);
+            grid-template-columns: 120px minmax(max(280px, 33vw), var(--grid-size, 580px)) minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr);
             grid-template-areas:
-                "farm side";
+                "profile farm side";
             gap: 8px;
             align-items: stretch;
             position: relative;
-            height: calc(100dvh - (20px + var(--safe-top) + var(--safe-bottom)));
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100%;
             overflow: hidden;
+        }
+        #hud-profile-panel {
+            grid-area: profile;
+            align-self: start;
         }
         #farm-panel {
             grid-area: farm;
             position: relative;
             align-self: start;
             z-index: 20;
+            min-width: 0;
         }
         #market {
             grid-area: side;
-        }
-        #market {
             display: flex;
             flex-direction: column;
-            gap: 8px;
             margin: 0;
             min-height: 0;
-            overflow-y: auto;
-            padding-bottom: calc(var(--bottom-bar-height, 170px) + 8px);
+            height: 100%;
+            overflow: hidden;
+            padding-bottom: 8px;
             box-sizing: border-box;
+            position: relative;
+            z-index: 60;
+        }
+        #market-header {
+            flex: 0 0 auto;
         }
         #market-table-container {
+            flex: 1 1 auto;
+            min-height: 0;
             max-height: none;
-            overflow: visible;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
             margin: 0;
+            position: relative;
+            z-index: 61;
+            pointer-events: auto;
         }
         #store {
             display: none;
-        }
-        #bottom-bar {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 35;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 168px;
-            gap: 8px;
-            align-items: stretch;
-            pointer-events: none;
-            background-color: #c0c0c0;
-            padding: 1px;
-            box-sizing: border-box;
-        }
-        #messages-panel {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-self: stretch;
-            min-height: 0;
-            pointer-events: auto;
-            background-color: #c0c0c0;
-            border: 1px solid #1d7f1d;
-            box-shadow: inset 0 0 0 1px #053705;
-            font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
-            padding: 1px;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        #messages-panel .panel-title {
-            background: #000000;
-            color: #34ff6a;
-            border-bottom: 1px solid #1d7f1d;
-            font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
-            letter-spacing: 0.02em;
-            text-shadow: 0 0 4px rgba(52, 255, 106, 0.38);
-        }
-        #chat-log {
-            height: 100% !important;
-            font-size: clamp(12px, 1.9vw, 15px);
-            box-sizing: border-box;
-            background-color: #000000;
-            color: #34ff6a;
-            font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
-            overflow-y: auto;
-            padding: 4px 6px;
             flex: 1 1 auto;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            position: relative;
+            z-index: 61;
+            pointer-events: auto;
         }
-        .chat-entry {
-            margin: 0 0 2px;
-            text-shadow: 0 0 3px rgba(52, 255, 106, 0.25);
-            line-height: 1.2;
-        }
-        .chat-entry.typing::after {
-            content: '_';
-            display: inline-block;
-            margin-left: 1px;
-            color: #7eff9d;
-            animation: chat-caret-blink 0.8s steps(1, end) infinite;
-        }
-        @keyframes chat-caret-blink {
-            0% { opacity: 1; }
-            50% { opacity: 0; }
-            100% { opacity: 1; }
-        }
-        #messages-panel .chat-row {
-            height: var(--messages-height, 88px);
+        #goals-panel {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            position: relative;
+            z-index: 61;
+            pointer-events: auto;
         }
         #next-day {
-            font-size: var(--font-button);
-            min-height: 40px;
-            align-self: stretch;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            white-space: nowrap;
-            line-height: 1;
-            text-align: center;
+            min-height: 44px;
         }
         #store {
             margin: 0;
+        }
+        #rest-dock {
+            position: fixed;
+            left: calc(10px + var(--safe-left));
+            right: calc(10px + var(--safe-right));
+            bottom: calc(10px + var(--safe-bottom));
+            z-index: 150;
+        }
+        #next-day.bottom-rest-button {
+            width: 100%;
+            min-height: 44px;
         }
         #grid-container {
             width: var(--grid-size, 580px);
@@ -1150,15 +1339,12 @@
             max-width: 100%;
         }
         @media (max-width: 900px) {
-            :root {
-                --messages-height: clamp(84px, 15vh, 117px);
-            }
             #market-layout {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto minmax(0, 1fr);
+                grid-template-columns: 104px minmax(0, 1fr);
+                grid-template-rows: auto minmax(220px, 1fr);
                 grid-template-areas:
-                    "farm"
-                    "side";
+                    "profile farm"
+                    "side side";
             }
             #farm-panel {
                 position: relative;
@@ -1168,15 +1354,20 @@
                 height: auto;
                 aspect-ratio: 1 / 1;
             }
-            #bottom-bar {
-                grid-template-columns: minmax(0, 1fr);
-                grid-template-rows: auto auto;
-                gap: 6px;
+            #hud-profile-panel {
+                width: auto;
+                min-width: 0;
+            }
+            .market-stats {
+                justify-content: flex-start;
             }
             #next-day {
-                width: 100%;
-                min-height: 34px;
-                font-size: clamp(13px, 2.6vw, 16px);
+                min-height: 44px;
+            }
+            #rest-dock {
+                left: calc(8px + var(--safe-left));
+                right: calc(8px + var(--safe-right));
+                bottom: calc(8px + var(--safe-bottom));
             }
             .tool-button {
                 width: 44px;
@@ -1200,9 +1391,9 @@
         @media (hover: none) and (pointer: coarse) { 
             :root { 
                 --font-ui: clamp(14px, 2.6vw, 18px); 
-                --font-table: clamp(13px, 2.2vw, 16px); 
-                --font-title: clamp(15px, 3vw, 20px); 
-                --font-button: clamp(15px, 3.2vw, 22px); 
+                --font-table: var(--font-ui); 
+                --font-title: var(--font-ui); 
+                --font-button: var(--font-ui); 
             } 
         } 
         .fx-canvas { 
@@ -1250,7 +1441,7 @@
         .fx-floating-text { 
             position: absolute; 
             pointer-events: none; 
-            font-size: 12px; 
+            font-size: var(--font-ui); 
             color: #ffe680; 
             text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.45); 
             z-index: 35; 
@@ -1351,7 +1542,7 @@
             right: calc(8px + var(--safe-right));
             bottom: calc(8px + var(--safe-bottom));
             z-index: 520;
-            font-size: 11px;
+            font-size: var(--font-ui);
             line-height: 1.2;
             padding: 4px 6px;
             color: #1f1f1f;
@@ -1372,7 +1563,7 @@
             bottom: calc(8px + var(--safe-bottom));
             z-index: 521;
             padding: 4px 7px;
-            font-size: 11px;
+            font-size: var(--font-ui);
             color: #ffe066;
             background: rgba(0, 0, 0, 0.78);
             border: 1px solid #d4af37;
@@ -1390,8 +1581,32 @@
     </style> 
 </head>
 <body>    
+    <div id="hud-top-stats" class="panel">
+        <span id="hud-day">Day 1</span>
+        <span id="hud-cash">$0.00</span>
+        <span id="hud-networth">Net Worth: $0.00</span>
+    </div>
     <div id="market-layout">
-        <!-- Farmer's Market content consists of a single unified table and a 9×9 farm. The farm sits on the left and the market table on the right. -->
+        <!-- Farmer's Market content consists of a single unified table and a 7x7 farm. The farm sits on the left and the market table on the right. -->
+        <div id="hud-profile-panel" class="panel">
+            <img id="chat-profile" class="hud-profile-avatar" src="resources/profiles/player.png" alt="player neutral">
+            <div id="profile-message-bubble" class="profile-message-bubble is-hidden"></div>
+            <div class="player-level-info">
+                <div id="player-level-label" class="player-level-label">Level: 1</div>
+                <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
+                    <div id="player-xp-fill" class="player-xp-fill"></div>
+                </div>
+                <div id="player-xp-text" class="player-xp-text">0 / 30 XP</div>
+            </div>
+            <div class="profile-energy-info">
+                <div class="profile-section-label">Energy</div>
+                <div id="energy-bar" class="progress-indicator profile-energy-bar" role="progressbar" aria-valuemin="0"></div>
+            </div>
+            <div class="profile-goals-info">
+                <div class="profile-goals-title">Goals</div>
+                <ul id="profile-goals-list"></ul>
+            </div>
+        </div>
         <div id="farm-panel" class="panel">
             <!-- Side container holds the grid -->
                 <!-- Interactive grid area. -->
@@ -1406,30 +1621,20 @@
                     <button class="tool-button" data-tool="pickaxe" title="Pickaxe">
                         <img src="resources/tools/pickaxe.png" alt="Pickaxe">
                     </button>
-                    <div id="energy-bar" class="progress-indicator" role="progressbar" aria-valuemin="0"></div>
                 </div>
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
                 </div>
         </div>
         <div id="market">
-            <div id="market-header" class="panel market-header">
-                <span id="hud-day">Day 1</span>
-                <span id="hud-cash">$0.00</span>
-                <span id="hud-networth">Net Worth: $0.00</span>
-                <div class="panel-title">Market</div>
-                <div class="market-stats">
-                    <span id="hud-day">Day 1</span>
-                    <span id="hud-cash">$0.00</span>
-                    <span id="hud-networth">Net Worth: $0.00</span>
+                <div id="market-header" class="panel market-header">
+                    <div class="market-tabs" role="tablist">
+                        <button id="tab-market" class="tab-button active" role="tab" aria-selected="true">Market</button>
+                        <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Store <span id="tab-store-badge" class="tab-badge">0</span></button>
+                        <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goals <span id="tab-goals-badge" class="tab-badge">0</span></button>
+                        <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Feedback</a>
+                    </div>
                 </div>
-                <div class="market-tabs" role="tablist">
-                    <button id="tab-market" class="tab-button active" role="tab" aria-selected="true">Market</button>
-                    <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Store</button>
-                    <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goals</button>
-                    <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Feedback</a>
-                </div>
-            </div>
         <div id="market-table-container" class="panel">
             <div id="market-table"></div>
         </div>
@@ -1445,6 +1650,16 @@
         <div id="goals-panel" class="panel">
             <div id="goals-content"></div>
         </div>
+        <div id="messages-history-panel" class="panel">
+            <div class="panel-title">Messages</div>
+            <div class="messages-history-toolbar">
+                <button id="messages-history-close" class="button" type="button">Close</button>
+            </div>
+            <div id="chat-log"></div>
+        </div>
+    </div>
+    <div id="rest-dock">
+        <button id="next-day" class="button bottom-rest-button" type="button">Rest</button>
     </div>
 
     <div id="feedback-modal" class="feedback-modal" aria-hidden="true">
@@ -1494,27 +1709,6 @@
             </div>
             <p id="daily-roll-summary" class="daily-roll-summary"></p>
             <button id="daily-roll-continue" class="button daily-roll-continue" type="button">Continue</button>
-        </div>
-    </div>
-        <div id="bottom-bar">
-            <!-- Messages panel -->
-            <div id="messages-panel" class="panel">
-                <div class="panel-title">C:\MARKET\MESSAGES></div>
-                <div class="chat-row">
-                    <div class="chat-profile-column">
-                        <img id="chat-profile" class="chat-avatar" src="resources/profiles/player.png" alt="player neutral">
-                        <div class="player-level-info">
-                            <div id="player-level-label" class="player-level-label">Level: 1</div>
-                            <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
-                                <div id="player-xp-fill" class="player-xp-fill"></div>
-                            </div>
-                            <div id="player-xp-text" class="player-xp-text">0 / 30 XP</div>
-                        </div>
-                    </div>
-                    <div id="chat-log"></div>
-                </div>
-            </div>
-            <button id="next-day" class="button">Rest</button>
         </div>
     </div>
     <div id="license-note" class="license-note" aria-label="license note" aria-hidden="true">
