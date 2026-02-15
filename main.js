@@ -615,6 +615,8 @@ let state = {
   daySalesCount: 0,
   daySalesTotal: 0,
   dayTopSale: null,
+  dayItemSales: null,
+  marketPressureByItem: null,
   daySummaryHistory: [],
   pendingDaySummary: null,
   gridPurchasePrice: null
@@ -2034,6 +2036,8 @@ function initialiseState() {
   state.daySalesCount = Math.max(0, Number(loadFromStorage('daySalesCount', null) ?? 0) || 0);
   state.daySalesTotal = Math.max(0, Number(loadFromStorage('daySalesTotal', null) ?? 0) || 0);
   state.dayTopSale = loadFromStorage('dayTopSale', null);
+  state.dayItemSales = loadFromStorage('dayItemSales', null) ?? {};
+  state.marketPressureByItem = loadFromStorage('marketPressureByItem', null) ?? {};
   state.daySummaryHistory = loadFromStorage('daySummaryHistory', null) ?? [];
   state.pendingDaySummary = null;
   // News history stores arrays of events per week. Load from storage or start empty.
@@ -2230,6 +2234,12 @@ function initialiseState() {
   }
   state.goalCelebrationQueue = [];
   state.activeGoalCelebration = null;
+  if (!state.dayItemSales || typeof state.dayItemSales !== 'object' || Array.isArray(state.dayItemSales)) {
+    state.dayItemSales = {};
+  }
+  if (!state.marketPressureByItem || typeof state.marketPressureByItem !== 'object' || Array.isArray(state.marketPressureByItem)) {
+    state.marketPressureByItem = {};
+  }
   selectedGridCellIndex = null;
   selectedShopItemId = null;
   selectionPulseId = null;
@@ -2266,6 +2276,8 @@ function saveState() {
   saveToStorage('daySalesCount', state.daySalesCount);
   saveToStorage('daySalesTotal', state.daySalesTotal);
   saveToStorage('dayTopSale', state.dayTopSale);
+  saveToStorage('dayItemSales', state.dayItemSales);
+  saveToStorage('marketPressureByItem', state.marketPressureByItem);
   saveToStorage('daySummaryHistory', state.daySummaryHistory);
   // Persist grid purchase and placement state. These arrays represent which grid
   // slots have been purchased (gridUnlocked) and which contain items (gridItems).
@@ -3642,6 +3654,10 @@ let messageJustEmitted = false;
 const MESSAGE_LIMIT = 150;
 const PROFILE_BUBBLE_HIDE_MS = 3000;
 const ECONOMY_ALERT_THRESHOLD = 0.15;
+const HOLDING_LOT_THRESHOLD = 4;
+const HOLD_BIAS_STREAK_DAYS = 8;
+const HOLD_BIAS_QTY_RANGE = 12;
+const SELL_SHOCK_QTY_RANGE = 10;
 let lowEnergyNoticeDay = null; 
 const messageReplaceMap = new Map();
 const typingTimersByEntry = new WeakMap();
@@ -4083,6 +4099,7 @@ function sellBulkSelectedGridItems() {
     const buyPrice = Math.max(0, Number(cell.buyPrice) || 0);
     const profit = saleValue - buyPrice;
     registerSaleEvent(item.name, saleValue, 1);
+    registerItemSalePressure(itemId, 1);
     state.player.cash += saleValue;
     state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
     if (state.goalFlags && typeof state.goalFlags === 'object') {
@@ -4631,6 +4648,7 @@ function sellItem(itemId, quantity) {
   registerDayAction();
   const item = state.items.find(it => it.id === itemId);
   registerSaleEvent(item ? item.name : 'Item', saleValue, quantity);
+  registerItemSalePressure(itemId, quantity);
   // Increase cash and stock
   state.player.cash += saleValue;
   shopEntry.quantity += quantity;
@@ -4706,6 +4724,112 @@ function registerDayAction() {
   state.dayActionCount = Math.max(0, Number(state.dayActionCount) || 0) + 1;
 }
 
+function clampMarketBias(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || 0));
+}
+
+function getHeldQuantityForItem(itemId) {
+  const safeItemId = Number(itemId);
+  if (!Number.isFinite(safeItemId)) return 0;
+  const inventoryQty = Array.isArray(state.inventory)
+    ? state.inventory.reduce((sum, entry) => {
+      if (!entry || Number(entry.itemId) !== safeItemId) return sum;
+      return sum + Math.max(0, Number(entry.quantity) || 0);
+    }, 0)
+    : 0;
+  const gridQty = Array.isArray(state.gridItems)
+    ? state.gridItems.reduce((sum, gridItemId) => sum + (Number(gridItemId) === safeItemId ? 1 : 0), 0)
+    : 0;
+  return inventoryQty + gridQty;
+}
+
+function getMarketPressureRecord(itemId) {
+  if (!state.marketPressureByItem || typeof state.marketPressureByItem !== 'object' || Array.isArray(state.marketPressureByItem)) {
+    state.marketPressureByItem = {};
+  }
+  const key = String(itemId);
+  const current = state.marketPressureByItem[key];
+  if (!current || typeof current !== 'object') {
+    state.marketPressureByItem[key] = { holdDays: 0, holdBias: 0, sellShock: 0 };
+    return state.marketPressureByItem[key];
+  }
+  current.holdDays = Math.max(0, Number(current.holdDays) || 0);
+  current.holdBias = clampMarketBias(current.holdBias, 0, 1);
+  current.sellShock = clampMarketBias(current.sellShock, 0, 1);
+  return current;
+}
+
+function getMarketDirectionalBias(itemId) {
+  const pressure = getMarketPressureRecord(itemId);
+  const upward = clampMarketBias(pressure.holdBias, 0, 1);
+  const downward = clampMarketBias(pressure.sellShock, 0, 1);
+  return {
+    upward,
+    downward,
+    net: upward - downward
+  };
+}
+
+function registerItemSalePressure(itemId, quantity) {
+  if (!state.dayItemSales || typeof state.dayItemSales !== 'object' || Array.isArray(state.dayItemSales)) {
+    state.dayItemSales = {};
+  }
+  const key = String(itemId);
+  const soldQty = Math.max(0, Number(quantity) || 0);
+  state.dayItemSales[key] = (Math.max(0, Number(state.dayItemSales[key]) || 0)) + soldQty;
+}
+
+function updateMarketPressureForNextDay() {
+  if (!Array.isArray(state.items)) {
+    state.dayItemSales = {};
+    return;
+  }
+  state.items.forEach(item => {
+    if (!item || typeof item.id !== 'number') return;
+    const key = String(item.id);
+    const pressure = getMarketPressureRecord(item.id);
+    const heldQty = getHeldQuantityForItem(item.id);
+    const soldQty = Math.max(0, Number(state.dayItemSales?.[key]) || 0);
+    if (heldQty >= HOLDING_LOT_THRESHOLD) {
+      pressure.holdDays = Math.min(30, pressure.holdDays + 1);
+    } else {
+      pressure.holdDays = Math.max(0, pressure.holdDays - 1);
+    }
+    const qtyFactor = clampMarketBias((heldQty - HOLDING_LOT_THRESHOLD + 1) / HOLD_BIAS_QTY_RANGE, 0, 1);
+    const streakFactor = clampMarketBias(pressure.holdDays / HOLD_BIAS_STREAK_DAYS, 0, 1);
+    pressure.holdBias = clampMarketBias(qtyFactor * streakFactor, 0, 1);
+    if (soldQty > 0) {
+      pressure.holdDays = Math.max(0, pressure.holdDays - Math.ceil(soldQty / 4));
+    }
+    const sellShockAdded = clampMarketBias(soldQty / SELL_SHOCK_QTY_RANGE, 0, 1);
+    pressure.sellShock = clampMarketBias((pressure.sellShock * 0.45) + sellShockAdded, 0, 1);
+  });
+  state.dayItemSales = {};
+}
+
+function getDailyRollItemWeight(itemId) {
+  const pressure = getMarketPressureRecord(itemId);
+  return 1 + (pressure.holdBias * 1.6) + (pressure.sellShock * 1.2);
+}
+
+function pickRollItemByWeight(unlockedItems) {
+  if (!Array.isArray(unlockedItems) || unlockedItems.length === 0) return null;
+  const weighted = unlockedItems.map(item => ({
+    item,
+    weight: Math.max(0.01, Number(getDailyRollItemWeight(item.id)) || 1)
+  }));
+  const total = weighted.reduce((sum, row) => sum + row.weight, 0);
+  if (total <= 0) return unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+  let roll = Math.random() * total;
+  for (const row of weighted) {
+    roll -= row.weight;
+    if (roll <= 0) {
+      return row.item;
+    }
+  }
+  return weighted[weighted.length - 1].item;
+}
+
 function getUnlockedRollItems() {
   if (!Array.isArray(state.items)) return [];
   return state.items.filter(item => item && isShopItemUnlocked(item.id));
@@ -4741,8 +4865,10 @@ function generateDailyMarketRoll(impactMultiplier = 1) {
   }
   const picks = [];
   for (let i = 0; i < 3; i += 1) {
-    const target = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
-    const sign = Math.random() < 0.5 ? -1 : 1;
+    const target = pickRollItemByWeight(unlockedItems) || unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+    const bias = getMarketDirectionalBias(target.id);
+    const upChance = clampMarketBias(0.5 + (bias.upward * 0.35) - (bias.downward * 0.4), 0.1, 0.9);
+    const sign = Math.random() < upChance ? 1 : -1;
     const baseMagnitude = 6 + Math.floor(Math.random() * 8); // 6..13
     const story = getRollStoryForItem(target.name);
     picks.push({
@@ -4851,6 +4977,8 @@ function nextDay() {
     { speaker: 'farmer', category: 'economy', priority: 'normal' }
   );
 
+  updateMarketPressureForNextDay();
+
   // Roll the daily market slots before prices are updated.
   const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier);
   const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
@@ -4881,8 +5009,13 @@ function nextDay() {
     // Accumulate the current price into priceSum and increment daysCount
     entry.priceSum = (entry.priceSum || 0) + entry.price;
     entry.daysCount = (entry.daysCount || 0) + 1;
-    // Apply random ±5% fluctuation
-    const randomFactor = 1 + (Math.random() * 0.1 - 0.05);
+    // Apply random movement with small directional drift from hold/sell pressure.
+    const bias = getMarketDirectionalBias(entry.itemId);
+    const upChance = clampMarketBias(0.5 + (bias.upward * 0.28) - (bias.downward * 0.32), 0.08, 0.92);
+    const swingMagnitude = Math.random() * 0.05;
+    const signedSwing = Math.random() < upChance ? swingMagnitude : -swingMagnitude;
+    const drift = (bias.upward * 0.012) - (bias.downward * 0.018);
+    const randomFactor = 1 + signedSwing + drift;
     entry.price *= randomFactor;
     // Keep price within reasonable bounds
     entry.price = Math.max(0.01, entry.price);
@@ -5885,6 +6018,7 @@ function harvestPlant(cellIndex) {
   const saleValue = basePrice * multiplier;
   const realizedProfit = saleValue - buyPrice;
   registerSaleEvent(item.name, saleValue, 1);
+  registerItemSalePressure(itemId, 1);
   state.player.cash += saleValue;
   state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
   if (state.goalFlags && typeof state.goalFlags === 'object') {
