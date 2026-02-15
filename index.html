@@ -486,6 +486,24 @@
             border-right: 1px solid white;
             border-bottom: 1px solid white;
         }
+        #grid.farm-two {
+            background-color: #9a9a9a;
+            border-color: #6f6f6f;
+        }
+        #grid.farm-two .grid-cell {
+            background-color: #bebebe;
+            border-left: 1px solid #e8e8e8;
+            border-top: 1px solid #e8e8e8;
+            border-right: 1px solid #6f6f6f;
+            border-bottom: 1px solid #6f6f6f;
+        }
+        #grid.farm-two .grid-cell.revealed {
+            background-color: #4a271e;
+            border-left: 1px solid #6f6f6f;
+            border-top: 1px solid #6f6f6f;
+            border-right: 1px solid #e8e8e8;
+            border-bottom: 1px solid #e8e8e8;
+        }
         .grid-cell.grid-cell-selected {
             outline: 2px solid #7eff9d;
             outline-offset: -2px;
@@ -632,6 +650,12 @@
             height: clamp(20px, calc(var(--grid-size, 580px) * 0.06), 32px);
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+        }
+        .tool-button.tool-button-farm .tool-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            line-height: 1;
         }
 
         .progress-indicator {
@@ -1695,6 +1719,9 @@
                 width: 28px;
                 height: 28px;
             }
+            .tool-button.tool-button-farm .tool-label {
+                font-size: 10px;
+            }
             .progress-indicator {
                 height: 44px;
             }
@@ -1940,7 +1967,7 @@
         <div id="farm-panel" class="panel">
             <!-- Side container holds the grid -->
                 <!-- Interactive grid area. -->
-                <div class="panel-title">Farm</div>
+                <div id="farm-title" class="panel-title">Farm 1</div>
                 <div class="farm-toolbar" aria-label="Farm tools">
                     <button class="tool-button active" data-tool="glove" title="Gloves">
                         <img src="resources/tools/glove.png" alt="Gloves">
@@ -1950,6 +1977,9 @@
                     </button>
                     <button class="tool-button" data-tool="pickaxe" title="Pickaxe">
                         <img src="resources/tools/pickaxe.png" alt="Pickaxe">
+                    </button>
+                    <button id="farm-toggle-button" class="tool-button tool-button-farm" title="Farm 2">
+                        <span class="tool-label">Farm 2</span>
                     </button>
                 </div>
                 <div id="grid-container">
@@ -2069,7 +2099,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=75"></script>
+    <script src="main.js?v=76"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

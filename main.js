@@ -619,7 +619,10 @@ let state = {
   marketPressureByItem: null,
   daySummaryHistory: [],
   pendingDaySummary: null,
-  gridPurchasePrice: null
+  gridPurchasePrice: null,
+  farms: null,
+  activeFarmId: 1,
+  secondFarmPurchased: false
 };
 
 const playtestStats = {
@@ -672,25 +675,26 @@ function formatMoney(value) {
 }
 
 function getGrowablePlantCount() {
-  if (!Array.isArray(state.gridItems)) {
-    // TODO: Replace with actual plant tracking array if gridItems is removed.
-    return null;
-  }
+  if (!state.farms || typeof state.farms !== 'object') return null;
   if (!Array.isArray(state.items)) {
     // TODO: Replace with actual item catalog lookup if state.items is unavailable.
     return null;
   }
   const itemById = new Map(state.items.map(item => [item.id, item]));
-  let count = 0;
-  state.gridItems.forEach(itemId => {
-    if (!itemId) return;
-    const item = itemById.get(itemId);
-    const growDays = Number(item?.growDays) || 0;
-    if (growDays > 0) {
-      count += 1;
-    }
-  });
-  return count;
+  const farmsToCount = [getFarmState(FARM_PRIMARY_ID), getFarmState(FARM_SECONDARY_ID)];
+  return farmsToCount.reduce((farmTotal, farm) => {
+    if (!Array.isArray(farm.gridItems)) return farmTotal;
+    let count = 0;
+    farm.gridItems.forEach(itemId => {
+      if (!itemId) return;
+      const item = itemById.get(itemId);
+      const growDays = Number(item?.growDays) || 0;
+      if (growDays > 0) {
+        count += 1;
+      }
+    });
+    return farmTotal + count;
+  }, 0);
 }
 
 function getGoalsSummary() {
@@ -1597,9 +1601,10 @@ function getGoalMetricValue(metric) {
   if (metric === 'day') return Number(state.player?.day) || 0;
   if (metric === 'harvestCount') return Number(state.goalStats?.harvestCount) || 0;
   if (metric === 'gridUnlockedCount') {
-    return Array.isArray(state.gridUnlocked)
-      ? state.gridUnlocked.reduce((sum, v) => sum + (v ? 1 : 0), 0)
-      : 0;
+    return Math.max(
+      getUnlockedTileCountForFarm(FARM_PRIMARY_ID),
+      getUnlockedTileCountForFarm(FARM_SECONDARY_ID)
+    );
   }
   if (metric.startsWith('itemsHarvested.')) {
     const itemId = metric.split('.')[1];
@@ -1749,6 +1754,12 @@ const TOOL_PICKAXE = 'pickaxe';
 const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
 const GRID_DIMENSION = 7;
 const GRID_CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION;
+const FARM_PRIMARY_ID = 1;
+const FARM_SECONDARY_ID = 2;
+const FARM_TWO_PURCHASE_COST = 1000;
+const FARM_TWO_MINING_ENERGY_PER_HIT = 5;
+const FARM_TWO_SELL_MULTIPLIER = 2;
+const FARM_TWO_BUTTON_REVEAL_TILES_LEFT = 10;
 const PLAYER_LEVEL_CAP = 99;
 const ENERGY_SEGMENT_CAP = 10;
 const PRICE_CRASH_THRESHOLD_PERCENT = 100;
@@ -1789,6 +1800,110 @@ const GUIDED_FLAGS = {
   storeAnnounced: 'tutorial:unlock-store-announced',
   goalsAnnounced: 'tutorial:unlock-goals-announced'
 };
+
+function createEmptyFarmState() {
+  return {
+    gridUnlocked: Array(GRID_CELL_COUNT).fill(false),
+    gridItems: Array(GRID_CELL_COUNT).fill(null),
+    gridPlantedDay: Array(GRID_CELL_COUNT).fill(null),
+    gridWateredDay: Array(GRID_CELL_COUNT).fill(null),
+    gridWateredCount: Array(GRID_CELL_COUNT).fill(0),
+    gridMiningHits: Array(GRID_CELL_COUNT).fill(0),
+    gridRarity: Array(GRID_CELL_COUNT).fill(null),
+    gridPurchasePrice: Array(GRID_CELL_COUNT).fill(null)
+  };
+}
+
+function normalizeFarmArray(rawArray, fallbackValue) {
+  if (!Array.isArray(rawArray)) {
+    return Array(GRID_CELL_COUNT).fill(fallbackValue);
+  }
+  if (rawArray.length >= GRID_CELL_COUNT) {
+    return rawArray.slice(0, GRID_CELL_COUNT);
+  }
+  const padded = rawArray.slice();
+  while (padded.length < GRID_CELL_COUNT) {
+    padded.push(fallbackValue);
+  }
+  return padded;
+}
+
+function normalizeFarmState(rawFarm) {
+  const base = createEmptyFarmState();
+  if (!rawFarm || typeof rawFarm !== 'object') return base;
+  return {
+    gridUnlocked: normalizeFarmArray(rawFarm.gridUnlocked, false).map(value => !!value),
+    gridItems: normalizeFarmArray(rawFarm.gridItems, null),
+    gridPlantedDay: normalizeFarmArray(rawFarm.gridPlantedDay, null),
+    gridWateredDay: normalizeFarmArray(rawFarm.gridWateredDay, null),
+    gridWateredCount: normalizeFarmArray(rawFarm.gridWateredCount, 0).map(value => Math.max(0, Number(value) || 0)),
+    gridMiningHits: normalizeFarmArray(rawFarm.gridMiningHits, 0).map(value => Math.max(0, Number(value) || 0)),
+    gridRarity: normalizeFarmArray(rawFarm.gridRarity, null),
+    gridPurchasePrice: normalizeFarmArray(rawFarm.gridPurchasePrice, null).map(value => (value === null ? null : Math.max(0, Number(value) || 0)))
+  };
+}
+
+function isFarmStateShapeValid(farm) {
+  if (!farm || typeof farm !== 'object') return false;
+  return Array.isArray(farm.gridUnlocked) && farm.gridUnlocked.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridItems) && farm.gridItems.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridPlantedDay) && farm.gridPlantedDay.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridWateredDay) && farm.gridWateredDay.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridWateredCount) && farm.gridWateredCount.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridMiningHits) && farm.gridMiningHits.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridRarity) && farm.gridRarity.length === GRID_CELL_COUNT
+    && Array.isArray(farm.gridPurchasePrice) && farm.gridPurchasePrice.length === GRID_CELL_COUNT;
+}
+
+function getFarmState(farmId) {
+  if (!state.farms || typeof state.farms !== 'object') {
+    state.farms = {
+      [FARM_PRIMARY_ID]: createEmptyFarmState(),
+      [FARM_SECONDARY_ID]: createEmptyFarmState()
+    };
+  }
+  if (!state.farms[farmId] || !isFarmStateShapeValid(state.farms[farmId])) {
+    state.farms[farmId] = normalizeFarmState(state.farms[farmId]);
+  }
+  return state.farms[farmId];
+}
+
+function applyFarmStateToActiveGrid(farmId) {
+  const safeFarmId = Number(farmId) === FARM_SECONDARY_ID ? FARM_SECONDARY_ID : FARM_PRIMARY_ID;
+  const farm = getFarmState(safeFarmId);
+  state.activeFarmId = safeFarmId;
+  state.gridUnlocked = farm.gridUnlocked;
+  state.gridItems = farm.gridItems;
+  state.gridPlantedDay = farm.gridPlantedDay;
+  state.gridWateredDay = farm.gridWateredDay;
+  state.gridWateredCount = farm.gridWateredCount;
+  state.gridMiningHits = farm.gridMiningHits;
+  state.gridRarity = farm.gridRarity;
+  state.gridPurchasePrice = farm.gridPurchasePrice;
+}
+
+function getUnlockedTileCountForFarm(farmId) {
+  const farm = getFarmState(farmId);
+  return Array.isArray(farm.gridUnlocked)
+    ? farm.gridUnlocked.reduce((sum, value) => sum + (value ? 1 : 0), 0)
+    : 0;
+}
+
+function isFarmOneFullyUnlocked() {
+  return getUnlockedTileCountForFarm(FARM_PRIMARY_ID) >= GRID_CELL_COUNT;
+}
+
+function isFarmTwoPurchased() {
+  return !!state.secondFarmPurchased;
+}
+
+function getActiveFarmSellMultiplier() {
+  return state.activeFarmId === FARM_SECONDARY_ID ? FARM_TWO_SELL_MULTIPLIER : 1;
+}
+
+function getActiveFarmMiningEnergyCost() {
+  return state.activeFarmId === FARM_SECONDARY_ID ? FARM_TWO_MINING_ENERGY_PER_HIT : 1;
+}
 
 function decodeAuthorIdentity() {
   try {
@@ -2175,82 +2290,51 @@ function initialiseState() {
     state.inventory = clone(DEFAULT_DATA.inventory);
     saveState();
   }
-  // Initialise the Minesweeper grid state. A 7x7 grid has 49 cells,
-  // each represented by whether it has been purchased/unlocked and what item it contains.
-  // Earlier versions stored a 'grid' boolean array indicating revealed cells. To support
-  // purchased grid slots and items, we now maintain two parallel arrays:
-  //  - gridUnlocked: boolean flag for each cell indicating whether the slot has been purchased
-  //  - gridItems: stores the itemId placed in the slot (or null if empty)
-  //  When migrating from an old save that uses 'grid', treat any previously revealed cell
-  //  as purchased and empty.
+  // Grid save migration:
+  // 1) Read legacy single-grid keys into farm 1 fallback.
+  // 2) Prefer `farms` collection if present.
+  // 3) Keep farm 2 empty unless it has been explicitly purchased.
   const oldGrid = loadFromStorage('grid', null);
-  state.gridUnlocked = loadFromStorage('gridUnlocked', null);
-  state.gridItems    = loadFromStorage('gridItems', null);
-  state.gridPlantedDay = loadFromStorage('gridPlantedDay', null);
-  state.gridWateredDay = loadFromStorage('gridWateredDay', null);
-  state.gridWateredCount = loadFromStorage('gridWateredCount', null);
-  state.gridMiningHits = loadFromStorage('gridMiningHits', null);
-  state.gridRarity = loadFromStorage('gridRarity', null);
-  state.gridPurchasePrice = loadFromStorage('gridPurchasePrice', null);
+  const legacyFarmOne = normalizeFarmState({
+    gridUnlocked: Array.isArray(loadFromStorage('gridUnlocked', null))
+      ? loadFromStorage('gridUnlocked', null)
+      : (Array.isArray(oldGrid) ? oldGrid : null),
+    gridItems: loadFromStorage('gridItems', null),
+    gridPlantedDay: loadFromStorage('gridPlantedDay', null),
+    gridWateredDay: loadFromStorage('gridWateredDay', null),
+    gridWateredCount: loadFromStorage('gridWateredCount', null),
+    gridMiningHits: loadFromStorage('gridMiningHits', null),
+    gridRarity: loadFromStorage('gridRarity', null),
+    gridPurchasePrice: loadFromStorage('gridPurchasePrice', null)
+  });
+  const savedFarms = loadFromStorage('farms', null);
+  const normalizedSavedPrimary = normalizeFarmState(savedFarms?.[FARM_PRIMARY_ID]);
+  const normalizedSavedSecondary = normalizeFarmState(savedFarms?.[FARM_SECONDARY_ID]);
+  const hasSavedFarmCollection = !!(savedFarms && typeof savedFarms === 'object');
+  const hasSavedPrimaryFarm = !!(hasSavedFarmCollection && savedFarms[FARM_PRIMARY_ID]);
+  state.farms = {
+    [FARM_PRIMARY_ID]: hasSavedPrimaryFarm ? normalizedSavedPrimary : legacyFarmOne,
+    [FARM_SECONDARY_ID]: normalizedSavedSecondary
+  };
+  state.secondFarmPurchased = !!loadFromStorage('secondFarmPurchased', null);
+  if (!state.secondFarmPurchased) {
+    const secondaryUnlocks = getUnlockedTileCountForFarm(FARM_SECONDARY_ID);
+    const secondaryItems = getFarmState(FARM_SECONDARY_ID).gridItems.filter(Boolean).length;
+    if (secondaryUnlocks > 0 || secondaryItems > 0) {
+      state.secondFarmPurchased = true;
+    }
+  }
+  if (!state.secondFarmPurchased) {
+    state.farms[FARM_SECONDARY_ID] = createEmptyFarmState();
+  }
+  state.activeFarmId = Number(loadFromStorage('activeFarmId', null) || FARM_PRIMARY_ID) === FARM_SECONDARY_ID
+    ? FARM_SECONDARY_ID
+    : FARM_PRIMARY_ID;
+  if (state.activeFarmId === FARM_SECONDARY_ID && !isFarmTwoPurchased()) {
+    state.activeFarmId = FARM_PRIMARY_ID;
+  }
+  applyFarmStateToActiveGrid(state.activeFarmId);
   state.activeTool = loadFromStorage('activeTool', null);
-  if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridUnlocked) && state.gridUnlocked.length >= GRID_CELL_COUNT) {
-      state.gridUnlocked = state.gridUnlocked.slice(0, GRID_CELL_COUNT).map(val => !!val);
-    } else if (Array.isArray(oldGrid) && oldGrid.length >= GRID_CELL_COUNT) {
-      state.gridUnlocked = oldGrid.slice(0, GRID_CELL_COUNT).map(val => !!val);
-    } else {
-      state.gridUnlocked = Array(GRID_CELL_COUNT).fill(false);
-    }
-  }
-  if (!Array.isArray(state.gridItems) || state.gridItems.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridItems) && state.gridItems.length >= GRID_CELL_COUNT) {
-      state.gridItems = state.gridItems.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridItems = Array(GRID_CELL_COUNT).fill(null);
-    }
-  }
-  if (!Array.isArray(state.gridPlantedDay) || state.gridPlantedDay.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridPlantedDay) && state.gridPlantedDay.length >= GRID_CELL_COUNT) {
-      state.gridPlantedDay = state.gridPlantedDay.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridPlantedDay = Array(GRID_CELL_COUNT).fill(null);
-    }
-  }
-  if (!Array.isArray(state.gridWateredDay) || state.gridWateredDay.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridWateredDay) && state.gridWateredDay.length >= GRID_CELL_COUNT) {
-      state.gridWateredDay = state.gridWateredDay.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridWateredDay = Array(GRID_CELL_COUNT).fill(null);
-    }
-  }
-  if (!Array.isArray(state.gridWateredCount) || state.gridWateredCount.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridWateredCount) && state.gridWateredCount.length >= GRID_CELL_COUNT) {
-      state.gridWateredCount = state.gridWateredCount.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridWateredCount = Array(GRID_CELL_COUNT).fill(0);
-    }
-  }
-  if (!Array.isArray(state.gridMiningHits) || state.gridMiningHits.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridMiningHits) && state.gridMiningHits.length >= GRID_CELL_COUNT) {
-      state.gridMiningHits = state.gridMiningHits.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridMiningHits = Array(GRID_CELL_COUNT).fill(0);
-    }
-  }
-  if (!Array.isArray(state.gridRarity) || state.gridRarity.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridRarity) && state.gridRarity.length >= GRID_CELL_COUNT) {
-      state.gridRarity = state.gridRarity.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
-    }
-  }
-  if (!Array.isArray(state.gridPurchasePrice) || state.gridPurchasePrice.length !== GRID_CELL_COUNT) {
-    if (Array.isArray(state.gridPurchasePrice) && state.gridPurchasePrice.length >= GRID_CELL_COUNT) {
-      state.gridPurchasePrice = state.gridPurchasePrice.slice(0, GRID_CELL_COUNT);
-    } else {
-      state.gridPurchasePrice = Array(GRID_CELL_COUNT).fill(null);
-    }
-  }
   if (!TOOL_LIST.includes(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
   }
@@ -2352,6 +2436,12 @@ function initialiseState() {
  */
 function saveState() {
   updateNetWorth();
+  const primaryFarm = getFarmState(FARM_PRIMARY_ID);
+  const secondaryFarm = isFarmTwoPurchased() ? getFarmState(FARM_SECONDARY_ID) : createEmptyFarmState();
+  state.farms = {
+    [FARM_PRIMARY_ID]: primaryFarm,
+    [FARM_SECONDARY_ID]: secondaryFarm
+  };
   saveToStorage('player',        state.player);
   saveToStorage('items',         state.items);
   saveToStorage('shop',          state.shop);
@@ -2377,16 +2467,18 @@ function saveState() {
   saveToStorage('dayItemSales', state.dayItemSales);
   saveToStorage('marketPressureByItem', state.marketPressureByItem);
   saveToStorage('daySummaryHistory', state.daySummaryHistory);
-  // Persist grid purchase and placement state. These arrays represent which grid
-  // slots have been purchased (gridUnlocked) and which contain items (gridItems).
-  saveToStorage('gridUnlocked',  state.gridUnlocked);
-  saveToStorage('gridItems',     state.gridItems);
-  saveToStorage('gridPlantedDay', state.gridPlantedDay);
-  saveToStorage('gridWateredDay', state.gridWateredDay);
-  saveToStorage('gridWateredCount', state.gridWateredCount);
-  saveToStorage('gridMiningHits', state.gridMiningHits);
-  saveToStorage('gridRarity', state.gridRarity);
-  saveToStorage('gridPurchasePrice', state.gridPurchasePrice);
+  saveToStorage('farms', state.farms);
+  saveToStorage('activeFarmId', state.activeFarmId);
+  saveToStorage('secondFarmPurchased', state.secondFarmPurchased);
+  // Keep legacy single-grid keys synced to farm 1 for migration compatibility.
+  saveToStorage('gridUnlocked', primaryFarm.gridUnlocked);
+  saveToStorage('gridItems', primaryFarm.gridItems);
+  saveToStorage('gridPlantedDay', primaryFarm.gridPlantedDay);
+  saveToStorage('gridWateredDay', primaryFarm.gridWateredDay);
+  saveToStorage('gridWateredCount', primaryFarm.gridWateredCount);
+  saveToStorage('gridMiningHits', primaryFarm.gridMiningHits);
+  saveToStorage('gridRarity', primaryFarm.gridRarity);
+  saveToStorage('gridPurchasePrice', primaryFarm.gridPurchasePrice);
   saveToStorage('activeTool', state.activeTool);
 }
 
@@ -2413,18 +2505,13 @@ async function resetGame() {
   }
   // Initialise state from freshly loaded defaults
   initialiseState();
-  // Reset grid arrays explicitly. Without this, residual gridUnlocked
-  // entries from previous sessions could persist if state was not fully
-  // reinitialised. Ensure both the unlocked flags and placed items
-  // arrays are fresh for a new game.
-  state.gridUnlocked = Array(GRID_CELL_COUNT).fill(false);
-  state.gridItems    = Array(GRID_CELL_COUNT).fill(null);
-  state.gridPlantedDay = Array(GRID_CELL_COUNT).fill(null);
-  state.gridWateredDay = Array(GRID_CELL_COUNT).fill(null);
-  state.gridWateredCount = Array(GRID_CELL_COUNT).fill(0);
-  state.gridMiningHits = Array(GRID_CELL_COUNT).fill(0);
-  state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
-  state.gridPurchasePrice = Array(GRID_CELL_COUNT).fill(null);
+  state.farms = {
+    [FARM_PRIMARY_ID]: createEmptyFarmState(),
+    [FARM_SECONDARY_ID]: createEmptyFarmState()
+  };
+  state.secondFarmPurchased = false;
+  state.activeFarmId = FARM_PRIMARY_ID;
+  applyFarmStateToActiveGrid(FARM_PRIMARY_ID);
   state.activeTool = TOOL_GLOVE;
   state.goals = clone(DEFAULT_DATA.goals);
   state.goalsClaimed = {};
@@ -2446,14 +2533,17 @@ async function resetGame() {
   state.activeGoalCelebration = null;
   clearGoalCelebrationSparkles();
   setGoalCelebrationOpen(false);
-  saveToStorage('gridUnlocked', state.gridUnlocked);
-  saveToStorage('gridItems',    state.gridItems);
+  saveToStorage('farms', state.farms);
   saveToStorage('gridPlantedDay', state.gridPlantedDay);
   saveToStorage('gridWateredDay', state.gridWateredDay);
   saveToStorage('gridWateredCount', state.gridWateredCount);
   saveToStorage('gridMiningHits', state.gridMiningHits);
   saveToStorage('gridRarity', state.gridRarity);
   saveToStorage('gridPurchasePrice', state.gridPurchasePrice);
+  saveToStorage('gridUnlocked', state.gridUnlocked);
+  saveToStorage('gridItems', state.gridItems);
+  saveToStorage('activeFarmId', state.activeFarmId);
+  saveToStorage('secondFarmPurchased', state.secondFarmPurchased);
   saveToStorage('activeTool', state.activeTool);
   saveToStorage('goals', state.goals);
   saveToStorage('goalsClaimed', state.goalsClaimed);
@@ -2606,6 +2696,14 @@ function renderMarket() {
   // Unified farmer's market table container
   const tableContainer = document.getElementById('market-table');
   const gridEl         = document.getElementById('grid');
+  const farmTitleEl = document.getElementById('farm-title');
+  if (farmTitleEl) {
+    farmTitleEl.textContent = state.activeFarmId === FARM_SECONDARY_ID ? 'Farm 2' : 'Farm 1';
+  }
+  if (gridEl) {
+    gridEl.classList.toggle('farm-two', state.activeFarmId === FARM_SECONDARY_ID);
+  }
+  updateFarmToggleButton();
   if (selectedShopItemId && !isShopItemUnlocked(selectedShopItemId)) {
     selectedShopItemId = null;
   }
@@ -2788,7 +2886,7 @@ function renderMarket() {
             }
             const shopEntry = state.shop.find(entry => entry.itemId === itmId);
             const multiplier = getRarityMultiplier(rarity);
-            const sellPrice = shopEntry ? shopEntry.price * multiplier : 0;
+            const sellPrice = shopEntry ? shopEntry.price * multiplier * getActiveFarmSellMultiplier() : 0;
             cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
           } else if (growDays > 0) {
             cell.title = `Grows in ${growth.daysLeft} day${growth.daysLeft === 1 ? '' : 's'}`;
@@ -4157,7 +4255,7 @@ function getSelectedGridItemInsightData() {
   const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
   const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
   const sellMultiplier = growth.isGrown ? getRarityMultiplier(rarity || 'common') : 0;
-  const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier) : 0;
+  const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier * getActiveFarmSellMultiplier()) : 0;
   const profitNow = sellNow - buyPrice;
   return {
     cellIndex: selectedGridCellIndex,
@@ -5440,7 +5538,8 @@ function purchaseGridSlot(index) {
 function mineGridTile(index) { 
   if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false; 
   if (state.gridUnlocked[index]) return false; 
-  if (!consumeEnergy(1, 'mine this tile')) { 
+  const miningEnergyCost = getActiveFarmMiningEnergyCost();
+  if (!consumeEnergy(miningEnergyCost, 'mine this tile')) { 
     return true; 
   } 
   registerDayAction();
@@ -5801,7 +5900,7 @@ function getGridCellSellSnapshot(cellIndex) {
   if (!growth.isGrown) return null;
   const rarity = getGridRarity(cellIndex) || 'common';
   const multiplier = getRarityMultiplier(rarity);
-  const sellNow = Math.max(0, Number(shopEntry.price) || 0) * multiplier;
+  const sellNow = Math.max(0, Number(shopEntry.price) || 0) * multiplier * getActiveFarmSellMultiplier();
   const buyPrice = Array.isArray(state.gridPurchasePrice)
     ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
     : 0;
@@ -5976,6 +6075,90 @@ function clearShopSelection() {
   renderMarket(); 
 } 
 
+function updateFarmToggleButton() {
+  const button = document.getElementById('farm-toggle-button');
+  if (!button) return;
+  const label = button.querySelector('.tool-label');
+  const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
+  const revealThreshold = Math.max(0, GRID_CELL_COUNT - FARM_TWO_BUTTON_REVEAL_TILES_LEFT);
+  const shouldShow = isFarmTwoPurchased() || unlockedOnFarmOne >= revealThreshold;
+  button.style.display = shouldShow ? '' : 'none';
+  if (!shouldShow) {
+    return;
+  }
+  if (!isFarmOneFullyUnlocked()) {
+    if (label) label.textContent = 'Farm 2';
+    button.title = `Unlock Farm 1 first (${unlockedOnFarmOne}/${GRID_CELL_COUNT})`;
+    button.classList.remove('active');
+    return;
+  }
+  if (!isFarmTwoPurchased()) {
+    if (label) label.textContent = 'Buy F2';
+    button.title = `Buy Farm 2 for $${FARM_TWO_PURCHASE_COST.toFixed(2)}`;
+    button.classList.remove('active');
+    return;
+  }
+  const destinationFarm = state.activeFarmId === FARM_PRIMARY_ID ? FARM_SECONDARY_ID : FARM_PRIMARY_ID;
+  if (label) label.textContent = `To F${destinationFarm}`;
+  button.title = `Switch to Farm ${destinationFarm}`;
+  button.classList.toggle('active', state.activeFarmId === FARM_SECONDARY_ID);
+}
+
+function setActiveFarm(farmId) {
+  const safeFarmId = Number(farmId) === FARM_SECONDARY_ID ? FARM_SECONDARY_ID : FARM_PRIMARY_ID;
+  if (safeFarmId === FARM_SECONDARY_ID && !isFarmTwoPurchased()) return false;
+  if (state.activeFarmId === safeFarmId) return false;
+  applyFarmStateToActiveGrid(safeFarmId);
+  selectedGridCellIndex = null;
+  selectedGridCellIndices.clear();
+  selectedShopItemId = null;
+  selectionPulseId = null;
+  stopFarmPointerInteraction();
+  saveState();
+  renderAll();
+  return true;
+}
+
+function handleFarmToggleButtonClick() {
+  if (!isFarmOneFullyUnlocked()) {
+    const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
+    addMessage(`Unlock all Farm 1 tiles first (${unlockedOnFarmOne}/${GRID_CELL_COUNT}).`, {
+      speaker: 'player',
+      emotion: 'neutral',
+      category: 'progress',
+      priority: 'normal'
+    });
+    return;
+  }
+  if (!isFarmTwoPurchased()) {
+    const confirmed = confirm(`Buy Farm 2 for $${FARM_TWO_PURCHASE_COST.toFixed(2)}?`);
+    if (!confirmed) return;
+    if ((Number(state.player?.cash) || 0) < FARM_TWO_PURCHASE_COST) {
+      addMessage(`Not enough cash for Farm 2. Need $${FARM_TWO_PURCHASE_COST.toFixed(2)}.`, {
+        speaker: 'player',
+        emotion: 'wrong',
+        category: 'progress',
+        priority: 'high'
+      });
+      return;
+    }
+    state.player.cash -= FARM_TWO_PURCHASE_COST;
+    state.secondFarmPurchased = true;
+    state.farms[FARM_SECONDARY_ID] = normalizeFarmState(state.farms[FARM_SECONDARY_ID]);
+    addMessage('Farm 2 purchased. Crops there sell for 2x, but mining costs 5 energy per hit.', {
+      speaker: 'farmer',
+      emotion: 'excited',
+      category: 'progress',
+      priority: 'high'
+    });
+    setActiveFarm(FARM_SECONDARY_ID);
+    pulseHud(false);
+    return;
+  }
+  const nextFarmId = state.activeFarmId === FARM_PRIMARY_ID ? FARM_SECONDARY_ID : FARM_PRIMARY_ID;
+  setActiveFarm(nextFarmId);
+}
+
 function updateToolButtons() {
   const desktopShortcuts = !!(
     window.matchMedia
@@ -5990,7 +6173,7 @@ function updateToolButtons() {
   if (document.body) {
     document.body.classList.toggle('has-desktop-shortcuts', desktopShortcuts);
   }
-  document.querySelectorAll('.tool-button').forEach(button => {
+  document.querySelectorAll('.tool-button[data-tool]').forEach(button => {
     const tool = button.getAttribute('data-tool');
     const unlocked = isToolUnlocked(tool);
     const baseTitle = getToolDisplayName(tool);
@@ -6015,6 +6198,7 @@ function updateToolButtons() {
     restButton.textContent = desktopShortcuts ? 'Rest (Space)' : 'Rest';
     restButton.title = 'Rest';
   }
+  updateFarmToggleButton();
 }
 
 function updateCursorForTool() {
@@ -6154,7 +6338,7 @@ function harvestPlant(cellIndex) {
     : 0;
   const rarity = getGridRarity(cellIndex) || assignGridRarity(cellIndex);
   const multiplier = getRarityMultiplier(rarity);
-  const saleValue = basePrice * multiplier;
+  const saleValue = basePrice * multiplier * getActiveFarmSellMultiplier();
   const realizedProfit = saleValue - buyPrice;
   registerSaleEvent(item.name, saleValue, 1);
   registerItemSalePressure(itemId, 1);
@@ -6492,7 +6676,7 @@ function attachEventHandlers() {
   // Next Day button triggers a daily update
   document.getElementById('next-day').onclick = nextDay;
 
-  document.querySelectorAll('.tool-button').forEach(button => { 
+  document.querySelectorAll('.tool-button[data-tool]').forEach(button => { 
     button.addEventListener('click', () => { 
       const tool = button.getAttribute('data-tool'); 
       if (tool === TOOL_WATERING || tool === TOOL_PICKAXE) { 
@@ -6502,6 +6686,13 @@ function attachEventHandlers() {
       setActiveTool(tool); 
     }); 
   }); 
+  const farmToggleButton = document.getElementById('farm-toggle-button');
+  if (farmToggleButton) {
+    farmToggleButton.addEventListener('click', () => {
+      triggerFxClass(farmToggleButton, 'fx-pop');
+      handleFarmToggleButtonClick();
+    });
+  }
   installFarmPointerHandlers();
   document.addEventListener('click', (event) => {
     if (selectedGridCellIndex === null && selectedGridCellIndices.size === 0) return;
