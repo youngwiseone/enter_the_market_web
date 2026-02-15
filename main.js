@@ -611,7 +611,13 @@ let state = {
   lastRollImpactMultiplier: 1,
   dayStartSnapshot: null,
   goalCelebrationQueue: [],
-  activeGoalCelebration: null
+  activeGoalCelebration: null,
+  daySalesCount: 0,
+  daySalesTotal: 0,
+  dayTopSale: null,
+  daySummaryHistory: [],
+  pendingDaySummary: null,
+  gridPurchasePrice: null
 };
 
 const playtestStats = {
@@ -1004,6 +1010,58 @@ function setDailyRollOpen(isOpen) {
 
 function continueDailyRollModal() {
   setDailyRollOpen(false);
+  if (state.pendingDaySummary) {
+    showDaySummaryModal(state.pendingDaySummary);
+    state.pendingDaySummary = null;
+  }
+}
+
+function setDaySummaryOpen(isOpen) {
+  const modal = document.getElementById('day-summary-modal');
+  if (!modal) return;
+  modal.classList.toggle('is-open', !!isOpen);
+  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+function showDaySummaryModal(summary) {
+  if (!summary || typeof summary !== 'object') return;
+  const subtitleEl = document.getElementById('day-summary-subtitle');
+  const soldEl = document.getElementById('day-summary-sold');
+  const salesEl = document.getElementById('day-summary-sales');
+  const deltaEl = document.getElementById('day-summary-delta');
+  const topEl = document.getElementById('day-summary-top');
+  const nextEl = document.getElementById('day-summary-next');
+  if (subtitleEl) {
+    subtitleEl.textContent = `Day ${summary.day || 1} wrap-up`;
+  }
+  if (soldEl) {
+    soldEl.textContent = String(Math.max(0, Number(summary.itemsSold) || 0));
+  }
+  if (salesEl) {
+    salesEl.textContent = `$${(Math.max(0, Number(summary.salesTotal) || 0)).toFixed(2)}`;
+  }
+  if (deltaEl) {
+    const delta = Number(summary.cashDelta) || 0;
+    deltaEl.textContent = `${delta >= 0 ? '+' : ''}$${delta.toFixed(2)}`;
+    deltaEl.style.color = delta >= 0 ? '#1f7a1f' : '#9a1c1c';
+  }
+  if (topEl) {
+    if (summary.topSale && typeof summary.topSale === 'object') {
+      const topName = String(summary.topSale.itemName || 'Item');
+      const topValue = Math.max(0, Number(summary.topSale.value) || 0);
+      topEl.textContent = `${topName} ($${topValue.toFixed(2)})`;
+    } else {
+      topEl.textContent = 'None';
+    }
+  }
+  if (nextEl) {
+    nextEl.textContent = summary.nextOpportunity || 'No special opportunities noted.';
+  }
+  setDaySummaryOpen(true);
+}
+
+function continueDaySummaryModal() {
+  setDaySummaryOpen(false);
 }
 
 function createDailyRollSlotNode(item, extraClass = '') {
@@ -1599,6 +1657,21 @@ const RARITY_MULTIPLIERS = {
   rare: 2,
   mythic: 3
 };
+const EXPECTED_RARITY_MULTIPLIER = RARITY_ROLLS.reduce((sum, entry) => {
+  const multiplier = RARITY_MULTIPLIERS[entry.rarity] ?? 1;
+  return sum + (entry.weight * multiplier);
+}, 0) / Math.max(1, RARITY_ROLLS.reduce((sum, entry) => sum + entry.weight, 0));
+const GUIDED_FLAGS = {
+  selected: 'tutorial:selected-first-item',
+  planted: 'tutorial:planted-first-seed',
+  harvest: 'tutorial:harvested-first-crop',
+  firstRest: 'tutorial:first-rest-complete',
+  firstProfit: 'tutorial:first-profit-complete',
+  storeUnlocked: 'tutorial:unlock-store-tab',
+  goalsUnlocked: 'tutorial:unlock-goals-tab',
+  storeAnnounced: 'tutorial:unlock-store-announced',
+  goalsAnnounced: 'tutorial:unlock-goals-announced'
+};
 
 function decodeAuthorIdentity() {
   try {
@@ -1930,6 +2003,11 @@ function initialiseState() {
   state.lastRollFatiguePercent = Math.max(0, Math.min(100, Number(loadFromStorage('lastRollFatiguePercent', null) ?? 0) || 0));
   state.lastRollImpactMultiplier = Math.max(0, Math.min(1, Number(loadFromStorage('lastRollImpactMultiplier', null) ?? 1) || 1));
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
+  state.daySalesCount = Math.max(0, Number(loadFromStorage('daySalesCount', null) ?? 0) || 0);
+  state.daySalesTotal = Math.max(0, Number(loadFromStorage('daySalesTotal', null) ?? 0) || 0);
+  state.dayTopSale = loadFromStorage('dayTopSale', null);
+  state.daySummaryHistory = loadFromStorage('daySummaryHistory', null) ?? [];
+  state.pendingDaySummary = null;
   // News history stores arrays of events per week. Load from storage or start empty.
   state.newsHistory   = loadFromStorage('newsHistory',   null) ?? clone(DEFAULT_DATA.newsHistory);
   ensurePlayerProgressState();
@@ -1994,6 +2072,7 @@ function initialiseState() {
   state.gridWateredCount = loadFromStorage('gridWateredCount', null);
   state.gridMiningHits = loadFromStorage('gridMiningHits', null);
   state.gridRarity = loadFromStorage('gridRarity', null);
+  state.gridPurchasePrice = loadFromStorage('gridPurchasePrice', null);
   state.activeTool = loadFromStorage('activeTool', null);
   if (!Array.isArray(state.gridUnlocked) || state.gridUnlocked.length !== GRID_CELL_COUNT) {
     if (Array.isArray(state.gridUnlocked) && state.gridUnlocked.length >= GRID_CELL_COUNT) {
@@ -2046,6 +2125,13 @@ function initialiseState() {
       state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
     }
   }
+  if (!Array.isArray(state.gridPurchasePrice) || state.gridPurchasePrice.length !== GRID_CELL_COUNT) {
+    if (Array.isArray(state.gridPurchasePrice) && state.gridPurchasePrice.length >= GRID_CELL_COUNT) {
+      state.gridPurchasePrice = state.gridPurchasePrice.slice(0, GRID_CELL_COUNT);
+    } else {
+      state.gridPurchasePrice = Array(GRID_CELL_COUNT).fill(null);
+    }
+  }
   if (!TOOL_LIST.includes(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
   }
@@ -2089,6 +2175,21 @@ function initialiseState() {
   if (!Array.isArray(state.dailyMarketRollHistory)) {
     state.dailyMarketRollHistory = [];
   }
+  state.daySalesCount = Math.max(0, Number(state.daySalesCount) || 0);
+  state.daySalesTotal = Math.max(0, Number(state.daySalesTotal) || 0);
+  if (!Array.isArray(state.daySummaryHistory)) {
+    state.daySummaryHistory = [];
+  }
+  if (!state.dayTopSale || typeof state.dayTopSale !== 'object') {
+    state.dayTopSale = null;
+  } else {
+    state.dayTopSale = {
+      itemName: String(state.dayTopSale.itemName || 'Item'),
+      value: Math.max(0, Number(state.dayTopSale.value) || 0),
+      quantity: Math.max(1, Number(state.dayTopSale.quantity) || 1)
+    };
+  }
+  state.pendingDaySummary = null;
   if (!isToolUnlocked(TOOL_WATERING) && state.activeTool === TOOL_WATERING) {
     state.activeTool = TOOL_GLOVE;
   }
@@ -2101,6 +2202,9 @@ function initialiseState() {
   }
   state.goalCelebrationQueue = [];
   state.activeGoalCelebration = null;
+  selectedGridCellIndex = null;
+  selectedShopItemId = null;
+  selectionPulseId = null;
   clearGoalCelebrationSparkles();
   setGoalCelebrationOpen(false);
 
@@ -2131,6 +2235,10 @@ function saveState() {
   saveToStorage('lastRollFatiguePercent', state.lastRollFatiguePercent);
   saveToStorage('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
   saveToStorage('dayStartSnapshot', state.dayStartSnapshot);
+  saveToStorage('daySalesCount', state.daySalesCount);
+  saveToStorage('daySalesTotal', state.daySalesTotal);
+  saveToStorage('dayTopSale', state.dayTopSale);
+  saveToStorage('daySummaryHistory', state.daySummaryHistory);
   // Persist grid purchase and placement state. These arrays represent which grid
   // slots have been purchased (gridUnlocked) and which contain items (gridItems).
   saveToStorage('gridUnlocked',  state.gridUnlocked);
@@ -2140,6 +2248,7 @@ function saveState() {
   saveToStorage('gridWateredCount', state.gridWateredCount);
   saveToStorage('gridMiningHits', state.gridMiningHits);
   saveToStorage('gridRarity', state.gridRarity);
+  saveToStorage('gridPurchasePrice', state.gridPurchasePrice);
   saveToStorage('activeTool', state.activeTool);
 }
 
@@ -2177,6 +2286,7 @@ async function resetGame() {
   state.gridWateredCount = Array(GRID_CELL_COUNT).fill(0);
   state.gridMiningHits = Array(GRID_CELL_COUNT).fill(0);
   state.gridRarity = Array(GRID_CELL_COUNT).fill(null);
+  state.gridPurchasePrice = Array(GRID_CELL_COUNT).fill(null);
   state.activeTool = TOOL_GLOVE;
   state.goals = clone(DEFAULT_DATA.goals);
   state.goalsClaimed = {};
@@ -2189,6 +2299,11 @@ async function resetGame() {
   state.dailyMarketRollHistory = [];
   state.lastRollFatiguePercent = 0;
   state.lastRollImpactMultiplier = 1;
+  state.daySalesCount = 0;
+  state.daySalesTotal = 0;
+  state.dayTopSale = null;
+  state.daySummaryHistory = [];
+  state.pendingDaySummary = null;
   state.goalCelebrationQueue = [];
   state.activeGoalCelebration = null;
   clearGoalCelebrationSparkles();
@@ -2200,6 +2315,7 @@ async function resetGame() {
   saveToStorage('gridWateredCount', state.gridWateredCount);
   saveToStorage('gridMiningHits', state.gridMiningHits);
   saveToStorage('gridRarity', state.gridRarity);
+  saveToStorage('gridPurchasePrice', state.gridPurchasePrice);
   saveToStorage('activeTool', state.activeTool);
   saveToStorage('goals', state.goals);
   saveToStorage('goalsClaimed', state.goalsClaimed);
@@ -2212,6 +2328,10 @@ async function resetGame() {
   saveToStorage('dailyMarketRollHistory', state.dailyMarketRollHistory);
   saveToStorage('lastRollFatiguePercent', state.lastRollFatiguePercent);
   saveToStorage('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
+  saveToStorage('daySalesCount', state.daySalesCount);
+  saveToStorage('daySalesTotal', state.daySalesTotal);
+  saveToStorage('dayTopSale', state.dayTopSale);
+  saveToStorage('daySummaryHistory', state.daySummaryHistory);
   renderAll();
   updateToolButtons();
   updateCursorForTool();
@@ -2275,6 +2395,7 @@ function renderEnergyBar() {
     text.textContent = `Energy: ${current}/${max}`;
   }
   renderPlayerLevelStatus();
+  updateTimeOfDayMood();
 }
 
 function renderPlayerLevelStatus() {
@@ -2341,6 +2462,15 @@ function renderMarket() {
   if (selectedShopItemId && !isShopItemUnlocked(selectedShopItemId)) {
     selectedShopItemId = null;
   }
+  if (
+    selectedGridCellIndex !== null
+    && (!Array.isArray(state.gridItems)
+      || selectedGridCellIndex < 0
+      || selectedGridCellIndex >= state.gridItems.length
+      || !state.gridItems[selectedGridCellIndex])
+  ) {
+    selectedGridCellIndex = null;
+  }
   // Clear previous content
   if (tableContainer) tableContainer.innerHTML = '';
   if (gridEl) gridEl.innerHTML = '';
@@ -2391,9 +2521,23 @@ function renderMarket() {
     // Price
     const priceCell = document.createElement('td');
     const freeCount = getFreePurchaseCount(item.id);
-    priceCell.textContent = freeCount > 0
+    const priceText = document.createElement('span');
+    priceText.className = 'market-price-value';
+    priceText.textContent = freeCount > 0
       ? `$${entry.price.toFixed(2)} (${freeCount} free)`
       : `$${entry.price.toFixed(2)}`;
+    priceCell.appendChild(priceText);
+    const avgDelta = avgPrice > 0 ? ((entry.price - avgPrice) / avgPrice) : 0;
+    const trendChip = document.createElement('span');
+    trendChip.className = `insight-chip market-price-trend ${avgDelta <= -0.05 ? 'good' : (avgDelta >= 0.05 ? 'bad' : '')}`.trim();
+    if (avgDelta <= -0.05) {
+      trendChip.textContent = `${Math.abs(avgDelta * 100).toFixed(0)}% below avg`;
+    } else if (avgDelta >= 0.05) {
+      trendChip.textContent = `${Math.abs(avgDelta * 100).toFixed(0)}% above avg`;
+    } else {
+      trendChip.textContent = 'near avg';
+    }
+    priceCell.appendChild(trendChip);
     row.appendChild(priceCell);
 
     row.classList.add('market-row'); 
@@ -2424,6 +2568,9 @@ function renderMarket() {
     const cell = document.createElement('div'); 
     cell.className = 'grid-cell'; 
     cell.dataset.index = String(i); 
+    if (selectedGridCellIndex === i) {
+      cell.classList.add('grid-cell-selected');
+    }
     // Determine unlocked state and item placement. Use temporary variables for initial
     // visual state only. Event handlers will reference state arrays directly to
     // reflect up‑to‑date values.
@@ -2535,14 +2682,7 @@ function renderMarket() {
         return;
       }
       if (state.gridItems[i]) {
-        const itmId = state.gridItems[i];
-        const it = state.items.find(itm => itm.id === itmId);
-        const isGrown = it ? getPlantGrowthState(it, i).isGrown : true;
-        if (isGrown) {
-          harvestPlant(i);
-        } else {
-          addMessage('This plant is still growing.');
-        }
+        selectGridCell(i);
         return;
       }
       if (selectedShopItemId) {
@@ -2559,7 +2699,8 @@ function renderMarket() {
     });
     gridEl.appendChild(cell);
   }
-
+  renderSelectedItemInsight();
+  renderGuidancePanel();
 }
 
 /**
@@ -2938,6 +3079,8 @@ function updateMainTabButtons() {
   const marketTab = document.getElementById('tab-market');
   const storeTab = document.getElementById('tab-store');
   const goalsTab = document.getElementById('tab-goals');
+  const storeUnlocked = isStoreTabUnlocked();
+  const goalsUnlocked = isGoalsTabUnlocked();
   const isMarket = activeMainTab === 'market';
   const isStore = activeMainTab === 'store';
   const isGoals = activeMainTab === 'goals';
@@ -2948,10 +3091,16 @@ function updateMainTabButtons() {
   if (storeTab) {
     storeTab.classList.toggle('active', isStore);
     storeTab.setAttribute('aria-selected', isStore ? 'true' : 'false');
+    storeTab.disabled = !storeUnlocked;
+    storeTab.setAttribute('aria-disabled', storeUnlocked ? 'false' : 'true');
+    storeTab.title = storeUnlocked ? 'Open Shop' : 'Unlocks after first harvest';
   }
   if (goalsTab) {
     goalsTab.classList.toggle('active', isGoals);
     goalsTab.setAttribute('aria-selected', isGoals ? 'true' : 'false');
+    goalsTab.disabled = !goalsUnlocked;
+    goalsTab.setAttribute('aria-disabled', goalsUnlocked ? 'false' : 'true');
+    goalsTab.title = goalsUnlocked ? 'Open Goal' : 'Unlocks after first harvest and rest';
   }
 }
 
@@ -2972,6 +3121,12 @@ function toggleMessagesPanel() {
 }
 
 function showTab(tabName) {
+  syncGuidedUnlocks();
+  if ((tabName === 'store' || tabName === 'goals') && !requestLockedTab(tabName)) {
+    updateMainTabButtons();
+    renderGuidancePanel();
+    return;
+  }
   if (tabName !== 'messages') {
     tabBeforeMessages = tabName;
   }
@@ -2982,6 +3137,8 @@ function showTab(tabName) {
   updateMainViewVisibility();
   updateMainTabButtons();
   renderMarket();
+  renderSelectedItemInsight();
+  renderGuidancePanel();
   renderEnergyBar();
   if (tabName === 'store') {
     renderStore();
@@ -3000,11 +3157,14 @@ function showTab(tabName) {
  * for UI updates.
  */
 function renderAll() {
+  syncGuidedUnlocks();
   renderHUD();
   renderEnergyBar();
   renderProfileGoalSummary();
+  renderGuidancePanel();
   // Always update market to keep grid/table in sync, even if hidden.
   renderMarket();
+  renderSelectedItemInsight();
   // Update store only when visible.
   const storeEl = document.getElementById('store');
   if (storeEl && window.getComputedStyle(storeEl).display !== 'none') {
@@ -3017,6 +3177,7 @@ function renderAll() {
   updateMainViewVisibility();
   updateMainTabButtons();
   updateTabNotificationBadges();
+  updateTimeOfDayMood();
   updateGridSize();
 }
 
@@ -3516,6 +3677,16 @@ function showProfileMessageBubble(text) {
   }, PROFILE_BUBBLE_HIDE_MS);
 }
 
+function hideProfileMessageBubbleImmediately() {
+  const bubble = document.getElementById('profile-message-bubble');
+  if (!bubble) return;
+  bubble.classList.add('is-hidden');
+  if (profileBubbleHideTimerId) {
+    window.clearTimeout(profileBubbleHideTimerId);
+    profileBubbleHideTimerId = null;
+  }
+}
+
 function getPendingGoalsCount() {
   if (!Array.isArray(state.goals)) return 0;
   return state.goals.reduce((count, goal) => {
@@ -3605,6 +3776,432 @@ function renderProfileGoalSummary() {
     li.appendChild(button);
     list.appendChild(li);
   });
+}
+
+function countPlantedTiles() {
+  if (!Array.isArray(state.gridItems)) return 0;
+  return state.gridItems.reduce((sum, itemId) => sum + (itemId ? 1 : 0), 0);
+}
+
+function getPrimaryGuidedState() {
+  const plantedTiles = countPlantedTiles();
+  const harvested = Math.max(0, Number(state.goalStats?.harvestCount) || 0);
+  const hasSelection = !!selectedShopItemId || !!state.goalFlags?.[GUIDED_FLAGS.selected];
+  return {
+    plantedTiles,
+    harvested,
+    hasSelection,
+    hasPlanted: plantedTiles > 0 || !!state.goalFlags?.[GUIDED_FLAGS.planted],
+    hasHarvested: harvested > 0 || !!state.goalFlags?.[GUIDED_FLAGS.harvest],
+    hasRested: (Number(state.player?.day) || 1) > 1 || !!state.goalFlags?.[GUIDED_FLAGS.firstRest]
+  };
+}
+
+function isStoreTabUnlocked() {
+  return !!state.goalFlags?.[GUIDED_FLAGS.storeUnlocked];
+}
+
+function isGoalsTabUnlocked() {
+  return !!state.goalFlags?.[GUIDED_FLAGS.goalsUnlocked];
+}
+
+function syncGuidedUnlocks() {
+  if (!state.goalFlags || typeof state.goalFlags !== 'object') return;
+  const guided = getPrimaryGuidedState();
+  const currentDay = Math.max(1, Number(state.player?.day) || 1);
+  if (guided.hasSelection) {
+    state.goalFlags[GUIDED_FLAGS.selected] = true;
+  }
+  if (guided.hasPlanted) {
+    state.goalFlags[GUIDED_FLAGS.planted] = true;
+  }
+  if (guided.hasHarvested) {
+    state.goalFlags[GUIDED_FLAGS.harvest] = true;
+  }
+  if (guided.hasHarvested || currentDay >= 2) {
+    state.goalFlags[GUIDED_FLAGS.storeUnlocked] = true;
+  }
+  if (guided.hasRested) {
+    state.goalFlags[GUIDED_FLAGS.firstRest] = true;
+  }
+  if (isStoreTabUnlocked() && (guided.hasRested || currentDay >= 2)) {
+    state.goalFlags[GUIDED_FLAGS.goalsUnlocked] = true;
+  }
+  if (!state.goalFlags[GUIDED_FLAGS.storeAnnounced] && isStoreTabUnlocked()) {
+    state.goalFlags[GUIDED_FLAGS.storeAnnounced] = true;
+    addMessage('Store unlocked: new options are now available.', {
+      speaker: 'merchant',
+      emotion: 'excited',
+      category: 'progress',
+      priority: 'high'
+    });
+  }
+  if (!state.goalFlags[GUIDED_FLAGS.goalsAnnounced] && isGoalsTabUnlocked()) {
+    state.goalFlags[GUIDED_FLAGS.goalsAnnounced] = true;
+    addMessage('Goals unlocked: track milestones and rewards.', {
+      speaker: 'farmer',
+      emotion: 'excited',
+      category: 'progress',
+      priority: 'high'
+    });
+  }
+}
+
+function requestLockedTab(tabName) {
+  if (tabName === 'store' && !isStoreTabUnlocked()) {
+    addMessage('Store unlocks after your first harvest.', {
+      speaker: 'merchant',
+      category: 'tips',
+      priority: 'low',
+      replaceKey: 'tip:unlock-store'
+    });
+    return false;
+  }
+  if (tabName === 'goals' && !isGoalsTabUnlocked()) {
+    addMessage('Goals unlock after your first harvest and rest.', {
+      speaker: 'farmer',
+      category: 'tips',
+      priority: 'low',
+      replaceKey: 'tip:unlock-goals'
+    });
+    return false;
+  }
+  return true;
+}
+
+function getBestBuyOpportunity() {
+  let best = null;
+  let bestDiff = 0;
+  if (!Array.isArray(state.shop)) return null;
+  state.shop.forEach(entry => {
+    if (!entry || !isShopItemUnlocked(entry.itemId)) return;
+    const avg = (entry.daysCount && entry.priceSum) ? (entry.priceSum / entry.daysCount) : 0;
+    if (avg <= 0) return;
+    const diff = (avg - entry.price) / avg;
+    if (diff > bestDiff) {
+      const item = state.items.find(it => it.id === entry.itemId);
+      if (!item) return;
+      bestDiff = diff;
+      best = { itemName: item.name, discountPct: diff * 100 };
+    }
+  });
+  return best && best.discountPct >= 5 ? best : null;
+}
+
+function getGuidancePayload() {
+  const guided = getPrimaryGuidedState();
+  const energy = Number(state.player?.energy) || 0;
+  if (!state.goalFlags?.[GUIDED_FLAGS.selected]) {
+    return {
+      objective: 'Select your first seed',
+      hint: 'Tap a market row to pick a seed to place.',
+      progressText: '0%',
+      chipClass: 'warn'
+    };
+  }
+  if (!state.goalFlags?.[GUIDED_FLAGS.planted]) {
+    return {
+      objective: 'Plant 1 seed on your farm',
+      hint: 'Tap any unlocked farm tile to place the selected seed.',
+      progressText: `${Math.min(1, guided.plantedTiles)}/1`,
+      chipClass: 'warn'
+    };
+  }
+  if (!state.goalFlags?.[GUIDED_FLAGS.harvest]) {
+    const readyTiles = countReadyToHarvestTiles();
+    if (readyTiles > 0) {
+      return {
+        objective: 'Harvest your first crop',
+        hint: 'Tap the ready crop tile to cash out.',
+        progressText: `${Math.min(1, guided.harvested)}/1`,
+        chipClass: ''
+      };
+    }
+    return {
+      objective: 'Grow and harvest your first crop',
+      hint: 'Use Rest to advance day and finish growth faster.',
+      progressText: `${Math.min(1, guided.harvested)}/1`,
+      chipClass: 'warn'
+    };
+  }
+  if (!state.goalFlags?.[GUIDED_FLAGS.firstRest]) {
+    return {
+      objective: 'Rest to roll the next market day',
+      hint: 'Tap Rest when you are ready for new prices.',
+      progressText: `${guided.hasRested ? 1 : 0}/1`,
+      chipClass: ''
+    };
+  }
+  if (!state.goalFlags?.[GUIDED_FLAGS.firstProfit]) {
+    const baselineCash = Number(state.dayStartSnapshot?.cash) || 0;
+    const cashDelta = (Number(state.player?.cash) || 0) - baselineCash;
+    if (cashDelta > 0) {
+      state.goalFlags[GUIDED_FLAGS.firstProfit] = true;
+    } else {
+      return {
+        objective: 'Build your first profit streak',
+        hint: 'Buy below average prices, then harvest and sell into stronger prices.',
+        progressText: `$${cashDelta.toFixed(2)}`,
+        chipClass: cashDelta < 0 ? 'bad' : 'warn'
+      };
+    }
+  }
+
+  if (energy <= 1) {
+    return {
+      objective: 'Keep momentum',
+      hint: 'Energy is low. Rest to refresh and reroll opportunities.',
+      progressText: `Energy ${Math.max(0, energy)}`,
+      chipClass: 'warn'
+    };
+  }
+  const bestBuy = getBestBuyOpportunity();
+  if (bestBuy) {
+    return {
+      objective: 'Play the best value move',
+      hint: `Buy ${bestBuy.itemName}: about ${bestBuy.discountPct.toFixed(0)}% below average.`,
+      progressText: 'Value',
+      chipClass: ''
+    };
+  }
+  return {
+    objective: 'Keep the loop going',
+    hint: 'Plant, water, harvest, then rest for new market shifts.',
+    progressText: 'Flow',
+    chipClass: ''
+  };
+}
+
+function renderGuidancePanel() {
+  const objectiveEl = document.getElementById('guidance-objective-text');
+  const hintEl = document.getElementById('guidance-hint-text');
+  const chipEl = document.getElementById('guidance-objective-chip');
+  if (!objectiveEl || !hintEl || !chipEl) return;
+  const payload = getGuidancePayload();
+  objectiveEl.textContent = payload.objective;
+  hintEl.textContent = payload.hint;
+  chipEl.textContent = payload.progressText;
+  chipEl.classList.remove('warn', 'bad');
+  if (payload.chipClass === 'warn') chipEl.classList.add('warn');
+  if (payload.chipClass === 'bad') chipEl.classList.add('bad');
+}
+
+function getSelectedShopItemInsightData() {
+  if (!selectedShopItemId) return null;
+  const item = Array.isArray(state.items) ? state.items.find(it => it.id === selectedShopItemId) : null;
+  const shopEntry = Array.isArray(state.shop) ? state.shop.find(entry => entry.itemId === selectedShopItemId) : null;
+  if (!item || !shopEntry) return null;
+  const buyPrice = Math.max(0, Number(shopEntry.price) || 0);
+  const freeCount = getFreePurchaseCount(selectedShopItemId);
+  const effectiveCost = freeCount > 0 ? 0 : buyPrice;
+  const expectedSale = buyPrice * EXPECTED_RARITY_MULTIPLIER;
+  const guaranteedSale = buyPrice * (RARITY_MULTIPLIERS.common || 1);
+  const projectedDelta = expectedSale - effectiveCost;
+  const guaranteedDelta = guaranteedSale - effectiveCost;
+  const marginPct = effectiveCost > 0 ? ((projectedDelta / effectiveCost) * 100) : 0;
+  return {
+    itemName: item.name,
+    buyPrice,
+    effectiveCost,
+    freeCount,
+    expectedSale,
+    guaranteedSale,
+    projectedDelta,
+    guaranteedDelta,
+    marginPct
+  };
+}
+
+function getSelectedGridItemInsightData() {
+  if (selectedGridCellIndex === null) return null;
+  if (!Array.isArray(state.gridItems) || selectedGridCellIndex < 0 || selectedGridCellIndex >= state.gridItems.length) {
+    return null;
+  }
+  const itemId = state.gridItems[selectedGridCellIndex];
+  if (!itemId) return null;
+  const item = Array.isArray(state.items) ? state.items.find(it => it.id === itemId) : null;
+  const shopEntry = Array.isArray(state.shop) ? state.shop.find(entry => entry.itemId === itemId) : null;
+  if (!item || !shopEntry) return null;
+  const growth = getPlantGrowthState(item, selectedGridCellIndex);
+  const buyPrice = Array.isArray(state.gridPurchasePrice)
+    ? Math.max(0, Number(state.gridPurchasePrice[selectedGridCellIndex]) || 0)
+    : 0;
+  const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
+  const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
+  const sellMultiplier = growth.isGrown ? getRarityMultiplier(rarity || 'common') : 0;
+  const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier) : 0;
+  const profitNow = sellNow - buyPrice;
+  return {
+    cellIndex: selectedGridCellIndex,
+    itemName: item.name,
+    buyPrice,
+    currentBasePrice,
+    rarity,
+    growth,
+    canSell: growth.isGrown,
+    sellNow,
+    profitNow
+  };
+}
+
+function sellSelectedGridItem() {
+  const insight = getSelectedGridItemInsightData();
+  if (!insight) return;
+  if (!insight.canSell) {
+    addMessage('This plant is still growing.');
+    return;
+  }
+  harvestPlant(insight.cellIndex);
+}
+
+function renderSelectedItemInsight() {
+  const panel = document.getElementById('market-insight-panel');
+  if (!panel) return;
+  panel.innerHTML = '';
+
+  const gridInsight = getSelectedGridItemInsightData();
+  if (gridInsight) {
+    const title = document.createElement('div');
+    title.className = 'market-insight-title';
+    title.textContent = `${gridInsight.itemName} selected tile`;
+    panel.appendChild(title);
+
+    const metricGrid = document.createElement('div');
+    metricGrid.className = 'market-insight-grid';
+    const rows = [
+      ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
+      ['Market Base', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
+      ['Sell Now', gridInsight.canSell ? `$${gridInsight.sellNow.toFixed(2)}` : 'Not ready', gridInsight.canSell ? '' : 'bad'],
+      ['Profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : '']
+    ];
+    rows.forEach(([label, value, tone]) => {
+      const metric = document.createElement('div');
+      metric.className = 'market-insight-metric';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'metric-label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = `metric-value${tone ? ` ${tone}` : ''}`;
+      valueEl.textContent = value;
+      metric.appendChild(labelEl);
+      metric.appendChild(valueEl);
+      metricGrid.appendChild(metric);
+    });
+    panel.appendChild(metricGrid);
+
+    const chipRow = document.createElement('div');
+    chipRow.className = 'market-insight-row';
+    const rarityChip = document.createElement('span');
+    const rarityLabel = String(gridInsight.rarity || 'unknown');
+    const rarityClass = rarityLabel === 'unknown' ? '' : ` rarity-${rarityLabel}`;
+    rarityChip.className = `insight-chip insight-rarity-chip${rarityClass}`;
+    rarityChip.textContent = `Rarity: ${rarityLabel === 'unknown' ? 'Unknown' : (rarityLabel.charAt(0).toUpperCase() + rarityLabel.slice(1))}`;
+    chipRow.appendChild(rarityChip);
+    const stageChip = document.createElement('span');
+    stageChip.className = `insight-chip${gridInsight.canSell ? ' good' : ''}`;
+    stageChip.textContent = gridInsight.canSell
+      ? 'Ready to sell'
+      : `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`;
+    chipRow.appendChild(stageChip);
+
+    const sellButton = document.createElement('button');
+    sellButton.type = 'button';
+    sellButton.className = 'button';
+    sellButton.textContent = gridInsight.canSell ? `Sell Selected ($${gridInsight.sellNow.toFixed(2)})` : 'Sell Selected (Locked)';
+    sellButton.disabled = !gridInsight.canSell;
+    sellButton.addEventListener('click', () => {
+      sellSelectedGridItem();
+    });
+    chipRow.appendChild(sellButton);
+    panel.appendChild(chipRow);
+    return;
+  }
+
+  const insight = getSelectedShopItemInsightData();
+  if (!insight) {
+    const empty = document.createElement('div');
+    empty.id = 'market-insight-empty';
+    empty.className = 'market-insight-empty';
+    empty.textContent = 'Select an item in Market or Farm to preview info.';
+    panel.appendChild(empty);
+    return;
+  }
+
+  const title = document.createElement('div');
+  title.className = 'market-insight-title';
+  title.textContent = `${insight.itemName} outlook`;
+  panel.appendChild(title);
+
+  const metricGrid = document.createElement('div');
+  metricGrid.className = 'market-insight-grid';
+  const rows = [
+    ['Buy Price', `$${insight.buyPrice.toFixed(2)}`, ''],
+    ['Effective Cost', `$${insight.effectiveCost.toFixed(2)}`, insight.effectiveCost === 0 ? 'good' : ''],
+    ['Expected Sale', `$${insight.expectedSale.toFixed(2)}`, ''],
+    ['Projected Delta', `${insight.projectedDelta >= 0 ? '+' : ''}$${insight.projectedDelta.toFixed(2)}`, insight.projectedDelta >= 0 ? 'good' : 'bad']
+  ];
+  rows.forEach(([label, value, tone]) => {
+    const metric = document.createElement('div');
+    metric.className = 'market-insight-metric';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'metric-label';
+    labelEl.textContent = label;
+    const valueEl = document.createElement('span');
+    valueEl.className = `metric-value${tone ? ` ${tone}` : ''}`;
+    valueEl.textContent = value;
+    metric.appendChild(labelEl);
+    metric.appendChild(valueEl);
+    metricGrid.appendChild(metric);
+  });
+  panel.appendChild(metricGrid);
+
+  const chipRow = document.createElement('div');
+  chipRow.className = 'market-insight-row';
+
+  const safetyChip = document.createElement('span');
+  safetyChip.className = `insight-chip${insight.guaranteedDelta >= 0 ? ' good' : ' bad'}`;
+  safetyChip.textContent = `Guaranteed: ${insight.guaranteedDelta >= 0 ? '+' : ''}$${insight.guaranteedDelta.toFixed(2)}`;
+  chipRow.appendChild(safetyChip);
+
+  const marginChip = document.createElement('span');
+  const marginTone = insight.marginPct >= 0 ? ' good' : ' bad';
+  marginChip.className = `insight-chip${marginTone}`;
+  marginChip.textContent = `Projected Margin: ${insight.marginPct >= 0 ? '+' : ''}${insight.marginPct.toFixed(0)}%`;
+  chipRow.appendChild(marginChip);
+
+  if (insight.freeCount > 0) {
+    const freeChip = document.createElement('span');
+    freeChip.className = 'insight-chip good';
+    freeChip.textContent = `${insight.freeCount} free purchase${insight.freeCount === 1 ? '' : 's'} remaining`;
+    chipRow.appendChild(freeChip);
+  }
+  panel.appendChild(chipRow);
+}
+
+function updateTimeOfDayMood() {
+  if (!document.body || !state.player) return;
+  const max = Math.max(1, Number(state.player.energyMax) || 1);
+  const energy = Math.max(0, Math.min(max, Number(state.player.energy) || 0));
+  const ratio = energy / max;
+  let mood = 'midday';
+  if (ratio >= 0.67) mood = 'morning';
+  else if (ratio <= 0.33) mood = 'night';
+  document.body.setAttribute('data-time-of-day', mood);
+}
+
+function registerSaleEvent(itemName, saleValue, quantity = 1) {
+  const safeValue = Math.max(0, Number(saleValue) || 0);
+  const safeQty = Math.max(1, Number(quantity) || 1);
+  state.daySalesCount = Math.max(0, Number(state.daySalesCount) || 0) + safeQty;
+  state.daySalesTotal = Math.max(0, Number(state.daySalesTotal) || 0) + safeValue;
+  const currentTop = state.dayTopSale && typeof state.dayTopSale === 'object' ? (Number(state.dayTopSale.value) || 0) : 0;
+  if (!state.dayTopSale || safeValue > currentTop) {
+    state.dayTopSale = {
+      itemName: String(itemName || 'Item'),
+      value: safeValue,
+      quantity: safeQty
+    };
+  }
 }
 
 function getMessageDayIndex() {
@@ -3766,6 +4363,9 @@ function initialiseMessageUI() {
     profile.style.cursor = 'pointer';
     profile.addEventListener('click', () => toggleMessagesPanel());
   }
+  document.addEventListener('pointerdown', () => {
+    hideProfileMessageBubbleImmediately();
+  });
   const closeButton = document.getElementById('messages-history-close');
   if (closeButton) {
     closeButton.addEventListener('click', () => toggleMessagesPanel());
@@ -3865,6 +4465,16 @@ function buyItem(itemId, quantity) {
     addMessage(`Bought ${quantity} x ${item.name} for $${totalCost.toFixed(2)}.`, { speaker: 'merchant' });
   }
   renderAll();
+  pulseHud(false);
+  const hudCenters = getHudCenters();
+  if (hudCenters.length > 0) {
+    spawnFloatingText({
+      x: hudCenters[0].x - 16,
+      y: hudCenters[0].y - 12,
+      text: `-$${totalCost.toFixed(2)}`,
+      color: '#ffd3d3'
+    });
+  }
 }
 
 function sellItem(itemId, quantity) {
@@ -3878,6 +4488,8 @@ function sellItem(itemId, quantity) {
   // Compute sale value – currently 100% of shop price (could be less)
   const saleValue = shopEntry.price * quantity;
   registerDayAction();
+  const item = state.items.find(it => it.id === itemId);
+  registerSaleEvent(item ? item.name : 'Item', saleValue, quantity);
   // Increase cash and stock
   state.player.cash += saleValue;
   shopEntry.quantity += quantity;
@@ -3892,9 +4504,18 @@ function sellItem(itemId, quantity) {
   evaluateGoals();
   saveState();
   // Announce sale
-  const item = state.items.find(it => it.id === itemId);
   addMessage(`Sold ${quantity} × ${item ? item.name : 'item'} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
   renderAll();
+  pulseHud(true);
+  const hudCenters = getHudCenters();
+  if (hudCenters.length > 0) {
+    spawnFloatingText({
+      x: hudCenters[0].x - 14,
+      y: hudCenters[0].y - 12,
+      text: `+$${saleValue.toFixed(2)}`,
+      color: '#b8ffd0'
+    });
+  }
 }
 
 function countReadyToHarvestTiles() {
@@ -3917,7 +4538,8 @@ function getCurrentDaySnapshot() {
     cash: Number(state.player?.cash) || 0,
     netWorth: calculateNetWorth(),
     readyTiles: countReadyToHarvestTiles(),
-    unlockedTiles: Array.isArray(state.gridUnlocked) ? state.gridUnlocked.reduce((sum, v) => sum + (v ? 1 : 0), 0) : 0
+    unlockedTiles: Array.isArray(state.gridUnlocked) ? state.gridUnlocked.reduce((sum, v) => sum + (v ? 1 : 0), 0) : 0,
+    harvestCount: Math.max(0, Number(state.goalStats?.harvestCount) || 0)
   };
 }
 
@@ -4049,6 +4671,19 @@ function getDailyRollSummaryText(rollResult, fatiguePercent = 0) {
   return `${fatigueText} | ${parts.join(' | ')}`;
 }
 
+function getBestRollOpportunityText(rollResult) {
+  if (!rollResult || !(rollResult.byItem instanceof Map) || rollResult.byItem.size === 0) {
+    return 'No major market shift this day.';
+  }
+  const ranked = Array.from(rollResult.byItem.values())
+    .sort((a, b) => (Number(b.adjustedImpactPct) || 0) - (Number(a.adjustedImpactPct) || 0));
+  const best = ranked[0];
+  if (!best) return 'No major market shift this day.';
+  const impact = Number(best.adjustedImpactPct) || 0;
+  const sign = impact >= 0 ? '+' : '';
+  return `Next opportunity: watch ${best.itemName} (${sign}${impact.toFixed(0)}% roll impact).`;
+}
+
 /**
  * Advance the game by one day ("Rest"). Applies energy-based market
  * fatigue to the daily roll, updates prices and restores energy.
@@ -4056,6 +4691,11 @@ function getDailyRollSummaryText(rollResult, fatiguePercent = 0) {
 function nextDay() { 
   updateNetWorth(); 
   playDayTransition(); 
+  syncGuidedUnlocks();
+  const daySummaryStart = (state.dayStartSnapshot && typeof state.dayStartSnapshot === 'object')
+    ? state.dayStartSnapshot
+    : getCurrentDaySnapshot();
+  const preRestCash = Number(state.player?.cash) || 0;
 
   const previousPrices = new Map();
   state.shop.forEach(entry => {
@@ -4138,12 +4778,37 @@ function nextDay() {
       state.dailyMarketRollHistory = state.dailyMarketRollHistory.slice(-30);
     }
   }
+  const daySummary = {
+    day: Number(daySummaryStart.day) || Math.max(1, Number(state.player.day) - 1),
+    itemsSold: Math.max(0, Number(state.daySalesCount) || 0),
+    salesTotal: Math.max(0, Number(state.daySalesTotal) || 0),
+    cashDelta: preRestCash - (Number(daySummaryStart.cash) || 0),
+    topSale: state.dayTopSale || null,
+    nextOpportunity: getBestRollOpportunityText(dailyRoll)
+  };
+  if (!Array.isArray(state.daySummaryHistory)) {
+    state.daySummaryHistory = [];
+  }
+  state.daySummaryHistory.push(daySummary);
+  if (state.daySummaryHistory.length > 7) {
+    state.daySummaryHistory = state.daySummaryHistory.slice(-7);
+  }
+  state.pendingDaySummary = daySummary;
+
   // Provide a single contextual tip or reminder for the day.
   generateDailyTip(dowIndex);
+  state.daySalesCount = 0;
+  state.daySalesTotal = 0;
+  state.dayTopSale = null;
   evaluateGoals();
+  syncGuidedUnlocks();
   state.dayStartSnapshot = getCurrentDaySnapshot();
   saveState();
   renderAll();
+  if (dailyRoll.picks.length === 0 && state.pendingDaySummary) {
+    showDaySummaryModal(state.pendingDaySummary);
+    state.pendingDaySummary = null;
+  }
 }
 
 /**
@@ -4536,7 +5201,12 @@ function placeItemOnGrid(itemId, cellIndex) {
     return;
   }
   registerDayAction();
+  const invEntry = Array.isArray(state.inventory) ? state.inventory.find(entry => entry.itemId === itemId) : null;
+  const perUnitCost = Math.max(0, Number(invEntry?.avgCost) || 0);
   state.gridItems[cellIndex] = itemId;
+  if (Array.isArray(state.gridPurchasePrice)) {
+    state.gridPurchasePrice[cellIndex] = perUnitCost;
+  }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
@@ -4580,6 +5250,9 @@ function removeItemFromGrid(cellIndex) {
   const item = state.items.find(it => it.id === itemId);
   if (!item) return;
   state.gridItems[cellIndex] = null;
+  if (Array.isArray(state.gridPurchasePrice)) {
+    state.gridPurchasePrice[cellIndex] = null;
+  }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
@@ -4591,12 +5264,35 @@ function removeItemFromGrid(cellIndex) {
   }
   saveState();
   addMessage(`Removed ${item.name} from the grid.`);
+  if (selectedGridCellIndex === cellIndex) {
+    selectedGridCellIndex = null;
+  }
   renderAll();
 }
 
 // Track the currently selected shop item for farm placement.
 let selectedShopItemId = null; 
 let selectionPulseId = null; 
+let selectedGridCellIndex = null;
+
+function selectGridCell(cellIndex) {
+  if (!Array.isArray(state.gridItems) || cellIndex < 0 || cellIndex >= state.gridItems.length) return;
+  if (!state.gridItems[cellIndex]) return;
+  if (selectedGridCellIndex === cellIndex) return;
+  selectedGridCellIndex = cellIndex;
+  selectedShopItemId = null;
+  selectionPulseId = null;
+  updateCursorForTool();
+  renderMarket();
+}
+
+function clearGridSelection(shouldRefresh = false) {
+  if (selectedGridCellIndex === null) return;
+  selectedGridCellIndex = null;
+  if (shouldRefresh) {
+    renderMarket();
+  }
+}
 
 function selectShopItem(itemId) { 
   if (!isShopItemUnlocked(itemId)) { 
@@ -4609,7 +5305,11 @@ function selectShopItem(itemId) {
     renderMarket(); 
     return; 
   } 
+  clearGridSelection();
   selectedShopItemId = itemId; 
+  if (state.goalFlags && typeof state.goalFlags === 'object') {
+    state.goalFlags[GUIDED_FLAGS.selected] = true;
+  }
   selectionPulseId = itemId; 
   setActiveTool(TOOL_GLOVE); 
   const freeCount = getFreePurchaseCount(itemId); 
@@ -4707,12 +5407,19 @@ function purchaseAndPlaceSelected(cellIndex) {
     return;
   }
   registerDayAction();
+  if (state.goalFlags && typeof state.goalFlags === 'object') {
+    state.goalFlags[GUIDED_FLAGS.planted] = true;
+  }
   if (freeQty > 0) {
     consumeFreePurchases(selectedShopItemId, 1);
   }
   state.player.cash -= totalCost;
   shopEntry.quantity -= 1;
   state.gridItems[cellIndex] = selectedShopItemId;
+  selectedGridCellIndex = cellIndex;
+  if (Array.isArray(state.gridPurchasePrice)) {
+    state.gridPurchasePrice[cellIndex] = totalCost;
+  }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
@@ -4773,14 +5480,25 @@ function harvestPlant(cellIndex) {
   registerDayAction();
   const shopEntry = state.shop.find(entry => entry.itemId === itemId);
   const basePrice = shopEntry ? shopEntry.price : 0;
+  const buyPrice = Array.isArray(state.gridPurchasePrice)
+    ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
+    : 0;
   const rarity = getGridRarity(cellIndex) || assignGridRarity(cellIndex);
   const multiplier = getRarityMultiplier(rarity);
   const saleValue = basePrice * multiplier;
+  const realizedProfit = saleValue - buyPrice;
+  registerSaleEvent(item.name, saleValue, 1);
   state.player.cash += saleValue;
   state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
+  if (state.goalFlags && typeof state.goalFlags === 'object') {
+    state.goalFlags[GUIDED_FLAGS.harvest] = true;
+  }
   const harvestKey = String(itemId);
   state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
   state.gridItems[cellIndex] = null;
+  if (Array.isArray(state.gridPurchasePrice)) {
+    state.gridPurchasePrice[cellIndex] = null;
+  }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
@@ -4794,7 +5512,13 @@ function harvestPlant(cellIndex) {
   updateNetWorth();
   evaluateGoals();
   saveState(); 
-  addMessage(`Harvested ${item.name} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' }); 
+  addMessage(
+    `Harvested ${item.name} for $${saleValue.toFixed(2)} (profit ${realizedProfit >= 0 ? '+' : ''}$${realizedProfit.toFixed(2)}).`,
+    { speaker: 'player', emotion: 'money' }
+  ); 
+  if (selectedGridCellIndex === cellIndex) {
+    selectedGridCellIndex = null;
+  }
   renderAll(); 
   const center = getTileCenter(cellIndex); 
   if (center) { 
@@ -5070,6 +5794,20 @@ function attachEventHandlers() {
       }
     });
   }
+  const daySummaryContinueButton = document.getElementById('day-summary-continue');
+  if (daySummaryContinueButton) {
+    daySummaryContinueButton.addEventListener('click', () => {
+      continueDaySummaryModal();
+    });
+  }
+  const daySummaryModal = document.getElementById('day-summary-modal');
+  if (daySummaryModal) {
+    daySummaryModal.addEventListener('click', (event) => {
+      if (event.target === daySummaryModal) {
+        continueDaySummaryModal();
+      }
+    });
+  }
   document.getElementById('store-cosmetics').onclick = () => {
     currentStoreTab = 'cosmetics';
     renderStore();
@@ -5094,6 +5832,20 @@ function attachEventHandlers() {
       setActiveTool(tool); 
     }); 
   }); 
+  document.addEventListener('click', (event) => {
+    if (selectedGridCellIndex === null) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const gridCell = target.closest('.grid-cell');
+    if (gridCell) {
+      const indexText = gridCell.getAttribute('data-index');
+      const index = Number(indexText);
+      if (Number.isInteger(index) && Array.isArray(state.gridItems) && !!state.gridItems[index]) {
+        return;
+      }
+    }
+    clearGridSelection(true);
+  });
 
   document.addEventListener('click', () => {
     messageJustEmitted = false;
@@ -5140,6 +5892,7 @@ async function main() {
   await loadJSONData();
   initialiseState();
   evaluateGoals();
+  syncGuidedUnlocks();
   attachEventHandlers();
   startPlaytimeTracking();
   initialiseMessageUI();

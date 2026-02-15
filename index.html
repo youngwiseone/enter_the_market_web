@@ -476,6 +476,11 @@
             border-right: 1px solid white;
             border-bottom: 1px solid white;
         }
+        .grid-cell.grid-cell-selected {
+            outline: 2px solid #7eff9d;
+            outline-offset: -2px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+        }
         .grid-cell img {
             width: 100%;
             height: 100%;
@@ -786,6 +791,8 @@
             text-overflow: clip;
             min-height: 28px !important;
             padding: 3px 6px !important;
+            font-size: clamp(11px, 1.4vw, 13px) !important;
+            line-height: 1.15 !important;
         }
         .goal-row-highlight {
             outline: 2px solid var(--secondary-color, #0078d7);
@@ -800,6 +807,153 @@
             gap: 4px;
             flex-wrap: wrap;
         }
+        .market-guidance {
+            margin-top: 6px;
+            padding: 6px;
+            border: 1px solid #808080;
+            background: #ece9e1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .guidance-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .guidance-label {
+            font-weight: bold;
+            min-width: 72px;
+            color: #2a2a2a;
+            flex: 0 0 auto;
+        }
+        .guidance-text {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+        .guidance-chip {
+            flex: 0 0 auto;
+            border: 1px solid #1f5f1f;
+            background: #d9f2d9;
+            color: #1f5f1f;
+            padding: 0 6px;
+            line-height: 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .guidance-chip.warn {
+            border-color: #8a6d00;
+            background: #fff5cc;
+            color: #5f4800;
+        }
+        .guidance-chip.bad {
+            border-color: #8f1f1f;
+            background: #ffe1e1;
+            color: #7a0000;
+        }
+        .market-insight-panel {
+            border: 1px solid #808080;
+            background: #f3f1ea;
+            padding: 6px;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .market-insight-empty {
+            color: #3a3a3a;
+            line-height: 1.2;
+        }
+        .market-insight-title {
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        .market-insight-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+            gap: 4px 8px;
+        }
+        .market-insight-metric {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            border: 1px solid #b5b5b5;
+            background: #fff;
+            padding: 2px 5px;
+            line-height: 1.2;
+        }
+        .metric-label {
+            color: #3b3b3b;
+        }
+        .metric-value {
+            font-weight: bold;
+        }
+        .metric-value.good {
+            color: #1f7a1f;
+        }
+        .metric-value.bad {
+            color: #9a1c1c;
+        }
+        .market-insight-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .insight-chip {
+            border: 1px solid #8f8f8f;
+            background: #efefef;
+            border-radius: 12px;
+            padding: 1px 8px;
+            font-size: 12px;
+            line-height: 18px;
+        }
+        .insight-chip.good {
+            border-color: #1f7a1f;
+            background: #d9f2d9;
+            color: #1f5f1f;
+        }
+        .insight-chip.bad {
+            border-color: #a12a2a;
+            background: #ffe2e2;
+            color: #7f1010;
+        }
+        .insight-rarity-chip {
+            font-weight: bold;
+        }
+        .insight-rarity-chip.rarity-common {
+            border-color: #cfd0d1;
+            background: #f7f7f7;
+            color: #2e2e2e;
+        }
+        .insight-rarity-chip.rarity-uncommon {
+            border-color: #bdbdbd;
+            background: #efefef;
+            color: #1f1f1f;
+        }
+        .insight-rarity-chip.rarity-rare {
+            border-color: #d4af37;
+            background: #fff3bf;
+            color: #6b4f00;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+        }
+        .insight-rarity-chip.rarity-mythic {
+            border-color: #a855f7;
+            background: #f2e5ff;
+            color: #4b1b7d;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 0 8px rgba(168, 85, 247, 0.35);
+        }
+        .market-price-value {
+            display: block;
+            line-height: 1.2;
+        }
+        .market-price-trend {
+            display: inline-block;
+            margin-top: 3px;
+        }
         button,
         .button,
         input,
@@ -813,6 +967,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-width: 70px;
             padding: 4px 10px;
             background-color: #c0c0c0;
             border-left: 1px solid white;
@@ -836,6 +991,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-width: 65px;
             padding: 4px 10px;
             font-size: var(--font-ui);
             background-color: #c0c0c0;
@@ -1197,6 +1353,74 @@
         .daily-roll-continue {
             width: 100%;
         }
+        .day-summary-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1240;
+        }
+        .day-summary-modal.is-open {
+            display: flex;
+        }
+        .day-summary-panel {
+            width: min(520px, calc(100vw - 24px));
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .day-summary-title {
+            margin: 0;
+            font-size: calc(var(--font-ui) + 2px);
+            line-height: 1.2;
+        }
+        .day-summary-subtitle {
+            margin: 0;
+            color: #303030;
+            line-height: 1.2;
+        }
+        .day-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(130px, 1fr));
+            gap: 6px;
+        }
+        .day-summary-card {
+            border: 1px solid #808080;
+            background: #fff;
+            padding: 5px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .day-summary-label {
+            color: #444;
+            font-size: 12px;
+        }
+        .day-summary-value {
+            font-weight: bold;
+        }
+        .day-summary-next {
+            border: 1px solid #808080;
+            background: #f4f4f4;
+            padding: 6px;
+            line-height: 1.25;
+        }
+        .day-summary-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        body[data-time-of-day="morning"] #farm-panel {
+            filter: brightness(1.03) saturate(1.05);
+        }
+        body[data-time-of-day="midday"] #farm-panel {
+            filter: brightness(1);
+        }
+        body[data-time-of-day="night"] #farm-panel {
+            filter: brightness(0.9) saturate(0.92);
+        }
         @keyframes daily-roll-shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-3px); }
@@ -1282,7 +1506,9 @@
             flex: 1 1 auto;
             min-height: 0;
             max-height: none;
+            padding: 0;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             touch-action: pan-y;
@@ -1290,6 +1516,10 @@
             position: relative;
             z-index: 61;
             pointer-events: auto;
+        }
+        #market-table {
+            padding: 8px;
+            box-sizing: border-box;
         }
         #store {
             display: none;
@@ -1308,13 +1538,19 @@
             flex: 1 1 auto;
             min-height: 0;
             max-height: 100%;
+            padding: 0;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             touch-action: pan-y;
             position: relative;
             z-index: 61;
             pointer-events: auto;
+        }
+        #goals-content {
+            padding: 8px;
+            box-sizing: border-box;
         }
         #next-day {
             min-height: 44px;
@@ -1386,6 +1622,10 @@
             }
             .daily-roll-reel {
                 min-height: 174px;
+            }
+            .market-insight-grid,
+            .day-summary-grid {
+                grid-template-columns: 1fr;
             }
         }
         @media (hover: none) and (pointer: coarse) { 
@@ -1630,9 +1870,14 @@
                 <div id="market-header" class="panel market-header">
                     <div class="market-tabs" role="tablist">
                         <button id="tab-market" class="tab-button active" role="tab" aria-selected="true">Market</button>
-                        <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Store <span id="tab-store-badge" class="tab-badge">0</span></button>
-                        <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goals <span id="tab-goals-badge" class="tab-badge">0</span></button>
-                        <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Feedback</a>
+                        <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Shop <span id="tab-store-badge" class="tab-badge">0</span></button>
+                        <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goal <span id="tab-goals-badge" class="tab-badge">0</span></button>
+                        <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
+                    </div>
+                    <div id="market-guidance" class="market-guidance" aria-live="polite">
+                        <div id="market-insight-panel" class="market-insight-panel" aria-live="polite">
+                            <div id="market-insight-empty" class="market-insight-empty">Select an item to preview expected return.</div>
+                        </div>
                     </div>
                 </div>
         <div id="market-table-container" class="panel">
@@ -1711,6 +1956,34 @@
             <button id="daily-roll-continue" class="button daily-roll-continue" type="button">Continue</button>
         </div>
     </div>
+    <div id="day-summary-modal" class="day-summary-modal" aria-hidden="true">
+        <div class="panel day-summary-panel" role="dialog" aria-labelledby="day-summary-title" aria-modal="true">
+            <h2 id="day-summary-title" class="day-summary-title">Day Summary</h2>
+            <p id="day-summary-subtitle" class="day-summary-subtitle"></p>
+            <div class="day-summary-grid">
+                <div class="day-summary-card">
+                    <span class="day-summary-label">Items Sold</span>
+                    <span id="day-summary-sold" class="day-summary-value">0</span>
+                </div>
+                <div class="day-summary-card">
+                    <span class="day-summary-label">Sales Total</span>
+                    <span id="day-summary-sales" class="day-summary-value">$0.00</span>
+                </div>
+                <div class="day-summary-card">
+                    <span class="day-summary-label">Cash Delta</span>
+                    <span id="day-summary-delta" class="day-summary-value">$0.00</span>
+                </div>
+                <div class="day-summary-card">
+                    <span class="day-summary-label">Top Sale</span>
+                    <span id="day-summary-top" class="day-summary-value">None</span>
+                </div>
+            </div>
+            <div id="day-summary-next" class="day-summary-next">No special opportunities noted.</div>
+            <div class="day-summary-actions">
+                <button id="day-summary-continue" class="button" type="button">Continue</button>
+            </div>
+        </div>
+    </div>
     <div id="license-note" class="license-note" aria-label="license note" aria-hidden="true">
         License (Bligh Hedges): custom reuse allowed, no unchanged rehosting. <a href="LICENSE.md" target="_blank" rel="noopener">Details</a>
     </div>
@@ -1719,7 +1992,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=58"></script>
+    <script src="main.js?v=66"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

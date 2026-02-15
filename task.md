@@ -1,215 +1,173 @@
-﻿# Enter The Market - Simplification + Juice Plan (Current Scope)
+﻿# Enter The Market - Track 2 Juice + Simplification Plan
 
 ## Goal
-Make the game easy to understand in under 60 seconds, while feeling rewarding and lively within the first 3 minutes.
+Make new players understand the loop in under 60 seconds and feel satisfying feedback within the first 2-3 actions.
 
-## Scope Rules For This Pass
-- No sound work yet.
-- Exclude all previously "move later" features from this plan.
-- Treat work as two separate tracks in strict order.
-1. Bug fixes first.
-2. Upgrades second.
+## Scope Rules
+- Track 1 is complete and intentionally out of this document.
+- Planning only. No implementation in this pass.
+- Locked decisions for this track:
+1. Onboarding uses guided flow via natural progression unlocks (not hard lockouts).
+2. Juice intensity target is medium.
+3. Mobile primary baseline is 390x844 (with 360x800 as secondary verification).
+- Every task must improve one or both:
+1. Clarity (faster understanding, less reading, less decision friction).
+2. Juice (stronger visual payoff, better action feel, better momentum).
+- If a feature adds complexity without immediate loop value, move it to backlog.
 
-## Locked UX Clarifications
-- During gameplay, hide persistent bottom message panel on both desktop and mobile.
-- Show compact message preview in the market header area (left side).
-- Compact preview content: small profile icon + single-line latest message text.
-- Profile icon remains visible at all times during gameplay and reflects latest speaker emotion.
-- Compact text auto-hides after `3s`; icon stays visible.
-- Full message history open method: tap the compact profile icon in header.
-- Opening message history replaces the main market/shop content area with message history view.
-- Preserve the previously active tab (Market/Store/Goals) while history is open, and restore it on close.
-- Full message history close methods:
-1. Tap explicit close control.
-2. Tap overlay backdrop.
-- Show unread count badge next to the icon.
-- Unread definition: messages received since the last time the icon was tapped to open full history.
-- Unread resets immediately when history is opened.
-- Move `Rest` into the market header tab row and style it like `Market`, `Store`, and `Goals`.
-- Apply the same message/history/header interaction model to desktop and mobile.
+## Design Pillars (Track 2)
+- One obvious thing to do now.
+- One obvious reason it is a good idea.
+- One immediate visual reward when the action completes.
+- Keep text short; let visuals do most of the teaching.
 
-## Product Principles
-- One clear objective at a time.
-- Fewer systems visible early.
-- Every key action should give immediate visual feedback.
-- Reduce reading load with short labels and guided prompts.
+## Current Baseline (Already In Game)
+- Core tab flow exists (Market, Store, Goals).
+- Message history flow exists.
+- Buy/sell feedback foundation exists (coin particles, floating text, FX canvas).
+- Daily roll modal exists.
+- Energy already influences day transition logic.
 
-## Core Problems To Solve
-- Mobile layout blocks core actions (grid/messages interfering with Market/Store tabs).
-- Desktop HUD overlap bug (levels hidden under profile icon).
-- New players still need clearer guidance and stronger moment-to-moment feedback.
+## Track 2 Roadmap (Refocused)
 
-## Implementation Order
-
-## Track 1 - Bug Fixes (Do First)
-
-### Bug-1: Desktop level text hidden under profile icon
+### T2-1: 60-Second Onboarding + Guided First Profit
 - Priority: P0
-- File targets: `index.html` (HUD/messages panel layout + CSS), `main.js` (`renderPlayerLevelStatus` + resize flow)
-- Implementation checklist:
-1. Inspect current `chat-profile-column` constraints and level/xp text clipping conditions.
-2. Reserve dedicated non-overlapping space for `#player-level-label`, `#player-xp-bar`, and `#player-xp-text`.
-3. Ensure profile avatar scales without covering level/xp block.
-4. Keep selector/id compatibility so existing HUD updates continue to work.
+- Why: This is the highest impact simplification work.
+- Outcome: First-time player reaches first profitable sale quickly with minimal reading.
+- File targets: `main.js`, `index.html`, optional `data/` goal metadata.
+- Plan:
+1. Add a strict early-game objective ladder (3-5 micro-steps max).
+2. Keep one active objective visible at all times.
+3. Add one-line "Do this now" hint that updates after each key action.
+4. Gate advanced hints and tabs behind natural progression unlocks until first profitable loop completes.
 - Acceptance criteria:
-1. At 1280x720, 1366x768, 1440x900, and 1920x1080 the level text is fully visible.
-2. Profile avatar and level/xp text never overlap at 100% browser zoom.
-3. No regressions to day/cash/net worth HUD readability.
+1. Player can complete first profit loop without opening extra panels.
+2. Only one objective is active on-screen at any time.
+3. Hint text changes immediately after buy/place/sell/rest.
+4. Unlock flow feels organic (new options appear as rewards, not forced lock screens).
 
-### Bug-2: Mobile grid too dominant and blocking core controls
+### T2-2: Profit Readability at Decision Time
 - Priority: P0
-- File targets: `index.html` (responsive CSS + layout rules), `main.js` (`updateGridSize`, resize observers)
-- Implementation checklist:
-1. Cap mobile grid size using viewport-based max that preserves access to Market/Store/Goals and header controls.
-2. Rebalance vertical allocation between grid, header controls, and content area.
-3. Rework `--grid-size`, `--messages-height`, and `--bottom-bar-height` logic after removing bottom persistent messages panel.
-4. Re-run sizing after tab switches, orientation changes, and message mode transitions.
+- Why: Players should instantly know if an action is smart.
+- Outcome: Every item decision communicates expected outcome before commit.
+- File targets: `main.js`, `index.html` (+ CSS).
+- Plan:
+1. On item select, show buy cost, current value, projected delta, and margin.
+2. Use consistent color semantics (loss red, neutral gray, profit green).
+3. Add lightweight outcome chips/icons so meaning is visible at a glance.
+4. Keep touch and desktop interactions behaviorally identical.
 - Acceptance criteria:
-1. On 360x800 and 390x844, Market/Store/Goals/Rest remain tappable during normal play.
-2. Grid remains playable and readable without overlapping top controls.
-3. No horizontal overflow on mobile portrait.
+1. Selected item always displays projected gain/loss.
+2. No ambiguous states where the player cannot tell expected result.
+3. Data remains readable at mobile widths.
 
-### Bug-3: Message UX and history flow cleanup
+### T2-3: Action Juice Pass (Buy/Sell/Place/Harvest)
 - Priority: P0
-- File targets: `index.html` (header markup/CSS + message history panel), `main.js` (`addMessage`, message UI state/timers, tab/content toggle handlers)
-- Implementation checklist:
-1. Remove always-visible bottom messages panel from gameplay layout on desktop and mobile.
-2. Add compact header preview on the left side of market header with small profile icon + newest line.
-3. Keep icon always visible during gameplay; update icon emotion with each newest message.
-4. Auto-hide only the compact text line after `3s` when no newer message arrives.
-5. Open full history by tapping the compact profile icon.
-6. Route full history into the main content region by replacing market/shop content view.
-7. Add clear close control to return from history view to previous market/store context.
-8. Allow backdrop tap to dismiss overlay flows where overlays are used.
-9. Add unread counter badge beside the compact icon.
-10. Reset unread counter immediately when history is opened via icon tap.
-11. Preserve message history and scroll position across compact/history toggles.
+- Why: Immediate payoff is the fastest way to reinforce the loop.
+- Outcome: Key actions feel punchy and responsive without becoming noisy.
+- File targets: `main.js` FX pipeline, `index.html` CSS animation tuning.
+- Plan:
+1. Standardize action feedback bundles per action (visual pulse + float value + particle burst).
+2. Tune effect duration and amplitude to medium intensity (snappy, readable, non-blocking).
+3. Increase positive feedback intensity for successful profit events.
+4. Add reduced-motion-safe fallback behavior.
 - Acceptance criteria:
-1. New message text appears in compact preview and auto-hides in ~3s.
-2. Compact profile icon remains visible throughout gameplay.
-3. Full history opens when tapping the compact profile icon.
-4. Opening history replaces market/shop content area as planned.
-5. Full history closes reliably and returns to prior play context.
-6. Backdrop tap closes full history reliably where overlay mode is active.
-7. Unread badge increments for new messages and resets immediately on history open.
-8. Compact header preview no longer blocks Market/Store/Goals/Rest controls.
+1. Buy/sell/place/harvest all have clear, distinct feedback.
+2. Effects never block input or obscure critical UI.
+3. Reduced-motion mode preserves information without motion overload.
+4. FX style is noticeable and rewarding but not visually noisy over repeated loops.
 
-### Bug-4: Header navigation consistency and Rest relocation
+### T2-4: Day-End Payoff That Teaches the Loop
 - Priority: P1
-- File targets: `index.html` (market header/tab row markup), `main.js` (tab wiring and rest handler bindings), CSS in `index.html`
-- Implementation checklist:
-1. Move `Rest` action from bottom bar into market header controls.
-2. Style `Rest` consistently with existing tab-style controls.
-3. Ensure control ordering is stable across desktop and mobile.
-4. Ensure click/tap targets remain accessible and non-overlapping at small widths.
+- Why: Rest should close the loop with clear cause/effect.
+- Outcome: End-of-day screen explains what happened and what to do next.
+- File targets: `main.js`, `index.html` summary UI.
+- Plan:
+1. Keep daily roll modal and add concise summary step after it.
+2. Show only high-value info: sold count, day profit, top win, notable market shift.
+3. Add "next day opportunities" strip (arrivals/unlocks/highlighted chance).
+4. Make summary skippable and quick to dismiss.
 - Acceptance criteria:
-1. `Rest` is in header on desktop and mobile.
-2. `Rest` visual style matches Market/Store/Goals interaction language.
-3. No loss of functionality for day advance flow.
-4. Header controls remain usable without overlap/truncation in mobile portrait.
+1. Player can explain why day outcome changed.
+2. Player sees at least one actionable next-day suggestion.
+3. Flow never traps input after close.
 
-### Bug-5: Regression and stability pass for bug fixes
+### T2-5: Energy as Readable World Mood (Not Just a Number)
 - Priority: P1
-- File targets: `main.js` (event listeners, resize flow, tab switching), `index.html` (final responsive polish)
-- Implementation checklist:
-1. Validate resize behavior when rotating mobile portrait/landscape.
-2. Validate tab switching with message UI closed/open states.
-3. Validate no duplicated listeners/timers after repeated history toggles.
-4. Validate level/HUD updates after day advance and level-up events.
+- Why: Ambient state supports juice and communicates pacing.
+- Outcome: Morning/midday/night state shifts based on energy bands.
+- File targets: `main.js` state mapping, `index.html` CSS.
+- Plan:
+1. Map energy bands to time-of-day visuals.
+2. Apply subtle global styling shifts with safe contrast.
+3. Keep transitions smooth and minimal.
+4. Ensure HUD/table readability in all states.
 - Acceptance criteria:
-1. No console errors during tab switching, resizing, or message/history toggling.
-2. No stuck history state and no blocked gameplay input after close.
-3. Desktop and mobile layouts remain stable after 5+ consecutive resize/orientation cycles.
+1. Visual state changes predictably with energy.
+2. No readability regression in any band.
+3. No harsh flashes during transitions.
 
-### Bug-6: Duplicate HUD IDs in `index.html` cause invalid DOM mapping
+### T2-6: Mobile Clarity + Comfort Pass
 - Priority: P1
-- Findings from review:
-1. Duplicate IDs detected for `hud-day`, `hud-cash`, and `hud-networth`.
-2. Hidden + visible duplicates can create brittle selector behavior and debugging confusion.
-- File targets: `index.html` (market header markup), `main.js` (`renderHUD` selectors if needed)
-- Implementation checklist:
-1. Remove duplicate hidden stat spans from `#market-header` or convert to class-based elements.
-2. Keep a single authoritative element per HUD ID.
-3. Update selectors only if structural changes require it.
+- Why: New players on small screens are most sensitive to friction.
+- Outcome: Core loop remains easy on common mobile resolutions.
+- File targets: `index.html` responsive CSS, `main.js` resize hooks if required.
+- Plan:
+1. Raise minimum legible type and spacing for key actions/HUD.
+2. Add grid zoom option where density is high.
+3. Preserve scroll behavior for market content while keeping primary actions visible.
+4. Validate tap targets on 390/412 first, then verify 360/375 for fallback stability.
 - Acceptance criteria:
-1. DOM has no duplicate IDs for HUD stats.
-2. HUD updates render exactly once per stat update cycle.
-3. No visual regression in market header.
+1. No clipped critical labels on target widths (starting with 390x844 baseline).
+2. No blocked primary actions during normal play.
+3. No horizontal overflow in core loop screens.
 
-### Bug-7: Text encoding artifacts (mojibake) in HTML/CSS strings
+### T2-7: Post-Core Content Expansion
 - Priority: P2
-- Findings from review:
-1. Artifacts like `WindowsÂ 98`, `9Ã—9`, and `DayÂ 1` appear in source text.
-2. Some are hidden now but can leak into visible UI depending on layout/state.
-- File targets: `index.html` (visible labels/comments where relevant)
-- Implementation checklist:
-1. Replace mojibake in user-facing text with clean ASCII/UTF-8-safe text.
-2. Keep comments readable and consistent.
-3. Validate no weird glyphs appear in live UI.
+- Why: More content should come after clarity and juice are stable.
+- Outcome: Adds depth without undermining onboarding.
+- File targets: `main.js`, `data/`, `index.html` labels.
+- Plan:
+1. Add more items with balanced early-game ranges.
+2. Add day-of-week display with clear current-day highlight and icon.
+3. Expand unlockable store roadmap with milestone-gated progression.
+4. Keep new systems hidden until players finish core onboarding loop.
 - Acceptance criteria:
-1. No visible mojibake in HUD, tabs, panel titles, or default labels.
-2. UI text remains stable across desktop/mobile.
+1. Economy pacing remains stable after item expansion.
+2. Day/week context is always understandable at a glance.
+3. Unlock states are explicit and motivating.
 
-### Track 1 Definition of Done
-1. All P0 acceptance criteria pass.
-2. P1 bugs (including duplicate HUD IDs) are resolved in the same pass.
-3. Manual QA pass completed on desktop + mobile viewport emulation.
-4. No functional regression to buy/place/sell/day loop.
-5. Ready for Track 2 without known blocker bugs.
+## Deferred Backlog (Not in This Track 2 Cycle)
+- Weather system.
+- Animals.
+- Deep crafting/recipes and combine systems.
+- Drag-and-drop sell/reorganize/cook workflows.
+- Advanced cosmetic progression extensions.
 
-## Track 2 - Upgrades (After Bug Fixes)
-1. Simplify loop clarity.
-- Add one daily objective shown in HUD.
-- Add "next best action" guidance.
-- Add short dismissible onboarding prompts.
+## Success Metrics (Updated)
+- First profitable loop completion target: under 90 seconds for new players.
+- Time-to-understand core loop target: under 60 seconds.
+- Every core action produces immediate readable feedback.
+- Day transition leaves player with a clear next action.
+- Mobile users can complete full loop without layout friction.
 
-2. Improve item decision clarity.
-- On select/hover show buy price, expected sell value, projected profit.
-- Use color coding for loss/neutral/profit.
+## QA Checklist (Juice + Simplicity)
+- New player can follow onboarding without opening secondary UI.
+- Only one primary objective/hint is visible at any moment.
+- Early progression unlocks feel natural and rewarding, not restrictive.
+- Item decision view clearly shows expected result before action.
+- Buy/sell/place/harvest each feel distinct and responsive.
+- Action FX remains medium intensity over repeated play (clear but not overwhelming).
+- Day-end summary clearly states: results + next opportunity.
+- Energy mood shifts are visible and readable.
+- Mobile 390x844 passes readability and tap-access checks first; 360x800 also passes secondary checks.
+- No console errors during repeated action loops and day transitions.
 
-3. Add visual juice (no audio).
-- Buy/sell visual feedback: coin particles + quick floating value changes.
-- Keep effects short and readable.
-
-4. Improve day transition payoff.
-- End-of-day summary: sold items, total profit, notable events.
-- Highlight next-day arrivals or unlock progress.
-
-5. World feedback from energy.
-- Time-of-day visual shift based on energy (morning/midday/night).
-
-6. Mobile readability pass.
-- Increase minimum font readability on small devices.
-- Keep critical HUD elements visible without covering action tabs.
-
-## Success Metrics
-- Level/profile overlap bug is fully resolved on desktop.
-- On mobile, Market/Store/Goals/Rest are always accessible during normal play.
-- New message compact/history behavior works from compact icon tap and close controls.
-- Message history reliably replaces market/shop content and returns cleanly.
-- Header controls (including `Rest`) remain usable on desktop and mobile.
-- New player completes first profitable sell cycle in < 90 seconds.
-
-## QA Checklist
-- Desktop: Is level/xp info always visible and not obscured by profile UI?
-- Mobile: Can player access Market/Store/Goals/Rest tabs without fighting layout?
-- Mobile/Desktop: Does compact newest-message text auto-hide at ~3s while icon stays visible?
-- Mobile/Desktop: Can message history be opened from compact profile icon tap?
-- Mobile/Desktop: Does opening history replace market/shop content as intended?
-- Mobile/Desktop: Can message history be closed reliably?
-- Mobile/Desktop: Does unread count increment on new messages and reset immediately on icon-tap open?
-- Mobile/Desktop: Is `Rest` in header and styled like tab controls?
-- DOM: Are HUD IDs unique (`hud-day`, `hud-cash`, `hud-networth`)?
-- Gameplay: Is there always an obvious next action?
-- Feedback: Do key actions feel responsive without relying on sound?
-
-## Build Sequence (Actionable)
-1. Fix desktop level/profile overlap.
-2. Fix mobile grid/message/tab blocking issues.
-3. Replace bottom persistent messages panel with compact header preview + history content view toggle.
-4. Move `Rest` into header and align tab-style interaction on desktop/mobile.
-5. Remove duplicate HUD IDs and stabilize header stat mapping.
-6. Run regression checks on desktop/mobile layouts.
-7. Implement simplification upgrades (objective/hints/item clarity).
-8. Implement visual juice upgrades (particles/floaters, no audio).
-9. Implement end-of-day summary + energy-based time-of-day visuals.
+## Build Sequence
+1. T2-1 60-second onboarding and guided first profit.
+2. T2-2 profit readability at decision time.
+3. T2-3 action juice pass.
+4. T2-4 day-end payoff teaching loop.
+5. T2-5 energy mood visuals.
+6. T2-6 mobile clarity and comfort.
+7. T2-7 post-core content expansion.
