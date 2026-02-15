@@ -1243,6 +1243,9 @@
             border: 1px solid #808080;
             box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 18px 44px rgba(0, 0, 0, 0.4);
             padding: 12px;
+            max-height: 82dvh;
+            display: flex;
+            flex-direction: column;
         }
         .daily-roll-title {
             margin: 0 0 8px;
@@ -1251,9 +1254,8 @@
         }
         .daily-roll-reels {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-            margin-bottom: 10px;
+            grid-template-columns: minmax(0, 1fr);
+            margin-bottom: 8px;
         }
         .daily-roll-reel {
             border: 1px solid #7f7f7f;
@@ -1261,10 +1263,10 @@
             color: #7eff9d;
             overflow: hidden;
             position: relative;
-            min-height: 186px;
+            min-height: 154px;
         }
         .daily-roll-reel-window {
-            height: 156px;
+            height: 132px;
             overflow: hidden;
             position: relative;
         }
@@ -1318,6 +1320,28 @@
             white-space: nowrap;
             overflow: hidden;
         }
+        .daily-roll-results {
+            margin: 0 0 8px;
+            min-height: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            align-content: flex-start;
+            overflow: hidden;
+        }
+        .daily-roll-result-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #9c9c9c;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 4px;
+            padding: 2px 6px;
+            min-height: 26px;
+            max-width: 100%;
+            overflow: hidden;
+        }
         .daily-roll-result-icon {
             width: 20px;
             height: 20px;
@@ -1341,14 +1365,14 @@
             line-height: 1.2;
         }
         .daily-roll-impact-chip.positive {
-            color: #7eff9d;
-            border-color: #1d7f1d;
-            background: rgba(29, 127, 29, 0.26);
+            color: #145214;
+            border-color: #2c7a2c;
+            background: rgba(126, 255, 157, 0.42);
         }
         .daily-roll-impact-chip.negative {
-            color: #ffb3b3;
-            border-color: #a62626;
-            background: rgba(166, 38, 38, 0.3);
+            color: #6f1111;
+            border-color: #9c2b2b;
+            background: rgba(255, 179, 179, 0.5);
         }
         .daily-roll-reel-stack {
             color: #ffe680;
@@ -1365,13 +1389,6 @@
             margin: 0 0 10px;
             font-size: var(--font-ui);
             color: #2f2f2f;
-        }
-        .daily-roll-summary {
-            margin: 0 0 8px;
-            font-size: var(--font-ui);
-            min-height: 20px;
-            line-height: 1.2;
-            color: #2a2a2a;
         }
         .daily-roll-spark {
             position: absolute;
@@ -1650,11 +1667,19 @@
                 height: 44px;
             }
             .daily-roll-reels {
-                grid-template-columns: 1fr;
-                gap: 6px;
+                margin-bottom: 6px;
             }
             .daily-roll-reel {
-                min-height: 174px;
+                min-height: 144px;
+            }
+            .daily-roll-reel-window {
+                height: 120px;
+            }
+            .daily-roll-reel-slot {
+                height: 40px;
+            }
+            .daily-roll-panel {
+                padding: 10px;
             }
             .market-insight-grid,
             .day-summary-grid {
@@ -1964,28 +1989,15 @@
         <div class="panel daily-roll-panel" role="dialog" aria-labelledby="daily-roll-title" aria-modal="true">
             <h2 id="daily-roll-title" class="daily-roll-title">Market Roll</h2>
             <p id="daily-roll-fatigue" class="daily-roll-fatigue"></p>
-            <p class="daily-roll-fatigue-note">Higher leftover energy reduces both upside and downside movement.</p>
+            <p id="daily-roll-fatigue-note" class="daily-roll-fatigue-note">Higher fatigue = smaller market moves.</p>
             <div class="daily-roll-reels">
-                <div id="daily-roll-reel-1" class="daily-roll-reel">
+                <div id="daily-roll-reel" class="daily-roll-reel">
                     <div class="daily-roll-reel-window">
-                        <div id="daily-roll-track-1" class="daily-roll-reel-track"></div>
+                        <div id="daily-roll-track" class="daily-roll-reel-track"></div>
                     </div>
-                    <div id="daily-roll-reel-summary-1" class="daily-roll-reel-summary"></div>
-                </div>
-                <div id="daily-roll-reel-2" class="daily-roll-reel">
-                    <div class="daily-roll-reel-window">
-                        <div id="daily-roll-track-2" class="daily-roll-reel-track"></div>
-                    </div>
-                    <div id="daily-roll-reel-summary-2" class="daily-roll-reel-summary"></div>
-                </div>
-                <div id="daily-roll-reel-3" class="daily-roll-reel">
-                    <div class="daily-roll-reel-window">
-                        <div id="daily-roll-track-3" class="daily-roll-reel-track"></div>
-                    </div>
-                    <div id="daily-roll-reel-summary-3" class="daily-roll-reel-summary"></div>
                 </div>
             </div>
-            <p id="daily-roll-summary" class="daily-roll-summary"></p>
+            <div id="daily-roll-results" class="daily-roll-results" aria-live="polite"></div>
             <button id="daily-roll-continue" class="button daily-roll-continue" type="button">Continue</button>
         </div>
     </div>
@@ -2025,7 +2037,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=70"></script>
+    <script src="main.js?v=71"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
