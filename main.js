@@ -1274,6 +1274,82 @@ function resetShopEntryToBasePrice(itemId) {
   shopEntry.price = basePrice;
   shopEntry.priceSum = 0;
   shopEntry.daysCount = 0;
+  shopEntry.priceRecoveryDaysRemaining = 0;
+  shopEntry.priceRecoveryTarget = null;
+}
+
+function ensureShopEntryMarketFields(entry) {
+  if (!entry || typeof entry !== 'object') return false;
+  let changed = false;
+  const price = Math.max(0.01, Number(entry.price) || 0.01);
+  if (entry.price !== price) {
+    entry.price = price;
+    changed = true;
+  }
+  const priceSum = Math.max(0, Number(entry.priceSum) || 0);
+  if (entry.priceSum !== priceSum) {
+    entry.priceSum = priceSum;
+    changed = true;
+  }
+  const daysCount = Math.max(0, Math.floor(Number(entry.daysCount) || 0));
+  if (entry.daysCount !== daysCount) {
+    entry.daysCount = daysCount;
+    changed = true;
+  }
+  const recoveryDaysRemaining = Math.max(0, Math.floor(Number(entry.priceRecoveryDaysRemaining) || 0));
+  if (entry.priceRecoveryDaysRemaining !== recoveryDaysRemaining) {
+    entry.priceRecoveryDaysRemaining = recoveryDaysRemaining;
+    changed = true;
+  }
+  const rawRecoveryTarget = Number(entry.priceRecoveryTarget);
+  const recoveryTarget = recoveryDaysRemaining > 0
+    ? Math.max(0.01, Number.isFinite(rawRecoveryTarget) ? rawRecoveryTarget : price)
+    : null;
+  if (entry.priceRecoveryTarget !== recoveryTarget) {
+    entry.priceRecoveryTarget = recoveryTarget;
+    changed = true;
+  }
+  return changed;
+}
+
+function getShopEntryAveragePrice(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  const daysCount = Math.max(0, Math.floor(Number(entry.daysCount) || 0));
+  const priceSum = Math.max(0, Number(entry.priceSum) || 0);
+  if (daysCount > 0 && priceSum > 0) {
+    return Math.max(0.01, priceSum / daysCount);
+  }
+  return Math.max(0.01, Number(entry.price) || 0.01);
+}
+
+function isShopEntryPriceRecoveryActive(entry) {
+  return !!(entry && Number(entry.priceRecoveryDaysRemaining) > 0 && Number(entry.priceRecoveryTarget) > 0);
+}
+
+function startShopEntryPriceRecovery(entry, targetPrice) {
+  if (!entry || typeof entry !== 'object') return false;
+  const target = Math.max(0.01, Number(targetPrice) || 0.01);
+  const current = Math.max(0.01, Number(entry.price) || 0.01);
+  if (Math.abs(target - current) < 0.0001) return false;
+  entry.priceRecoveryDaysRemaining = PRICE_RECOVERY_DAYS;
+  entry.priceRecoveryTarget = target;
+  return true;
+}
+
+function applyShopEntryPriceRecoveryStep(entry) {
+  if (!isShopEntryPriceRecoveryActive(entry)) return false;
+  const daysRemaining = Math.max(1, Math.floor(Number(entry.priceRecoveryDaysRemaining) || 1));
+  const target = Math.max(0.01, Number(entry.priceRecoveryTarget) || 0.01);
+  const current = Math.max(0.01, Number(entry.price) || 0.01);
+  const delta = (target - current) / daysRemaining;
+  entry.price = Math.max(0.01, current + delta);
+  entry.priceRecoveryDaysRemaining = Math.max(0, daysRemaining - 1);
+  if (entry.priceRecoveryDaysRemaining > 0) return false;
+  entry.price = target;
+  entry.priceRecoveryTarget = null;
+  entry.priceSum = target;
+  entry.daysCount = 1;
+  return true;
 }
 
 function getDefaultUnlockedShopItems(items) {
@@ -1675,6 +1751,8 @@ const GRID_DIMENSION = 7;
 const GRID_CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION;
 const PLAYER_LEVEL_CAP = 99;
 const ENERGY_SEGMENT_CAP = 10;
+const PRICE_CRASH_THRESHOLD_PERCENT = 100;
+const PRICE_RECOVERY_DAYS = 3;
 const XP_REWARDS = {
   plant: 2,
   water: 1,
@@ -2194,6 +2272,17 @@ function initialiseState() {
   }
   if (!state.freePurchasesByItem || typeof state.freePurchasesByItem !== 'object') {
     state.freePurchasesByItem = {};
+  }
+  if (Array.isArray(state.shop)) {
+    let shopChanged = false;
+    state.shop.forEach(entry => {
+      if (ensureShopEntryMarketFields(entry)) {
+        shopChanged = true;
+      }
+    });
+    if (shopChanged) {
+      saveToStorage('shop', state.shop);
+    }
   }
   if (!state.goalFlags || typeof state.goalFlags !== 'object') {
     state.goalFlags = {};
@@ -4936,6 +5025,8 @@ function applyDailyMarketRollToShop(rollResult) {
   if (!rollResult || !(rollResult.byItem instanceof Map)) return;
   state.shop.forEach(entry => {
     if (!isShopItemUnlocked(entry.itemId)) return;
+    ensureShopEntryMarketFields(entry);
+    if (isShopEntryPriceRecoveryActive(entry)) return;
     const effect = rollResult.byItem.get(entry.itemId);
     if (!effect) return;
     const factor = 1 + (effect.adjustedImpactPct / 100);
@@ -5025,9 +5116,23 @@ function nextDay() {
   // Update item prices – accumulate for average, apply random fluctuation and slot-roll impact.
   state.shop.forEach(entry => {
     if (!isShopItemUnlocked(entry.itemId)) return;
+    ensureShopEntryMarketFields(entry);
     // Accumulate the current price into priceSum and increment daysCount
     entry.priceSum = (entry.priceSum || 0) + entry.price;
     entry.daysCount = (entry.daysCount || 0) + 1;
+    if (isShopEntryPriceRecoveryActive(entry)) {
+      const completed = applyShopEntryPriceRecoveryStep(entry);
+      if (completed) {
+        const item = state.items.find(it => it.id === entry.itemId);
+        const itemName = item ? item.name : `Item ${entry.itemId}`;
+        addMessage(`${itemName} stabilized near its average after a price crash.`, {
+          speaker: 'farmer',
+          category: 'economy',
+          priority: 'normal'
+        });
+      }
+      return;
+    }
     // Apply random movement with small directional drift from hold/sell pressure.
     const bias = getMarketDirectionalBias(entry.itemId);
     const upChance = clampMarketBias(0.5 + (bias.upward * 0.28) - (bias.downward * 0.32), 0.08, 0.92);
@@ -5041,7 +5146,22 @@ function nextDay() {
   });
   applyDailyMarketRollToShop(dailyRoll);
   state.shop.forEach(entry => {
+    ensureShopEntryMarketFields(entry);
     entry.price = Math.max(0.01, Number(entry.price) || 0.01);
+    if (!isShopItemUnlocked(entry.itemId)) return;
+    if (isShopEntryPriceRecoveryActive(entry)) return;
+    const avgPrice = getShopEntryAveragePrice(entry);
+    if (avgPrice <= 0) return;
+    const deviationPct = ((entry.price - avgPrice) / avgPrice) * 100;
+    if (Math.abs(deviationPct) < PRICE_CRASH_THRESHOLD_PERCENT) return;
+    if (!startShopEntryPriceRecovery(entry, avgPrice)) return;
+    const item = state.items.find(it => it.id === entry.itemId);
+    const itemName = item ? item.name : `Item ${entry.itemId}`;
+    const direction = deviationPct >= 0 ? 'above' : 'below';
+    addMessage(
+      `${itemName} moved ${Math.abs(deviationPct).toFixed(0)}% ${direction} average. Market crash reset started (back to average in ${PRICE_RECOVERY_DAYS} days).`,
+      { speaker: 'farmer', category: 'economy', priority: 'high' }
+    );
   });
   // Recalculate net worth (cash + inventory + grid item value)
   updateNetWorth();
