@@ -4054,6 +4054,43 @@ function sellSelectedGridItem() {
   harvestPlant(insight.cellIndex);
 }
 
+function clearCurrentInfoSelection() {
+  let changed = false;
+  if (selectedShopItemId !== null) {
+    selectedShopItemId = null;
+    selectionPulseId = null;
+    changed = true;
+  }
+  if (selectedGridCellIndex !== null) {
+    selectedGridCellIndex = null;
+    changed = true;
+  }
+  if (!changed) return;
+  updateCursorForTool();
+  renderMarket();
+}
+
+function createInsightHeader(titleText) {
+  const head = document.createElement('div');
+  head.className = 'market-insight-head';
+  const title = document.createElement('div');
+  title.className = 'market-insight-title';
+  title.textContent = titleText;
+  head.appendChild(title);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'button market-insight-close';
+  close.textContent = 'x';
+  close.title = 'Close info';
+  close.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearCurrentInfoSelection();
+  });
+  head.appendChild(close);
+  return head;
+}
+
 function renderSelectedItemInsight() {
   const panel = document.getElementById('market-insight-panel');
   if (!panel) return;
@@ -4061,10 +4098,7 @@ function renderSelectedItemInsight() {
 
   const gridInsight = getSelectedGridItemInsightData();
   if (gridInsight) {
-    const title = document.createElement('div');
-    title.className = 'market-insight-title';
-    title.textContent = `${gridInsight.itemName} selected tile`;
-    panel.appendChild(title);
+    panel.appendChild(createInsightHeader(`${gridInsight.itemName} selected tile`));
 
     const metricGrid = document.createElement('div');
     metricGrid.className = 'market-insight-grid';
@@ -4127,10 +4161,7 @@ function renderSelectedItemInsight() {
     return;
   }
 
-  const title = document.createElement('div');
-  title.className = 'market-insight-title';
-  title.textContent = `${insight.itemName} outlook`;
-  panel.appendChild(title);
+  panel.appendChild(createInsightHeader(`${insight.itemName} outlook`));
 
   const metricGrid = document.createElement('div');
   metricGrid.className = 'market-insight-grid';
