@@ -1430,14 +1430,20 @@ function getXpToNextLevel(levelRaw) {
   return Math.max(1, Math.round(30 * Math.pow(1.18, Math.max(0, level - 1))));
 }
 
+function roundEnergyValue(valueRaw) {
+  const value = Number(valueRaw);
+  if (!Number.isFinite(value)) return 0;
+  return Math.round(value * 10) / 10;
+}
+
+function formatEnergyValue(valueRaw) {
+  const rounded = roundEnergyValue(valueRaw);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
 function getEnergyMaxForLevel(levelRaw) {
   const level = clampPlayerLevel(levelRaw);
-  if (level >= 10) return 10;
-  if (level >= 8) return 9;
-  if (level >= 6) return 8;
-  if (level >= 4) return 7;
-  if (level >= 2) return 6;
-  return 5;
+  return 5 + Math.max(0, level - 1);
 }
 
 function ensurePlayerProgressState() {
@@ -1450,7 +1456,9 @@ function ensurePlayerProgressState() {
   if (typeof state.player.energy !== 'number') {
     state.player.energy = state.player.energyMax;
   }
-  state.player.energy = Math.max(0, Math.min(Math.floor(state.player.energy), state.player.energyMax));
+  const maxEnergy = Number(state.player.energyMax) || 1;
+  const currentEnergy = roundEnergyValue(state.player.energy);
+  state.player.energy = Math.max(0, Math.min(currentEnergy, maxEnergy));
 }
 
 function enqueueLevelUpCelebration(level, changeText) {
@@ -1485,8 +1493,8 @@ function awardPlayerXp(amount, options = {}) {
     state.player.energyMax = currentEnergyMax;
     state.player.energy = currentEnergyMax;
     const changeText = currentEnergyMax > previousEnergyMax
-      ? `Max energy increased to ${currentEnergyMax}. Energy fully refilled.`
-      : `Energy fully refilled to ${currentEnergyMax}.`;
+      ? `Max energy increased to ${formatEnergyValue(currentEnergyMax)}. Energy fully refilled.`
+      : `Energy fully refilled to ${formatEnergyValue(currentEnergyMax)}.`;
     addMessage(`Level up! Reached Level ${state.player.playerLevel}. ${changeText}`, {
       speaker: 'player',
       emotion: 'level_up',
@@ -1665,7 +1673,8 @@ const TOOL_PICKAXE = 'pickaxe';
 const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
 const GRID_DIMENSION = 7;
 const GRID_CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION;
-const PLAYER_LEVEL_CAP = 20;
+const PLAYER_LEVEL_CAP = 99;
+const ENERGY_SEGMENT_CAP = 10;
 const XP_REWARDS = {
   plant: 2,
   water: 1,
@@ -2421,18 +2430,27 @@ function renderEnergyBar() {
   const bar = document.getElementById('energy-bar');
   const text = document.getElementById('energy-text');
   if (!bar || !state.player) return;
-  const max = Math.max(1, state.player.energyMax || 10);
-  const current = Math.max(0, Math.min(state.player.energy ?? max, max));
+  const max = Math.max(1, Number(state.player.energyMax) || 10);
+  const current = Math.max(0, Math.min(roundEnergyValue(state.player.energy ?? max), max));
+  const useCompactLabel = max > ENERGY_SEGMENT_CAP;
+  bar.classList.toggle('energy-bar-compact', useCompactLabel);
   bar.innerHTML = '';
-  for (let i = 0; i < max; i += 1) {
-    const segment = document.createElement('div');
-    segment.className = 'energy-segment' + (i < current ? ' filled' : '');
-    bar.appendChild(segment);
+  if (useCompactLabel) {
+    const compactLabel = document.createElement('span');
+    compactLabel.className = 'energy-compact-label';
+    compactLabel.textContent = `${formatEnergyValue(current)} / ${formatEnergyValue(max)}`;
+    bar.appendChild(compactLabel);
+  } else {
+    for (let i = 0; i < max; i += 1) {
+      const segment = document.createElement('div');
+      segment.className = 'energy-segment' + (i < current ? ' filled' : '');
+      bar.appendChild(segment);
+    }
   }
-  bar.setAttribute('aria-valuenow', String(current));
-  bar.setAttribute('aria-valuemax', String(max));
+  bar.setAttribute('aria-valuenow', String(roundEnergyValue(current)));
+  bar.setAttribute('aria-valuemax', String(roundEnergyValue(max)));
   if (text) {
-    text.textContent = `Energy: ${current}/${max}`;
+    text.textContent = `Energy: ${formatEnergyValue(current)}/${formatEnergyValue(max)}`;
   }
   renderPlayerLevelStatus();
   updateTimeOfDayMood();
@@ -4545,19 +4563,20 @@ function addMessage(text, meta) {
 }
 
 function consumeEnergy(amount, reason) {
-  const max = state.player.energyMax || 10;
+  const cost = Math.max(0, Number(amount) || 0);
+  const max = Math.max(1, Number(state.player.energyMax) || 10);
   if (typeof state.player.energy !== 'number') {
     state.player.energy = max;
   }
-  if (state.player.energy < amount) {
+  if (state.player.energy + 0.0001 < cost) {
     const message = reason ? `Not enough energy to ${reason}.` : 'Not enough energy.';
     addMessage(message, { speaker: 'player', emotion: 'tired', category: 'system', priority: 'normal' });
     return false;
   }
-  state.player.energy = Math.max(0, state.player.energy - amount);
+  state.player.energy = Math.max(0, roundEnergyValue(state.player.energy - cost));
   if (state.player.energy <= 2 && lowEnergyNoticeDay !== state.player.day) {
     lowEnergyNoticeDay = state.player.day;
-    addMessage(`Low energy: ${state.player.energy}/${state.player.energyMax}. Consider ending the day.`, {
+    addMessage(`Low energy: ${formatEnergyValue(state.player.energy)}/${formatEnergyValue(state.player.energyMax)}. Consider ending the day.`, {
       speaker: 'player',
       emotion: 'tired',
       category: 'tips',
@@ -4973,7 +4992,7 @@ function nextDay() {
   state.lastRollFatiguePercent = fatigue.fatiguePercent;
   state.lastRollImpactMultiplier = fatigue.impactMultiplier;
   addMessage(
-    `Market fatigue applied: ${fatigue.fatiguePercent}% reduced roll impact from leftover energy (${fatigue.energy}/${fatigue.energyMax}).`,
+    `Market fatigue applied: ${fatigue.fatiguePercent}% reduced roll impact from leftover energy (${formatEnergyValue(fatigue.energy)}/${formatEnergyValue(fatigue.energyMax)}).`,
     { speaker: 'farmer', category: 'economy', priority: 'normal' }
   );
 
