@@ -66,12 +66,12 @@
     {
       "id": "unlock-tier2-first-expansion",
       "name": "Tier 2 Contract",
-      "description": "Reach Day 4 and $300 cash",
+      "description": "Reach Day 3 and $220 cash",
       "type": "economy",
       "goal": {
         "all": [
-          { "metric": "day", "operator": ">=", "value": 4 },
-          { "metric": "cash", "operator": ">=", "value": 300 }
+          { "metric": "day", "operator": ">=", "value": 3 },
+          { "metric": "cash", "operator": ">=", "value": 220 }
         ]
       },
       "reward": { "unlockShopItems": [3, 7, 9, 10, 17] },
@@ -80,12 +80,12 @@
     {
       "id": "unlock-tier3-growth",
       "name": "Tier 3 Supply",
-      "description": "Harvest 30 crops and reach $2,500 cash",
+      "description": "Harvest 14 crops and reach $400 cash",
       "type": "economy",
       "goal": {
         "all": [
-          { "metric": "harvestCount", "operator": ">=", "value": 30 },
-          { "metric": "cash", "operator": ">=", "value": 2500 }
+          { "metric": "harvestCount", "operator": ">=", "value": 14 },
+          { "metric": "cash", "operator": ">=", "value": 400 }
         ]
       },
       "reward": { "unlockShopItems": [1, 11, 13, 16] },
@@ -94,12 +94,12 @@
     {
       "id": "unlock-tier4-elite",
       "name": "Tier 4 Elite Futures",
-      "description": "Reach $15,000 cash and unlock 10 farm tiles",
+      "description": "Reach $1,200 cash and unlock 8 farm tiles",
       "type": "economy",
       "goal": {
         "all": [
-          { "metric": "cash", "operator": ">=", "value": 15000 },
-          { "metric": "gridUnlockedCount", "operator": ">=", "value": 10 }
+          { "metric": "cash", "operator": ">=", "value": 1200 },
+          { "metric": "gridUnlockedCount", "operator": ">=", "value": 8 }
         ]
       },
       "reward": { "unlockShopItems": [8] },
@@ -116,37 +116,37 @@
     },
     {
       "id": "cash-1000-boost",
-      "name": "Four Figures",
-      "description": "Reach $1,000 cash",
+      "name": "Early Momentum",
+      "description": "Reach $300 cash",
       "type": "cosmetic",
-      "goal": { "metric": "cash", "operator": ">=", "value": 1000 },
+      "goal": { "metric": "cash", "operator": ">=", "value": 300 },
       "reward": { "grantCosmetic": "theme-sophisticated" },
       "message": "Goal complete: Sophisticated theme awarded."
     },
     {
       "id": "cash-10000-boost",
       "name": "Market Veteran",
-      "description": "Reach $10,000 cash",
+      "description": "Reach $1,000 cash",
       "type": "cosmetic",
-      "goal": { "metric": "cash", "operator": ">=", "value": 10000 },
+      "goal": { "metric": "cash", "operator": ">=", "value": 1000 },
       "reward": { "grantCosmetic": "theme-marble" },
       "message": "Goal complete: Marble theme awarded."
     },
     {
       "id": "cash-100000-boost",
       "name": "Tycoon",
-      "description": "Reach $100,000 cash",
+      "description": "Reach $5,000 cash",
       "type": "cosmetic",
-      "goal": { "metric": "cash", "operator": ">=", "value": 100000 },
+      "goal": { "metric": "cash", "operator": ">=", "value": 5000 },
       "reward": { "grantCosmetic": "theme-gold" },
       "message": "Goal complete: Gold theme awarded."
     },
     {
       "id": "cash-1000000-boost",
       "name": "Legendary Broker",
-      "description": "Reach $1,000,000 cash",
+      "description": "Reach $25,000 cash",
       "type": "cosmetic",
-      "goal": { "metric": "cash", "operator": ">=", "value": 1000000 },
+      "goal": { "metric": "cash", "operator": ">=", "value": 25000 },
       "reward": {
         "grantCosmetic": "theme-diamond",
         "setFlag": "cash_millionaire"

@@ -367,12 +367,12 @@ const DEFAULT_DATA = {
     {
       id: 'unlock-tier2-first-expansion',
       name: 'Tier 2 Contract',
-      description: 'Reach Day 4 and $300 cash',
+      description: 'Reach Day 3 and $220 cash',
       type: 'economy',
       goal: {
         all: [
-          { metric: 'day', operator: '>=', value: 4 },
-          { metric: 'cash', operator: '>=', value: 300 }
+          { metric: 'day', operator: '>=', value: 3 },
+          { metric: 'cash', operator: '>=', value: 220 }
         ]
       },
       reward: { unlockShopItems: [3, 7, 9, 10, 17] },
@@ -381,12 +381,12 @@ const DEFAULT_DATA = {
     {
       id: 'unlock-tier3-growth',
       name: 'Tier 3 Supply',
-      description: 'Harvest 30 crops and reach $2,500 cash',
+      description: 'Harvest 14 crops and reach $400 cash',
       type: 'economy',
       goal: {
         all: [
-          { metric: 'harvestCount', operator: '>=', value: 30 },
-          { metric: 'cash', operator: '>=', value: 2500 }
+          { metric: 'harvestCount', operator: '>=', value: 14 },
+          { metric: 'cash', operator: '>=', value: 400 }
         ]
       },
       reward: { unlockShopItems: [1, 11, 13, 16] },
@@ -395,12 +395,12 @@ const DEFAULT_DATA = {
     {
       id: 'unlock-tier4-elite',
       name: 'Tier 4 Elite Futures',
-      description: 'Reach $15,000 cash and unlock 10 farm tiles',
+      description: 'Reach $1,200 cash and unlock 8 farm tiles',
       type: 'economy',
       goal: {
         all: [
-          { metric: 'cash', operator: '>=', value: 15000 },
-          { metric: 'gridUnlockedCount', operator: '>=', value: 10 }
+          { metric: 'cash', operator: '>=', value: 1200 },
+          { metric: 'gridUnlockedCount', operator: '>=', value: 8 }
         ]
       },
       reward: { unlockShopItems: [8] },
@@ -417,37 +417,37 @@ const DEFAULT_DATA = {
     },
     {
       id: 'cash-1000-boost',
-      name: 'Four Figures',
-      description: 'Reach $1,000 cash',
+      name: 'Early Momentum',
+      description: 'Reach $300 cash',
       type: 'cosmetic',
-      goal: { metric: 'cash', operator: '>=', value: 1000 },
+      goal: { metric: 'cash', operator: '>=', value: 300 },
       reward: { grantCosmetic: 'theme-sophisticated' },
       message: 'Goal complete: Sophisticated theme awarded.'
     },
     {
       id: 'cash-10000-boost',
       name: 'Market Veteran',
-      description: 'Reach $10,000 cash',
+      description: 'Reach $1,000 cash',
       type: 'cosmetic',
-      goal: { metric: 'cash', operator: '>=', value: 10000 },
+      goal: { metric: 'cash', operator: '>=', value: 1000 },
       reward: { grantCosmetic: 'theme-marble' },
       message: 'Goal complete: Marble theme awarded.'
     },
     {
       id: 'cash-100000-boost',
       name: 'Tycoon',
-      description: 'Reach $100,000 cash',
+      description: 'Reach $5,000 cash',
       type: 'cosmetic',
-      goal: { metric: 'cash', operator: '>=', value: 100000 },
+      goal: { metric: 'cash', operator: '>=', value: 5000 },
       reward: { grantCosmetic: 'theme-gold' },
       message: 'Goal complete: Gold theme awarded.'
     },
     {
       id: 'cash-1000000-boost',
       name: 'Legendary Broker',
-      description: 'Reach $1,000,000 cash',
+      description: 'Reach $25,000 cash',
       type: 'cosmetic',
-      goal: { metric: 'cash', operator: '>=', value: 1000000 },
+      goal: { metric: 'cash', operator: '>=', value: 25000 },
       reward: {
         grantCosmetic: 'theme-diamond',
         setFlag: 'cash_millionaire'
@@ -2499,6 +2499,15 @@ function renderMarket() {
   ) {
     selectedGridCellIndex = null;
   }
+  if (selectedGridCellIndices.size) {
+    const stale = [];
+    selectedGridCellIndices.forEach(index => {
+      if (!getGridCellSellSnapshot(index)) {
+        stale.push(index);
+      }
+    });
+    stale.forEach(index => selectedGridCellIndices.delete(index));
+  }
   // Clear previous content
   if (tableContainer) tableContainer.innerHTML = '';
   if (gridEl) gridEl.innerHTML = '';
@@ -2506,7 +2515,7 @@ function renderMarket() {
   const table = document.createElement('table');
   table.className = 'zebra-table';
   const headerRow = document.createElement('tr');
-  const headers = ['Img', 'Item', 'Avg', 'Price'];
+  const headers = ['Img', 'Item', 'Price'];
   headers.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
@@ -2541,11 +2550,7 @@ function renderMarket() {
     const descCell = document.createElement('td');
     descCell.textContent = item.description || item.name;
     row.appendChild(descCell);
-    // Avg Price (shop)
-    const avgPriceCell = document.createElement('td');
     const avgPrice = (entry.daysCount && entry.priceSum) ? (entry.priceSum / entry.daysCount) : entry.price;
-    avgPriceCell.textContent = `$${avgPrice.toFixed(2)}`;
-    row.appendChild(avgPriceCell);
     // Price
     const priceCell = document.createElement('td');
     const freeCount = getFreePurchaseCount(item.id);
@@ -2556,14 +2561,19 @@ function renderMarket() {
       : `$${entry.price.toFixed(2)}`;
     priceCell.appendChild(priceText);
     const avgDelta = avgPrice > 0 ? ((entry.price - avgPrice) / avgPrice) : 0;
+    const avgDeltaPct = Math.abs(avgDelta * 100).toFixed(0);
+    const avgDeltaSigned = `${avgDelta >= 0 ? '+' : '-'}${avgDeltaPct}%`;
     const trendChip = document.createElement('span');
     trendChip.className = `insight-chip market-price-trend ${avgDelta <= -0.05 ? 'good' : (avgDelta >= 0.05 ? 'bad' : '')}`.trim();
     if (avgDelta <= -0.05) {
-      trendChip.textContent = `${Math.abs(avgDelta * 100).toFixed(0)}% below avg`;
+      trendChip.textContent = `Great Deal (${avgDeltaSigned})`;
+      trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% below average market price`;
     } else if (avgDelta >= 0.05) {
-      trendChip.textContent = `${Math.abs(avgDelta * 100).toFixed(0)}% above avg`;
+      trendChip.textContent = `Overpriced (${avgDeltaSigned})`;
+      trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% above average market price`;
     } else {
-      trendChip.textContent = 'near avg';
+      trendChip.textContent = `Fair Price (${avgDeltaSigned})`;
+      trendChip.title = 'Near average market price';
     }
     priceCell.appendChild(trendChip);
     row.appendChild(priceCell);
@@ -2598,6 +2608,9 @@ function renderMarket() {
     cell.dataset.index = String(i); 
     if (selectedGridCellIndex === i) {
       cell.classList.add('grid-cell-selected');
+    }
+    if (selectedGridCellIndices.has(i)) {
+      cell.classList.add('grid-cell-bulk-selected');
     }
     // Determine unlocked state and item placement. Use temporary variables for initial
     // visual state only. Event handlers will reference state arrays directly to
@@ -2679,45 +2692,11 @@ function renderMarket() {
       waterImg.alt = 'Watered';
       cell.appendChild(waterImg);
     }
-    // Handle clicks: purchase locked slots or remove items from grid. Use
-    // dynamic state lookups instead of captured variables.
+    // Handle clicks with shared action logic; pointer-driven interactions use
+    // the same route to keep behavior consistent.
     cell.addEventListener('click', () => {
-      const unlockedNow = state.gridUnlocked[i];
-      if (state.activeTool === TOOL_PICKAXE) {
-        if (!unlockedNow) {
-          const didMessage = mineGridTile(i);
-          if (!didMessage) {
-            setChatProfile('player', 'neutral');
-          }
-        } else {
-          setChatProfile('player', 'neutral');
-        }
-        return;
-      }
-      if (state.activeTool === TOOL_WATERING) {
-        if (!unlockedNow) {
-          addMessage('This tile is locked. Mine it first.');
-          return;
-        }
-        const didMessage = waterGridTile(i);
-        if (!didMessage) {
-          setChatProfile('player', 'neutral');
-        }
-        return;
-      }
-      if (!unlockedNow) {
-        addMessage('Use the pickaxe to mine this tile.');
-        return;
-      }
-      if (state.gridItems[i]) {
-        selectGridCell(i);
-        return;
-      }
-      if (selectedShopItemId) {
-        purchaseAndPlaceSelected(i);
-      } else {
-        addMessage('Select an item from the market first.');
-      }
+      if (Date.now() < farmPointerState.suppressClickUntil) return;
+      applyGridActionForIndex(i, { mode: 'tap' });
     });
     // Disable the context menu on right click. Earlier versions used
     // right‑click for testing reveal/hide behaviour but this has been
@@ -4042,9 +4021,7 @@ function getSelectedShopItemInsightData() {
 
 function getSelectedGridItemInsightData() {
   if (selectedGridCellIndex === null) return null;
-  if (!Array.isArray(state.gridItems) || selectedGridCellIndex < 0 || selectedGridCellIndex >= state.gridItems.length) {
-    return null;
-  }
+  if (!Array.isArray(state.gridItems) || selectedGridCellIndex < 0 || selectedGridCellIndex >= state.gridItems.length) return null;
   const itemId = state.gridItems[selectedGridCellIndex];
   if (!itemId) return null;
   const item = Array.isArray(state.items) ? state.items.find(it => it.id === itemId) : null;
@@ -4073,6 +4050,11 @@ function getSelectedGridItemInsightData() {
 }
 
 function sellSelectedGridItem() {
+  const bulkInsight = getBulkSelectedGridInsightData();
+  if (bulkInsight && bulkInsight.count > 0) {
+    sellBulkSelectedGridItems();
+    return;
+  }
   const insight = getSelectedGridItemInsightData();
   if (!insight) return;
   if (!insight.canSell) {
@@ -4080,6 +4062,59 @@ function sellSelectedGridItem() {
     return;
   }
   harvestPlant(insight.cellIndex);
+}
+
+function sellBulkSelectedGridItems() {
+  const bulkInsight = getBulkSelectedGridInsightData();
+  if (!bulkInsight || bulkInsight.count <= 0) return;
+  if (!consumeEnergy(bulkInsight.count, `harvest ${bulkInsight.count} selected plant${bulkInsight.count === 1 ? '' : 's'}`)) {
+    return;
+  }
+  registerDayAction();
+  let totalSaleValue = 0;
+  let totalProfitValue = 0;
+  let harvestedCount = 0;
+  const summaryByItem = new Map();
+  bulkInsight.cells.forEach(cell => {
+    const item = cell.item;
+    if (!item) return;
+    const itemId = cell.itemId;
+    const saleValue = Math.max(0, Number(cell.sellNow) || 0);
+    const buyPrice = Math.max(0, Number(cell.buyPrice) || 0);
+    const profit = saleValue - buyPrice;
+    registerSaleEvent(item.name, saleValue, 1);
+    state.player.cash += saleValue;
+    state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
+    if (state.goalFlags && typeof state.goalFlags === 'object') {
+      state.goalFlags[GUIDED_FLAGS.harvest] = true;
+    }
+    const harvestKey = String(itemId);
+    state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
+    state.gridItems[cell.cellIndex] = null;
+    if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cell.cellIndex] = null;
+    if (Array.isArray(state.gridRarity)) state.gridRarity[cell.cellIndex] = null;
+    if (Array.isArray(state.gridPlantedDay)) state.gridPlantedDay[cell.cellIndex] = null;
+    if (Array.isArray(state.gridWateredCount)) state.gridWateredCount[cell.cellIndex] = 0;
+    totalSaleValue += saleValue;
+    totalProfitValue += profit;
+    harvestedCount += 1;
+    summaryByItem.set(item.name, (summaryByItem.get(item.name) || 0) + 1);
+  });
+  if (!harvestedCount) {
+    return;
+  }
+  awardPlayerXp(XP_REWARDS.harvest * harvestedCount);
+  selectedGridCellIndices.clear();
+  selectedGridCellIndex = null;
+  updateNetWorth();
+  evaluateGoals();
+  saveState();
+  const summaryText = Array.from(summaryByItem.entries()).map(([name, qty]) => `${name} x${qty}`).join(', ');
+  addMessage(
+    `Sold ${harvestedCount} selected crop${harvestedCount === 1 ? '' : 's'} for $${totalSaleValue.toFixed(2)} (profit ${totalProfitValue >= 0 ? '+' : ''}$${totalProfitValue.toFixed(2)}). ${summaryText}`,
+    { speaker: 'player', emotion: 'money' }
+  );
+  renderAll();
 }
 
 function clearCurrentInfoSelection() {
@@ -4091,6 +4126,10 @@ function clearCurrentInfoSelection() {
   }
   if (selectedGridCellIndex !== null) {
     selectedGridCellIndex = null;
+    changed = true;
+  }
+  if (selectedGridCellIndices.size) {
+    selectedGridCellIndices.clear();
     changed = true;
   }
   if (!changed) return;
@@ -4123,6 +4162,49 @@ function renderSelectedItemInsight() {
   const panel = document.getElementById('market-insight-panel');
   if (!panel) return;
   panel.innerHTML = '';
+
+  const bulkInsight = getBulkSelectedGridInsightData();
+  if (bulkInsight && bulkInsight.count > 0) {
+    panel.appendChild(createInsightHeader(`${bulkInsight.count} selected crops`));
+    const metricGrid = document.createElement('div');
+    metricGrid.className = 'market-insight-grid';
+    const rows = [
+      ['Total Bought', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
+      ['Total Sell Now', `$${bulkInsight.totalSale.toFixed(2)}`, ''],
+      ['Bulk Profit', `${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)}`, bulkInsight.totalProfit >= 0 ? 'good' : 'bad'],
+      ['Energy Cost', `${bulkInsight.count}`, '']
+    ];
+    rows.forEach(([label, value, tone]) => {
+      const metric = document.createElement('div');
+      metric.className = 'market-insight-metric';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'metric-label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = `metric-value${tone ? ` ${tone}` : ''}`;
+      valueEl.textContent = value;
+      metric.appendChild(labelEl);
+      metric.appendChild(valueEl);
+      metricGrid.appendChild(metric);
+    });
+    panel.appendChild(metricGrid);
+    const chipRow = document.createElement('div');
+    chipRow.className = 'market-insight-row';
+    const compositionChip = document.createElement('span');
+    compositionChip.className = 'insight-chip';
+    compositionChip.textContent = bulkInsight.itemBreakdown.join(', ');
+    chipRow.appendChild(compositionChip);
+    const sellButton = document.createElement('button');
+    sellButton.type = 'button';
+    sellButton.className = 'button';
+    sellButton.textContent = `Sell Selected (${bulkInsight.count})`;
+    sellButton.addEventListener('click', () => {
+      sellBulkSelectedGridItems();
+    });
+    chipRow.appendChild(sellButton);
+    panel.appendChild(chipRow);
+    return;
+  }
 
   const gridInsight = getSelectedGridItemInsightData();
   if (gridInsight) {
@@ -5333,11 +5415,239 @@ function removeItemFromGrid(cellIndex) {
 let selectedShopItemId = null; 
 let selectionPulseId = null; 
 let selectedGridCellIndex = null;
+const selectedGridCellIndices = new Set();
+const farmPointerState = {
+  active: false,
+  pointerId: null,
+  processedIndices: new Set(),
+  suppressClickUntil: 0
+};
+let farmPointerHandlersInstalled = false;
+
+function isDaySummaryOpen() {
+  const modal = document.getElementById('day-summary-modal');
+  return !!(modal && modal.classList.contains('is-open'));
+}
+
+function isFarmActionBlocked() {
+  return isDailyRollOpen() || isGoalCelebrationOpen() || isDaySummaryOpen();
+}
+
+function getGridIndexFromPointerEvent(event) {
+  if (!(event && typeof event === 'object')) return null;
+  let targetCell = null;
+  if (event.target instanceof Element) {
+    targetCell = event.target.closest('.grid-cell');
+  }
+  if (!targetCell && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+    const hovered = document.elementFromPoint(event.clientX, event.clientY);
+    if (hovered instanceof Element) {
+      targetCell = hovered.closest('.grid-cell');
+    }
+  }
+  if (!targetCell) return null;
+  const index = Number(targetCell.getAttribute('data-index'));
+  return Number.isInteger(index) ? index : null;
+}
+
+function applyGridActionForIndex(index, options = {}) {
+  const mode = options.mode === 'drag' ? 'drag' : 'tap';
+  const isDragMode = mode === 'drag';
+  const allowInfoSelection = !isDragMode;
+  if (!Array.isArray(state.gridUnlocked) || !Array.isArray(state.gridItems)) return false;
+  if (index < 0 || index >= state.gridUnlocked.length || index >= state.gridItems.length) return false;
+
+  const unlockedNow = !!state.gridUnlocked[index];
+  if (state.activeTool === TOOL_PICKAXE) {
+    if (!unlockedNow) {
+      const didMessage = mineGridTile(index);
+      if (!didMessage) setChatProfile('player', 'neutral');
+      return true;
+    }
+    setChatProfile('player', 'neutral');
+    return false;
+  }
+
+  if (state.activeTool === TOOL_WATERING) {
+    if (!unlockedNow) {
+      if (mode !== 'drag') {
+        addMessage('This tile is locked. Mine it first.');
+      }
+      return false;
+    }
+    const didMessage = waterGridTile(index);
+    if (!didMessage) setChatProfile('player', 'neutral');
+    return true;
+  }
+
+  if (!unlockedNow) {
+    if (mode !== 'drag') {
+      addMessage('Use the pickaxe to mine this tile.');
+    }
+    return false;
+  }
+
+  if (state.gridItems[index]) {
+    if (isDragMode && !selectedShopItemId && state.activeTool === TOOL_GLOVE) {
+      if (addGridCellToBulkSelection(index)) {
+        return true;
+      }
+      return false;
+    }
+    if (allowInfoSelection) {
+      selectGridCell(index);
+      return true;
+    }
+    return false;
+  }
+
+  if (selectedShopItemId) {
+    purchaseAndPlaceSelected(index);
+    return true;
+  }
+
+  if (mode !== 'drag') {
+    addMessage('Select an item from the market first.');
+  }
+  return false;
+}
+
+function stopFarmPointerInteraction() {
+  farmPointerState.active = false;
+  farmPointerState.pointerId = null;
+  farmPointerState.processedIndices.clear();
+}
+
+function getGridCellSellSnapshot(cellIndex) {
+  if (!Array.isArray(state.gridItems) || cellIndex < 0 || cellIndex >= state.gridItems.length) return null;
+  const itemId = state.gridItems[cellIndex];
+  if (!itemId) return null;
+  const item = Array.isArray(state.items) ? state.items.find(it => it.id === itemId) : null;
+  const shopEntry = Array.isArray(state.shop) ? state.shop.find(entry => entry.itemId === itemId) : null;
+  if (!item || !shopEntry) return null;
+  const growth = getPlantGrowthState(item, cellIndex);
+  if (!growth.isGrown) return null;
+  const rarity = getGridRarity(cellIndex) || 'common';
+  const multiplier = getRarityMultiplier(rarity);
+  const sellNow = Math.max(0, Number(shopEntry.price) || 0) * multiplier;
+  const buyPrice = Array.isArray(state.gridPurchasePrice)
+    ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
+    : 0;
+  return {
+    cellIndex,
+    itemId,
+    item,
+    rarity,
+    sellNow,
+    buyPrice,
+    profitNow: sellNow - buyPrice
+  };
+}
+
+function addGridCellToBulkSelection(cellIndex) {
+  const snapshot = getGridCellSellSnapshot(cellIndex);
+  if (!snapshot) return false;
+  if (selectedGridCellIndices.has(cellIndex)) return false;
+  selectedGridCellIndices.add(cellIndex);
+  selectedGridCellIndex = null;
+  renderMarket();
+  return true;
+}
+
+function clearBulkGridSelection(shouldRefresh = false) {
+  if (!selectedGridCellIndices.size) return;
+  selectedGridCellIndices.clear();
+  if (shouldRefresh) {
+    renderMarket();
+  }
+}
+
+function getBulkSelectedGridInsightData() {
+  if (!selectedGridCellIndices.size) return null;
+  const cells = [];
+  selectedGridCellIndices.forEach(index => {
+    const snapshot = getGridCellSellSnapshot(index);
+    if (snapshot) cells.push(snapshot);
+  });
+  if (!cells.length) return null;
+  const totalSale = cells.reduce((sum, cell) => sum + cell.sellNow, 0);
+  const totalBuy = cells.reduce((sum, cell) => sum + cell.buyPrice, 0);
+  const totalProfit = totalSale - totalBuy;
+  const byItem = new Map();
+  cells.forEach(cell => {
+    const key = String(cell.itemId);
+    byItem.set(key, (byItem.get(key) || 0) + 1);
+  });
+  const itemBreakdown = Array.from(byItem.entries()).map(([itemIdText, qty]) => {
+    const itemId = Number(itemIdText);
+    const item = state.items.find(it => it.id === itemId);
+    return `${item ? item.name : 'Item'} x${qty}`;
+  });
+  return {
+    cells,
+    count: cells.length,
+    totalSale,
+    totalBuy,
+    totalProfit,
+    itemBreakdown
+  };
+}
+
+function installFarmPointerHandlers() {
+  if (farmPointerHandlersInstalled) return;
+  const grid = document.getElementById('grid');
+  if (!grid) return;
+  farmPointerHandlersInstalled = true;
+
+  grid.addEventListener('pointerdown', (event) => {
+    if (isFarmActionBlocked()) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const index = getGridIndexFromPointerEvent(event);
+    if (!Number.isInteger(index)) return;
+    farmPointerState.active = true;
+    farmPointerState.pointerId = event.pointerId;
+    farmPointerState.processedIndices.clear();
+    farmPointerState.processedIndices.add(index);
+    farmPointerState.suppressClickUntil = Date.now() + 260;
+    applyGridActionForIndex(index, { mode: 'tap' });
+    if (typeof grid.setPointerCapture === 'function') {
+      try {
+        grid.setPointerCapture(event.pointerId);
+      } catch (err) {
+        // Ignore capture failures; dragging still works via document listeners.
+      }
+    }
+    event.preventDefault();
+  });
+
+  document.addEventListener('pointermove', (event) => {
+    if (!farmPointerState.active) return;
+    if (farmPointerState.pointerId !== null && event.pointerId !== farmPointerState.pointerId) return;
+    if (isFarmActionBlocked()) {
+      stopFarmPointerInteraction();
+      return;
+    }
+    const index = getGridIndexFromPointerEvent(event);
+    if (!Number.isInteger(index)) return;
+    if (farmPointerState.processedIndices.has(index)) return;
+    farmPointerState.processedIndices.add(index);
+    applyGridActionForIndex(index, { mode: 'drag' });
+    event.preventDefault();
+  }, { passive: false });
+
+  const endPointer = () => {
+    if (!farmPointerState.active) return;
+    stopFarmPointerInteraction();
+  };
+  document.addEventListener('pointerup', endPointer);
+  document.addEventListener('pointercancel', endPointer);
+}
 
 function selectGridCell(cellIndex) {
   if (!Array.isArray(state.gridItems) || cellIndex < 0 || cellIndex >= state.gridItems.length) return;
   if (!state.gridItems[cellIndex]) return;
   if (selectedGridCellIndex === cellIndex) return;
+  selectedGridCellIndices.clear();
   selectedGridCellIndex = cellIndex;
   selectedShopItemId = null;
   selectionPulseId = null;
@@ -5346,8 +5656,9 @@ function selectGridCell(cellIndex) {
 }
 
 function clearGridSelection(shouldRefresh = false) {
-  if (selectedGridCellIndex === null) return;
+  if (selectedGridCellIndex === null && selectedGridCellIndices.size === 0) return;
   selectedGridCellIndex = null;
+  selectedGridCellIndices.clear();
   if (shouldRefresh) {
     renderMarket();
   }
@@ -5918,15 +6229,19 @@ function attachEventHandlers() {
       setActiveTool(tool); 
     }); 
   }); 
+  installFarmPointerHandlers();
   document.addEventListener('click', (event) => {
-    if (selectedGridCellIndex === null) return;
+    if (selectedGridCellIndex === null && selectedGridCellIndices.size === 0) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
     const gridCell = target.closest('.grid-cell');
     if (gridCell) {
       const indexText = gridCell.getAttribute('data-index');
       const index = Number(indexText);
-      if (Number.isInteger(index) && Array.isArray(state.gridItems) && !!state.gridItems[index]) {
+      if (selectedGridCellIndices.size > 0 && Number.isInteger(index) && selectedGridCellIndices.has(index)) {
+        return;
+      }
+      if (selectedGridCellIndices.size === 0 && Number.isInteger(index) && Array.isArray(state.gridItems) && !!state.gridItems[index]) {
         return;
       }
     }

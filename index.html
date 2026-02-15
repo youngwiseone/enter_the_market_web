@@ -21,6 +21,15 @@
             --font-table: var(--font-ui);
             --font-title: var(--font-ui);
             --font-button: var(--font-ui);
+            --tone-good-fg: #1b5e20;
+            --tone-good-bg: #d7f4d8;
+            --tone-good-border: #2e7d32;
+            --tone-bad-fg: #7f1010;
+            --tone-bad-bg: #ffe1e1;
+            --tone-bad-border: #b23b3b;
+            --tone-neutral-fg: #5f4700;
+            --tone-neutral-bg: #fff4cc;
+            --tone-neutral-border: #a87d00;
         }
         html,
         body {
@@ -408,10 +417,10 @@
             font-size: var(--font-table);
         }
         .zebra-table tr:nth-child(even) {
-            background-color: #f0f0f0;
+            background-color: #eef7ff;
         }
         .zebra-table tr:nth-child(odd) {
-            background-color: #ffffff;
+            background-color: #fffdf4;
         }
         .zebra-table th {
             background-color: var(--header-bg, #000080);
@@ -423,6 +432,7 @@
         .market-row-selected { 
             outline: 2px solid var(--secondary-color, #0078d7); 
             outline-offset: -2px; 
+            background: linear-gradient(180deg, #dff8ff 0%, #cfeff8 100%) !important;
         } 
         .market-row-pulse { 
             animation: fx-row-pulse 220ms ease-out; 
@@ -480,6 +490,11 @@
             outline: 2px solid #7eff9d;
             outline-offset: -2px;
             box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+        }
+        .grid-cell.grid-cell-bulk-selected {
+            outline: 2px solid #ffd166;
+            outline-offset: -2px;
+            box-shadow: inset 0 0 0 1px rgba(120, 72, 0, 0.45);
         }
         .grid-cell img {
             width: 100%;
@@ -606,7 +621,7 @@
             display: inline;
         }
         .tool-button.active {
-            background-color: #c0c0c0;
+            background: linear-gradient(180deg, #ccf0d1 0%, #bdeac4 100%);
             border-left: 1px solid #808080;
             border-top: 1px solid #808080;
             border-right: 1px solid white;
@@ -830,7 +845,7 @@
             margin-top: 6px;
             padding: 6px;
             border: 1px solid #808080;
-            background: #ece9e1;
+            background: linear-gradient(180deg, #f6f1d8 0%, #e2f0f7 100%);
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -875,7 +890,7 @@
         }
         .market-insight-panel {
             border: 1px solid #808080;
-            background: #f3f1ea;
+            background: linear-gradient(180deg, #fffdf1 0%, #edf5ff 100%);
             padding: 6px;
             margin-top: 4px;
             display: flex;
@@ -925,10 +940,10 @@
             font-weight: bold;
         }
         .metric-value.good {
-            color: #1f7a1f;
+            color: var(--tone-good-fg);
         }
         .metric-value.bad {
-            color: #9a1c1c;
+            color: var(--tone-bad-fg);
         }
         .market-insight-row {
             display: flex;
@@ -945,14 +960,14 @@
             line-height: 18px;
         }
         .insight-chip.good {
-            border-color: #1f7a1f;
-            background: #d9f2d9;
-            color: #1f5f1f;
+            border-color: var(--tone-good-border);
+            background: var(--tone-good-bg);
+            color: var(--tone-good-fg);
         }
         .insight-chip.bad {
-            border-color: #a12a2a;
-            background: #ffe2e2;
-            color: #7f1010;
+            border-color: var(--tone-bad-border);
+            background: var(--tone-bad-bg);
+            color: var(--tone-bad-fg);
         }
         .insight-rarity-chip {
             font-weight: bold;
@@ -986,6 +1001,9 @@
         .market-price-trend {
             display: inline-block;
             margin-top: 3px;
+            border-color: var(--tone-neutral-border);
+            background: var(--tone-neutral-bg);
+            color: var(--tone-neutral-fg);
         }
         button,
         .button,
@@ -1463,13 +1481,13 @@
             justify-content: flex-end;
         }
         body[data-time-of-day="morning"] #farm-panel {
-            filter: brightness(1.03) saturate(1.05);
+            filter: brightness(1.08) saturate(1.14) hue-rotate(-2deg);
         }
         body[data-time-of-day="midday"] #farm-panel {
-            filter: brightness(1);
+            filter: brightness(1.03) saturate(1.08);
         }
         body[data-time-of-day="night"] #farm-panel {
-            filter: brightness(0.9) saturate(0.92);
+            filter: brightness(0.86) saturate(1.02) hue-rotate(4deg);
         }
         @keyframes daily-roll-shake {
             0% { transform: translateX(0); }
@@ -2037,7 +2055,7 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script src="main.js?v=71"></script>
+    <script src="main.js?v=75"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
