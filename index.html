@@ -576,6 +576,7 @@
         .tool-button {
             flex: 1 1 0;
             width: auto;
+            min-width: 0 !important;
             height: clamp(32px, calc(var(--grid-size, 580px) * 0.09), 48px);
             padding: 0;
             display: inline-flex;
@@ -597,6 +598,7 @@
         }
         body.has-desktop-shortcuts .tool-button {
             width: auto;
+            min-width: 0 !important;
             padding: 0 4px;
             justify-content: center;
         }
