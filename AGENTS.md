@@ -4,6 +4,17 @@
 
 This file is the fast-start context for contributors and coding agents working in this repo.
 
+## Quick Overview Path
+
+- Reading this file helps with contributor workflow and code-area mapping, but it is not the fastest architecture-first overview.
+- For a quick understanding of how the game is structured right now, read in this order:
+  1. `README.md` (architecture snapshot and runtime map)
+  2. `js/app/bootstrap.js` (startup sequence in one place)
+  3. `main.js` (dependency wiring/composition layer)
+  4. `guide/refactor_baseline.md` (current refactor status and validation baseline)
+
+If short on time, start with `README.md` first.
+
 ## Current Architecture
 
 - Runtime stack: plain browser JavaScript, no bundler.
