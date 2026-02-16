@@ -1,86 +1,98 @@
 # Enter The Market (Web)
 
-Welcome, market legend in the making.
+Browser farming + trading game focused on progression, market timing, and day-by-day decision making.
 
-<img src="resources/profiles/player_excited.png" alt="Excited Player" width="84">
+Play here: https://youngwiseone.github.io/enter_the_market_web/
 
-This is a browser farming + trading game where you mine, plant, water, harvest, and try to outsmart the market one day at a time.
+## Current Gameplay
 
-## Why This Is Fun
+- 7x7 farm grid with tool-based interaction:
+  - `glove`: plant and harvest
+  - `watering`: advance growth
+  - `pickaxe`: mine/clear locked tiles
+- Daily rest loop (`nextDay`) updates:
+  - prices and market pressure
+  - daily market roll
+  - day summary and tips
+  - goal evaluation and rewards
+- Progression:
+  - crop unlock tiers via goals (`goalLocked`)
+  - tool unlocks and free purchase rewards
+  - second farm unlock after fully unlocking Farm 1
+  - cosmetic themes from milestones
 
-<img src="resources/profiles/player_money.png" alt="Money Mood" width="84">
+## Architecture Snapshot
 
-- Grow crops on a 9x9 farm.
-- Watch prices shift daily.
-- React to weekly news events.
-- Complete goals for tools, crop unlocks, and flashy cosmetics.
-- Climb from humble seeds to luxury-tier progression.
+- No framework and no build step.
+- Single page app with native ES modules:
+  - `index.html` for UI shell and CSS
+  - `main.js` for bootstrap + dependency wiring
+  - `js/` for feature modules:
+    - `js/app/` startup orchestration
+    - `js/controllers/` gameplay/domain controllers
+    - `js/state/` persistence, normalization, runtime state helpers
+    - `js/ui/` rendering, tabs, modals, bindings, notifications
+    - `js/sim/` market/news/rarity/day-roll simulation logic
+    - `js/content/` JSON loading, normalization, fallback defaults
+    - `js/fx/` particles and FX runtime
+    - `js/core/` shared utilities (storage, clone)
+- Data-first content files:
+  - `data/items.json`
+  - `data/goals.json`
+  - `data/news.json`
+- Save system: browser `localStorage` with migration logic in `js/state/state_initializer.js`.
 
-## Core Features
+## Local Run
 
-<img src="resources/profiles/player_goal_unlocked.png" alt="Goal Unlocked" width="84">
-
-- Tools: glove, watering can, pickaxe.
-- Goals: single-condition and multi-condition goals.
-- Progression: tier-locked crops (`goalLocked`) unlocked through goals.
-- Market simulation: only unlocked crops are affected by daily pricing/news.
-- Cosmetics: multiple themes, including high-end milestone themes.
-
-## Quick Start
-
-<img src="resources/profiles/player.png" alt="Player Ready" width="84">
-
-If you just want to play, use the hosted version: https://youngwiseone.github.io/enter_the_market_web/
-
-Double-click `index.html` to launch the game locally in your browser.
-
-If you want to host it with a local server instead, that works too.
-
-Example:
+Use a local server (recommended and expected for current ES module setup).
 
 ```bash
 python -m http.server 8000
 ```
 
-## Project Map
+Then visit `http://localhost:8000`.
 
-<img src="resources/profiles/farmer.png" alt="Farmer" width="84">
+Note: direct `file://` launch (double-clicking `index.html`) is not a supported dev path because native ES module imports are browser-restricted in that context.
 
-- `index.html`: UI shell + CSS
-- `main.js`: game logic/state/rendering
-- `data/items.json`: item definitions + prices + locks
-- `data/goals.json`: goals + rewards
-- `data/news.json`: market news templates
-- `guide/`: content authoring guides
+## Content Editing
 
-## Save Data
+When editing progression/content, keep IDs stable:
 
-<img src="resources/profiles/merchant.png" alt="Merchant" width="84">
+- `item.id`
+- `goal.id`
+- cosmetic IDs (`theme-*`, etc.)
 
-- Saves are stored in browser `localStorage`.
-- Use the in-game reset when you want a fresh run.
+Important: the game uses both JSON data files and fallback defaults in `js/content/fallbacks/default_data.js`. If you change progression rules, keep both aligned.
 
-## License
+Authoring guides:
 
-<img src="resources/profiles/player_wrong.png" alt="License Rules" width="84">
+- `guide/items.md`
+- `guide/goals.md`
+- `guide/news.md`
 
-This project uses a custom license in `LICENSE.md`.
-For AI/automation-specific guidance, see `llms.txt`.
+## Dev Notes
 
-Short version:
-- You can use the code to build your own project (including commercial).
-- You cannot rehost this game unchanged (including bot-driven scrape/clone/re-upload mirrors).
-- If you want to host this exact game as-is, ask for written permission first.
+- Runtime entry: `main()` in `main.js` (bootstrap/wiring layer).
+- Primary modules for behavior edits:
+  - Startup: `js/app/bootstrap.js`
+  - State init/save: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
+  - Day progression: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
+  - Farm actions: `js/controllers/farm_actions.js`, `js/controllers/grid_controller.js`, `js/controllers/harvest_controller.js`
+  - Shop/store: `js/controllers/shop_controller.js`, `js/controllers/store_cosmetics.js`
+  - Root render orchestration: `js/ui/render_root.js`
 
-## If You Edit Content
+Basic validation after edits:
 
-<img src="resources/profiles/player_watering.png" alt="Focused Player" width="84">
-
-- Keep IDs stable (`item.id`, `goal.id`, cosmetic ids).
-- Update both JSON data and fallback defaults in `main.js` when changing progression.
-- Validate after edits:
-```bash
-node --check main.js
+```powershell
+$files = Get-ChildItem -Recurse -File -Include *.js; foreach ($f in $files) { node --check $f.FullName }
 ```
 
-Now go break the market (responsibly).
+## License and AI Usage
+
+- License: `LICENSE.md`
+- AI/automation policy: `llms.txt`
+
+Short version:
+
+- Derivative projects are allowed.
+- Rehosting this project unchanged is not allowed without permission.

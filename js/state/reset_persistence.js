@@ -1,0 +1,29 @@
+export function persistResetState(saveFn, state) {
+  saveFn('farms', state.farms);
+  saveFn('gridPlantedDay', state.gridPlantedDay);
+  saveFn('gridWateredDay', state.gridWateredDay);
+  saveFn('gridWateredCount', state.gridWateredCount);
+  saveFn('gridMiningHits', state.gridMiningHits);
+  saveFn('gridRarity', state.gridRarity);
+  saveFn('gridPurchasePrice', state.gridPurchasePrice);
+  saveFn('gridUnlocked', state.gridUnlocked);
+  saveFn('gridItems', state.gridItems);
+  saveFn('activeFarmId', state.activeFarmId);
+  saveFn('secondFarmPurchased', state.secondFarmPurchased);
+  saveFn('activeTool', state.activeTool);
+  saveFn('goals', state.goals);
+  saveFn('goalsClaimed', state.goalsClaimed);
+  saveFn('unlockedTools', state.unlockedTools);
+  saveFn('unlockedShopItems', state.unlockedShopItems);
+  saveFn('freePurchasesByItem', state.freePurchasesByItem);
+  saveFn('goalFlags', state.goalFlags);
+  saveFn('goalStats', state.goalStats);
+  saveFn('dayActionCount', state.dayActionCount);
+  saveFn('dailyMarketRollHistory', state.dailyMarketRollHistory);
+  saveFn('lastRollFatiguePercent', state.lastRollFatiguePercent);
+  saveFn('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
+  saveFn('daySalesCount', state.daySalesCount);
+  saveFn('daySalesTotal', state.daySalesTotal);
+  saveFn('dayTopSale', state.dayTopSale);
+  saveFn('daySummaryHistory', state.daySummaryHistory);
+}
