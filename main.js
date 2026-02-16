@@ -20,6 +20,9 @@
 // Core
 import { clone, loadFromStorage, saveToStorage } from './js/core/storage.js';
 import { runAppBootstrap } from './js/app/bootstrap.js';
+import { buildGoalCelebrationControllerDeps, buildSessionRuntimeDeps } from './js/app/bootstrap/session.js';
+import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bootstrap/farm.js';
+import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
 import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js';
 import { nextDayAction } from './js/controllers/day_controller.js';
 import { createDayEconomyController } from './js/controllers/day_economy_controller.js';
@@ -72,7 +75,6 @@ import {
   getPrimaryGuidedStateAction,
   isGoalsTabUnlockedAction,
   isStoreTabUnlockedAction,
-  renderGuidancePanelAction,
   requestLockedTabAction,
   syncGuidedUnlocksAction
 } from './js/controllers/guided_controller.js';
@@ -119,7 +121,6 @@ import {
 } from './js/controllers/shop_market_controller.js';
 import { buyItemAction, sellItemAction } from './js/controllers/shop_controller.js';
 import {
-  applyThemeAction,
   craftItemAction,
   purchaseCosmeticAction,
   selectCosmeticAction
@@ -234,6 +235,7 @@ import {
   continueDailyRollModalAction,
   continueDaySummaryModalAction,
   isDailyRollOpenDom,
+  isDaySummaryOpenDom,
   setDailyRollOpenDom,
   setDaySummaryOpenDom,
   showDailyMarketRollModalAction,
@@ -273,6 +275,20 @@ import {
 } from './js/ui/notifications_controller.js';
 import { createCreatorVisibilityController } from './js/ui/creator_visibility_controller.js';
 import { createProfileChatController } from './js/ui/profile_chat_controller.js';
+import { getGridActionFxTargetsDom } from './js/ui/grid_fx_targets.js';
+import { renderGuidancePanelDom } from './js/ui/render_guidance.js';
+import { applyThemeDom } from './js/ui/theme_dom.js';
+import { getElementFromPointDom } from './js/ui/pointer_dom.js';
+import {
+  confirmDialogDom,
+  createToolKeyLabelElementDom,
+  getDesktopShortcutsEnabledDom,
+  getFarmToggleButtonDom,
+  getRestButtonDom,
+  getToolButtonsDom,
+  setBodyCursorDom,
+  setDesktopShortcutsClassDom
+} from './js/ui/farm_ui_dom.js';
 
 // FX
 import { allocParticleFromState, releaseParticleToState } from './js/fx/particle_pool.js';
@@ -395,14 +411,14 @@ const growthRuntimeController = createGrowthRuntimeController({
   saveToStorage
 });
 
-const goalCelebrationController = createGoalCelebrationController({
+const goalCelebrationController = createGoalCelebrationController(buildGoalCelebrationControllerDeps({
   state,
   moveFocusOutsideModal,
   isReduceMotion: () => fxController.isReduceMotion(),
   getToolDisplayName
-});
+}));
 
-const sessionRuntimeController = createSessionRuntimeController({
+const sessionRuntimeController = createSessionRuntimeController(buildSessionRuntimeDeps({
   playtestStats,
   startPlaytimeTrackingAction,
   getActivePlaytimeMsAction,
@@ -430,7 +446,7 @@ const sessionRuntimeController = createSessionRuntimeController({
   getHarvestImagePath,
   moveFocusOutsideModal,
   isReduceMotion: () => fxController.isReduceMotion()
-});
+}));
 
 function getPlantGrowthState(item, index) {
   return growthRuntimeController.getPlantGrowthState(item, index);
@@ -816,7 +832,9 @@ async function resetGame() {
     addMessage,
     saveState,
     clearGoalCelebrationSparkles: sessionRuntimeController.clearGoalCelebrationSparkles,
-    setGoalCelebrationOpen: sessionRuntimeController.setGoalCelebrationOpen
+    setGoalCelebrationOpen: sessionRuntimeController.setGoalCelebrationOpen,
+    confirmDialog: confirmDialogDom,
+    clearStorage: () => localStorage.clear()
   });
 }
 
@@ -871,7 +889,7 @@ function assignGridRarity(index) {
  * could diff the tables or reuse elements.
  */
 function renderMarket() {
-  renderMarketAction({
+  renderMarketAction(buildRenderMarketDeps({
     state,
     FARM_SECONDARY_ID,
     GRID_CELL_COUNT,
@@ -908,7 +926,7 @@ function renderMarket() {
     applyGridActionForIndex,
     renderSelectedItemInsight,
     renderGuidancePanel
-  });
+  }));
 }
 
 /**
@@ -917,7 +935,7 @@ function renderMarket() {
  * area is populated accordingly. Buttons to buy or select items call
  * into functions that update state and persist changes.
  */
-const uiRuntimeController = createUiRuntimeController({
+const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   state,
   trackRenderCall,
   trackActionDuration,
@@ -955,7 +973,7 @@ const uiRuntimeController = createUiRuntimeController({
   doesGoalMeetCondition,
   renderHUD,
   updateTimeOfDayMood
-});
+}));
 
 function renderStore() {
   uiRuntimeController.renderStore();
@@ -1167,7 +1185,7 @@ function getGuidancePayload() {
 }
 
 function renderGuidancePanel() {
-  renderGuidancePanelAction(getGuidancePayload);
+  renderGuidancePanelDom(getGuidancePayload());
 }
 
 function getSelectedShopItemInsightData() {
@@ -1291,7 +1309,7 @@ const gameplayRuntimeController = createGameplayRuntimeController({
   sellItemAction,
   purchaseCosmeticAction,
   selectCosmeticAction,
-  applyThemeAction,
+  applyThemeAction: applyThemeDom,
   craftItemAction,
   mineGridTileAction,
   waterGridTileAction,
@@ -1322,6 +1340,7 @@ const gameplayRuntimeController = createGameplayRuntimeController({
   awardPlayerXp,
   xpRewards: XP_REWARDS,
   getTileCenter,
+  getGridActionFxTargets: getGridActionFxTargetsDom,
   spawnBurst,
   spawnRing,
   triggerFxClass,
@@ -1596,6 +1615,7 @@ function placeItemOnGrid(itemId, cellIndex) {
     addMessage,
     renderAll,
     getTileCenter,
+    getGridActionFxTargets: getGridActionFxTargetsDom,
     spawnBurst,
     triggerFxClass,
     showXpGainFeedback
@@ -1627,11 +1647,13 @@ let selectionPulseId = null;
 let selectedGridCellIndex = null;
 const selectedGridCellIndices = new Set();
 
-const farmPointerRuntimeController = createFarmPointerRuntimeController({
+const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFarmPointerRuntimeDeps({
   state,
   trackActionDuration,
   isDailyRollOpen: sessionRuntimeController.isDailyRollOpen,
   isGoalCelebrationOpen: sessionRuntimeController.isGoalCelebrationOpen,
+  isDaySummaryOpen: isDaySummaryOpenDom,
+  getElementFromPoint: getElementFromPointDom,
   getGridIndexFromPointerEventAction,
   applyGridActionForIndexAction,
   stopFarmPointerInteractionAction,
@@ -1675,19 +1697,7 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController({
   setActiveTool,
   getFreePurchaseCount,
   GUIDED_FLAGS
-});
-
-function isDaySummaryOpen() {
-  return farmPointerRuntimeController.isDaySummaryOpen();
-}
-
-function isFarmActionBlocked() {
-  return farmPointerRuntimeController.isFarmActionBlocked();
-}
-
-function getGridIndexFromPointerEvent(event) {
-  return farmPointerRuntimeController.getGridIndexFromPointerEvent(event);
-}
+}));
 
 function applyGridActionForIndex(index, options = {}) {
   return farmPointerRuntimeController.applyGridActionForIndex(index, options);
@@ -1733,7 +1743,7 @@ function clearShopSelection() {
   farmPointerRuntimeController.clearShopSelection();
 }
 
-const farmUiRuntimeController = createFarmUiRuntimeController({
+const farmUiRuntimeController = createFarmUiRuntimeController(buildFarmUiRuntimeDeps({
   state,
   updateFarmToggleButtonAction,
   setActiveFarmAction,
@@ -1778,8 +1788,16 @@ const farmUiRuntimeController = createFarmUiRuntimeController({
   updateCursorForTool: () => updateCursorForTool(),
   saveToStorage,
   selectedShopItemId: () => selectedShopItemId,
-  getSeedImagePath
-});
+  getSeedImagePath,
+  getFarmToggleButton: getFarmToggleButtonDom,
+  confirmDialog: confirmDialogDom,
+  getDesktopShortcutsEnabled: getDesktopShortcutsEnabledDom,
+  setDesktopShortcutsClass: setDesktopShortcutsClassDom,
+  getToolButtons: getToolButtonsDom,
+  getRestButton: getRestButtonDom,
+  createToolKeyLabelElement: createToolKeyLabelElementDom,
+  setBodyCursor: setBodyCursorDom
+}));
 
 function updateFarmToggleButton() {
   farmUiRuntimeController.updateFarmToggleButton();

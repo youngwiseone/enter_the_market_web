@@ -8,6 +8,10 @@ const GOAL_CELEBRATION_SPARKLE_IMAGES = [
 export function createGoalCelebrationController(deps) {
   const {
     state,
+    getActiveGoalCelebration,
+    setActiveGoalCelebration,
+    getGoalCelebrationQueue,
+    setGoalCelebrationQueue,
     moveFocusOutsideModal,
     isReduceMotion,
     getToolDisplayName
@@ -17,7 +21,7 @@ export function createGoalCelebrationController(deps) {
   let goalCelebrationAmbientStopTimer = null;
 
   function isGoalCelebrationOpen() {
-    return !!state.activeGoalCelebration;
+    return !!getActiveGoalCelebration();
   }
 
   function clearGoalCelebrationSparkles() {
@@ -174,11 +178,13 @@ export function createGoalCelebrationController(deps) {
   }
 
   function showNextGoalCelebration() {
-    if (state.activeGoalCelebration) return;
-    if (!Array.isArray(state.goalCelebrationQueue) || state.goalCelebrationQueue.length === 0) return;
-    const next = state.goalCelebrationQueue.shift();
+    if (getActiveGoalCelebration()) return;
+    const queue = getGoalCelebrationQueue();
+    if (!Array.isArray(queue) || queue.length === 0) return;
+    const next = queue.shift();
     if (!next) return;
-    state.activeGoalCelebration = next;
+    setGoalCelebrationQueue(queue);
+    setActiveGoalCelebration(next);
 
     const titleEl = document.getElementById('goal-celebration-title');
     const unlockEl = document.getElementById('goal-celebration-unlock');
@@ -200,10 +206,12 @@ export function createGoalCelebrationController(deps) {
 
   function enqueueGoalCelebration(goal) {
     if (!goal || typeof goal !== 'object') return;
-    if (!Array.isArray(state.goalCelebrationQueue)) {
-      state.goalCelebrationQueue = [];
+    let queue = getGoalCelebrationQueue();
+    if (!Array.isArray(queue)) {
+      queue = [];
+      setGoalCelebrationQueue(queue);
     }
-    state.goalCelebrationQueue.push({
+    queue.push({
       id: goal.id || '',
       title: goal.name || 'Goal Complete',
       rewardText: getGoalCelebrationRewardText(goal),
@@ -214,8 +222,8 @@ export function createGoalCelebrationController(deps) {
   }
 
   function continueGoalCelebration() {
-    if (!state.activeGoalCelebration) return;
-    state.activeGoalCelebration = null;
+    if (!getActiveGoalCelebration()) return;
+    setActiveGoalCelebration(null);
     clearGoalCelebrationSparkles();
     setGoalCelebrationOpen(false);
     window.setTimeout(() => {

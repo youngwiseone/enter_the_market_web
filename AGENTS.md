@@ -10,8 +10,9 @@ This file is the fast-start context for contributors and coding agents working i
 - For a quick understanding of how the game is structured right now, read in this order:
   1. `README.md` (architecture snapshot and runtime map)
   2. `js/app/bootstrap.js` (startup sequence in one place)
-  3. `main.js` (dependency wiring/composition layer)
-  4. `guide/refactor_baseline.md` (current refactor status and validation baseline)
+  3. `js/app/bootstrap/session.js`, `js/app/bootstrap/farm.js`, `js/app/bootstrap/market.js` (wiring builders by domain)
+  4. `main.js` (composition layer consuming builders)
+  5. `guide/refactor_baseline.md` (current refactor status and validation baseline)
 
 If short on time, start with `README.md` first.
 
@@ -20,13 +21,13 @@ If short on time, start with `README.md` first.
 - Runtime stack: plain browser JavaScript, no bundler.
 - Main files:
   - `index.html`: structure + CSS + UI panels
-  - `main.js`: bootstrap + runtime wiring/composition
+  - `main.js`: runtime wiring/composition
   - `data/*.json`: content definitions
   - `js/` modules:
-    - `js/app/`: startup orchestration
-    - `js/controllers/`: gameplay and domain flow
+    - `js/app/`: startup orchestration + dependency builder modules
+    - `js/controllers/`: gameplay and domain flow (no direct DOM access)
     - `js/state/`: persistence/load/save/migration/runtime state
-    - `js/ui/`: renderers, tabs, bindings, modals, feedback, notifications
+    - `js/ui/`: renderers, tabs, bindings, modals, feedback, notifications, DOM adapters
     - `js/sim/`: daily roll, market pressure, rarity, news simulation
     - `js/content/`: JSON loading, normalization, resource path helpers, fallbacks
     - `js/fx/`: particle + FX runtime
@@ -65,7 +66,7 @@ If short on time, start with `README.md` first.
 
 ## High-Impact Code Areas
 
-- Startup and wiring: `main.js`, `js/app/bootstrap.js`
+- Startup and wiring: `main.js`, `js/app/bootstrap.js`, `js/app/bootstrap/session.js`, `js/app/bootstrap/farm.js`, `js/app/bootstrap/market.js`
 - Save and migration: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
 - Game-day simulation: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
 - Grid actions: `js/controllers/grid_controller.js`, `js/controllers/farm_actions.js`, `js/controllers/harvest_controller.js`, `js/controllers/grid_interaction_controller.js`
@@ -76,6 +77,9 @@ If short on time, start with `README.md` first.
 
 - App bootstrap:
   - `js/app/bootstrap.js`: startup orchestration and initial runtime boot flow.
+  - `js/app/bootstrap/session.js`: session/celebration runtime dependency builders.
+  - `js/app/bootstrap/farm.js`: farm pointer/UI runtime dependency builders.
+  - `js/app/bootstrap/market.js`: market render/UI runtime dependency builders.
 - Core/shared:
   - `js/core/storage.js`: clone/load/save helpers used across runtime.
 - Content:
@@ -116,7 +120,7 @@ If short on time, start with `README.md` first.
   - `js/controllers/store_cosmetics.js`: cosmetic purchase/select/theme/crafting.
   - `js/controllers/resource_production.js`: production + inventory intake + news hooks.
   - `js/controllers/goals_controller.js`: goal condition/reward/evaluation logic.
-  - `js/controllers/guided_controller.js`: guided unlock + guidance rendering payloads.
+  - `js/controllers/guided_controller.js`: guided unlock + guidance payload generation.
   - `js/controllers/player_progress_controller.js`: XP/level/energy/net-worth/tool unlock helpers.
   - `js/controllers/reset_controller.js`: reset-game orchestration.
   - `js/controllers/gameplay_runtime_controller.js`: gameplay runtime composition.
@@ -136,6 +140,8 @@ If short on time, start with `README.md` first.
   - `js/ui/creator_license.js`, `js/ui/creator_visibility_controller.js`: creator/license visibility.
   - `js/ui/profile_chat_controller.js`: profile image/chat presentation helpers.
   - `js/ui/farm_pointer_bindings.js`, `js/ui/bindings/core_bindings.js`: DOM event wiring.
+  - `js/ui/farm_ui_dom.js`, `js/ui/grid_fx_targets.js`, `js/ui/pointer_dom.js`, `js/ui/theme_dom.js`: DOM adapters for controller/runtime dependency injection.
+  - `js/ui/render_guidance.js`: guidance panel DOM render helper.
   - `js/ui/ui_runtime_controller.js`: UI runtime orchestration.
 - FX/dev:
   - `js/fx/particle_pool.js`, `js/fx/fx_controller.js`: particle and FX runtime.
@@ -173,5 +179,11 @@ $files = Get-ChildItem -Recurse -File -Include *.js; foreach ($f in $files) { no
 - `main.js` is reduced but still sizable, and remains a dense wiring layer.
 - Many flows still converge into full `renderAll()` and immediate `saveState()`.
 - Runtime behavior is split across modules, so dependency wiring mistakes can create missing symbol issues if imports/deps drift.
+
+## Architecture Guardrails
+
+- Keep `js/sim/*` pure (no DOM, no browser UI APIs).
+- Keep `js/controllers/*` DOM-free; pass UI behavior through injected deps.
+- Keep `js/ui/*` responsible for DOM/event/render concerns, and treat state mutation as runtime/controller-owned unless explicitly intentional.
 
 Use this file as the canonical module map. Keep `task.md` for short-term planning only.

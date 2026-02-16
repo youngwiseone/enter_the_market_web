@@ -113,8 +113,9 @@ export function createSessionRuntimeController(deps) {
   }
 
   function continueDailyRollModal() {
-    continueDailyRollModalAction({
-      state,
+    const pendingDaySummary = state.pendingDaySummary;
+    const didOpenSummary = continueDailyRollModalAction({
+      pendingDaySummary,
       setDailyRollOpen,
       showDaySummaryModal,
       incrementDailyRollAnimationToken: () => {
@@ -122,6 +123,9 @@ export function createSessionRuntimeController(deps) {
         return dailyRollAnimationToken;
       }
     });
+    if (didOpenSummary) {
+      state.pendingDaySummary = null;
+    }
   }
 
   function setDaySummaryOpen(isOpen) {

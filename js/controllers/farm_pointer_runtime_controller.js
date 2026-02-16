@@ -4,6 +4,8 @@ export function createFarmPointerRuntimeController(deps) {
     trackActionDuration,
     isDailyRollOpen,
     isGoalCelebrationOpen,
+    isDaySummaryOpen,
+    getElementFromPoint,
     getGridIndexFromPointerEventAction,
     applyGridActionForIndexAction,
     stopFarmPointerInteractionAction,
@@ -51,17 +53,12 @@ export function createFarmPointerRuntimeController(deps) {
   };
   let farmPointerHandlersInstalled = false;
 
-  function isDaySummaryOpen() {
-    const modal = document.getElementById('day-summary-modal');
-    return !!(modal && modal.classList.contains('is-open'));
-  }
-
   function isFarmActionBlocked() {
     return isDailyRollOpen() || isGoalCelebrationOpen() || isDaySummaryOpen();
   }
 
   function getGridIndexFromPointerEvent(event) {
-    return getGridIndexFromPointerEventAction(event);
+    return getGridIndexFromPointerEventAction(event, getElementFromPoint);
   }
 
   function applyGridActionForIndex(index, options = {}) {

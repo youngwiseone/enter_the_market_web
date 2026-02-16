@@ -93,6 +93,11 @@ export function isDailyRollOpenDom() {
   return !!(modal && modal.classList.contains('is-open'));
 }
 
+export function isDaySummaryOpenDom() {
+  const modal = document.getElementById('day-summary-modal');
+  return !!(modal && modal.classList.contains('is-open'));
+}
+
 export function setDailyRollOpenDom(isOpen, moveFocusOutsideModal) {
   const modal = document.getElementById('daily-roll-modal');
   if (!modal) return;
@@ -105,17 +110,18 @@ export function setDailyRollOpenDom(isOpen, moveFocusOutsideModal) {
 
 export function continueDailyRollModalAction(deps) {
   const {
-    state,
+    pendingDaySummary,
     setDailyRollOpen,
     showDaySummaryModal,
     incrementDailyRollAnimationToken
   } = deps;
   incrementDailyRollAnimationToken();
   setDailyRollOpen(false);
-  if (state.pendingDaySummary) {
-    showDaySummaryModal(state.pendingDaySummary);
-    state.pendingDaySummary = null;
+  if (pendingDaySummary) {
+    showDaySummaryModal(pendingDaySummary);
+    return true;
   }
+  return false;
 }
 
 export function setDaySummaryOpenDom(isOpen, moveFocusOutsideModal) {

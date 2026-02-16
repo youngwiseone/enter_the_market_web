@@ -8,10 +8,11 @@ export function updateFarmToggleButtonAction(deps) {
     FARM_TWO_PURCHASE_COST,
     getUnlockedTileCountForFarm,
     isFarmTwoPurchased,
-    isFarmOneFullyUnlocked
+    isFarmOneFullyUnlocked,
+    getFarmToggleButton
   } = deps;
 
-  const button = document.getElementById('farm-toggle-button');
+  const button = getFarmToggleButton();
   if (!button) return;
   const label = button.querySelector('.tool-label');
   const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
@@ -83,7 +84,8 @@ export function handleFarmToggleButtonClickAction(deps) {
     isFarmTwoPurchased,
     normalizeFarmState,
     setActiveFarm,
-    pulseHud
+    pulseHud,
+    confirmDialog
   } = deps;
 
   if (!isFarmOneFullyUnlocked()) {
@@ -97,7 +99,7 @@ export function handleFarmToggleButtonClickAction(deps) {
     return;
   }
   if (!isFarmTwoPurchased()) {
-    const confirmed = confirm(`Buy Farm 2 for $${FARM_TWO_PURCHASE_COST.toFixed(2)}?`);
+    const confirmed = confirmDialog(`Buy Farm 2 for $${FARM_TWO_PURCHASE_COST.toFixed(2)}?`);
     if (!confirmed) return;
     if ((Number(state.player?.cash) || 0) < FARM_TWO_PURCHASE_COST) {
       addMessage(`Not enough cash for Farm 2. Need $${FARM_TWO_PURCHASE_COST.toFixed(2)}.`, {
@@ -133,31 +135,29 @@ export function updateToolButtonsAction(deps) {
     TOOL_PICKAXE,
     isToolUnlocked,
     getToolDisplayName,
-    updateFarmToggleButton
+    updateFarmToggleButton,
+    getDesktopShortcutsEnabled,
+    setDesktopShortcutsClass,
+    getToolButtons,
+    getRestButton,
+    createToolKeyLabelElement
   } = deps;
 
-  const desktopShortcuts = !!(
-    window.matchMedia
-    && window.matchMedia('(hover: hover) and (pointer: fine)').matches
-    && !window.matchMedia('(max-width: 900px)').matches
-  );
+  const desktopShortcuts = !!getDesktopShortcutsEnabled();
   const shortcutByTool = {
     [TOOL_GLOVE]: 'Z',
     [TOOL_WATERING]: 'X',
     [TOOL_PICKAXE]: 'C'
   };
-  if (document.body) {
-    document.body.classList.toggle('has-desktop-shortcuts', desktopShortcuts);
-  }
-  document.querySelectorAll('.tool-button[data-tool]').forEach((button) => {
+  setDesktopShortcutsClass(desktopShortcuts);
+  getToolButtons().forEach((button) => {
     const tool = button.getAttribute('data-tool');
     const unlocked = isToolUnlocked(tool);
     const baseTitle = getToolDisplayName(tool);
     const shortcut = shortcutByTool[tool] || '';
     let keyLabel = button.querySelector('.tool-key-label');
     if (!keyLabel) {
-      keyLabel = document.createElement('span');
-      keyLabel.className = 'tool-key-label';
+      keyLabel = createToolKeyLabelElement();
       button.appendChild(keyLabel);
     }
     keyLabel.textContent = shortcut ? `(${shortcut})` : '';
@@ -169,7 +169,7 @@ export function updateToolButtonsAction(deps) {
       button.classList.remove('active');
     }
   });
-  const restButton = document.getElementById('next-day');
+  const restButton = getRestButton();
   if (restButton) {
     restButton.textContent = desktopShortcuts ? 'Rest (Space)' : 'Rest';
     restButton.title = 'Rest';
@@ -185,18 +185,19 @@ export function updateCursorForToolAction(deps) {
     isToolUnlocked,
     TOOL_GLOVE,
     selectedShopItemId,
-    getSeedImagePath
+    getSeedImagePath,
+    setBodyCursor
   } = deps;
 
   if (state.activeTool && !isToolUnlocked(state.activeTool)) {
     state.activeTool = TOOL_GLOVE;
   }
   if (state.activeTool === TOOL_WATERING) {
-    document.body.style.cursor = "url('resources/tools/watering_can.png') 12 12, pointer";
+    setBodyCursor("url('resources/tools/watering_can.png') 12 12, pointer");
     return;
   }
   if (state.activeTool === TOOL_PICKAXE) {
-    document.body.style.cursor = "url('resources/tools/pickaxe.png') 12 12, pointer";
+    setBodyCursor("url('resources/tools/pickaxe.png') 12 12, pointer");
     return;
   }
   if (selectedShopItemId) {
@@ -204,11 +205,11 @@ export function updateCursorForToolAction(deps) {
     if (item) {
       const imgPath = getSeedImagePath(item);
       if (!imgPath) return;
-      document.body.style.cursor = `url('${imgPath}') 12 12, pointer`;
+      setBodyCursor(`url('${imgPath}') 12 12, pointer`);
       return;
     }
   }
-  document.body.style.cursor = '';
+  setBodyCursor('');
 }
 
 export function setActiveToolAction(deps) {

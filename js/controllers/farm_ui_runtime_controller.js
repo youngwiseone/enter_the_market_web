@@ -38,7 +38,15 @@ export function createFarmUiRuntimeController(deps) {
     updateCursorForTool,
     saveToStorage,
     selectedShopItemId,
-    getSeedImagePath
+    getSeedImagePath,
+    getFarmToggleButton,
+    confirmDialog,
+    getDesktopShortcutsEnabled,
+    setDesktopShortcutsClass,
+    getToolButtons,
+    getRestButton,
+    setBodyCursor,
+    createToolKeyLabelElement
   } = deps;
 
   function updateFarmToggleButtonFn() {
@@ -51,7 +59,8 @@ export function createFarmUiRuntimeController(deps) {
       FARM_TWO_PURCHASE_COST,
       getUnlockedTileCountForFarm,
       isFarmTwoPurchased,
-      isFarmOneFullyUnlocked
+      isFarmOneFullyUnlocked,
+      getFarmToggleButton
     });
   }
 
@@ -86,7 +95,8 @@ export function createFarmUiRuntimeController(deps) {
       isFarmTwoPurchased,
       normalizeFarmState,
       setActiveFarm,
-      pulseHud
+      pulseHud,
+      confirmDialog
     });
   }
 
@@ -98,7 +108,12 @@ export function createFarmUiRuntimeController(deps) {
       TOOL_PICKAXE,
       isToolUnlocked,
       getToolDisplayName,
-      updateFarmToggleButton
+      updateFarmToggleButton,
+      getDesktopShortcutsEnabled,
+      setDesktopShortcutsClass,
+      getToolButtons,
+      getRestButton,
+      createToolKeyLabelElement
     });
   }
 
@@ -110,7 +125,8 @@ export function createFarmUiRuntimeController(deps) {
       isToolUnlocked,
       TOOL_GLOVE,
       selectedShopItemId: selectedShopItemId(),
-      getSeedImagePath
+      getSeedImagePath,
+      setBodyCursor
     });
   }
 

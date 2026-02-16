@@ -21,7 +21,12 @@ export function purchaseGridSlotAction(deps) {
   if (state.gridUnlocked[index]) return;
   const cost = getGridUnlockCost();
   if (state.player.cash < cost) {
-    alert(`Insufficient funds to purchase this slot. Requires $${cost.toFixed(2)}.`);
+    addMessage(`Insufficient funds to purchase this slot. Requires $${cost.toFixed(2)}.`, {
+      speaker: 'player',
+      emotion: 'wrong',
+      category: 'progress',
+      priority: 'high'
+    });
     return;
   }
   if (!consumeEnergy(1, 'unlock a grid slot')) return;
@@ -47,6 +52,7 @@ export function placeItemOnGridAction(deps) {
     addMessage,
     renderAll,
     getTileCenter,
+    getGridActionFxTargets,
     spawnBurst,
     triggerFxClass,
     showXpGainFeedback
@@ -93,7 +99,8 @@ export function placeItemOnGridAction(deps) {
     gravity: 30,
     lifeRange: [220, 460]
   });
-  const cell = document.getElementById('grid')?.children[cellIndex];
+  const fxTargets = getGridActionFxTargets(cellIndex);
+  const cell = fxTargets ? fxTargets.cell : null;
   if (cell) triggerFxClass(cell, 'fx-pop');
   showXpGainFeedback(xpRewards.plant, center);
 }

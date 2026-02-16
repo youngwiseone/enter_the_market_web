@@ -20,13 +20,15 @@ export async function resetGameAction(deps) {
     addMessage,
     saveState,
     clearGoalCelebrationSparkles,
-    setGoalCelebrationOpen
+    setGoalCelebrationOpen,
+    confirmDialog,
+    clearStorage
   } = deps;
 
-  if (!confirm('Are you sure you want to reset your progress? This will erase all saved data.')) {
+  if (!confirmDialog('Are you sure you want to reset your progress? This will erase all saved data.')) {
     return;
   }
-  localStorage.clear();
+  clearStorage();
   try {
     await loadJSONData();
   } catch (e) {
@@ -70,5 +72,9 @@ export async function resetGameAction(deps) {
     state.player.welcomeShown = true;
     saveState();
   }
-  alert('Game has been reset to default values.');
+  addMessage('Game has been reset to default values.', {
+    speaker: 'farmer',
+    category: 'progress',
+    priority: 'high'
+  });
 }

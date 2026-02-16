@@ -1,8 +1,3 @@
-export function applyThemeAction(themeId) {
-  document.body.classList.remove(...Array.from(document.body.classList).filter((cls) => cls.startsWith('theme-')));
-  document.body.classList.add(themeId);
-}
-
 export function purchaseCosmeticAction(deps) {
   const {
     state,
@@ -15,7 +10,11 @@ export function purchaseCosmeticAction(deps) {
   const item = state.store.cosmetics.find((c) => c.id === itemId);
   if (!item || item.unlocked) return;
   if (state.player.cash < item.price) {
-    alert('Insufficient funds to buy this cosmetic.');
+    addMessage('Insufficient funds to buy this cosmetic.', {
+      speaker: 'merchant',
+      category: 'progress',
+      priority: 'normal'
+    });
     return;
   }
   state.player.cash -= item.price;
@@ -61,7 +60,11 @@ export function craftItemAction(deps) {
   for (const input of recipe.input) {
     const invEntry = state.inventory.find((e) => e.itemId === input.id);
     if (!invEntry || invEntry.quantity < input.qty * quantity) {
-      alert('Not enough materials to craft.');
+      addMessage('Not enough materials to craft.', {
+        speaker: 'merchant',
+        category: 'progress',
+        priority: 'normal'
+      });
       return;
     }
   }
@@ -69,7 +72,11 @@ export function craftItemAction(deps) {
   const costPerOutput = outputShopEntry ? outputShopEntry.price * recipe.costMultiplier : 0;
   const totalCost = costPerOutput * recipe.output.qty * quantity;
   if (state.player.cash < totalCost) {
-    alert('Insufficient funds to craft.');
+    addMessage('Insufficient funds to craft.', {
+      speaker: 'merchant',
+      category: 'progress',
+      priority: 'normal'
+    });
     return;
   }
   for (const input of recipe.input) {

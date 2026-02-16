@@ -25,14 +25,22 @@ export function buyItemAction(deps) {
   const item = state.items.find((it) => it.id === itemId);
   if (!shopEntry || !item) return;
   if (shopEntry.quantity < quantity) {
-    alert('Not enough stock available.');
+    addMessage('Not enough stock available.', {
+      speaker: 'merchant',
+      category: 'progress',
+      priority: 'normal'
+    });
     return;
   }
   const freeQty = Math.min(getFreePurchaseCount(itemId), quantity);
   const paidQty = quantity - freeQty;
   const totalCost = shopEntry.price * paidQty;
   if (state.player.cash < totalCost) {
-    alert('Insufficient funds.');
+    addMessage('Insufficient funds.', {
+      speaker: 'merchant',
+      category: 'progress',
+      priority: 'normal'
+    });
     return;
   }
   if (freeQty > 0) {
@@ -92,7 +100,11 @@ export function sellItemAction(deps) {
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);
   if (!invEntry || !shopEntry) return;
   if (invEntry.quantity < quantity) {
-    alert('You do not have enough to sell.');
+    addMessage('You do not have enough to sell.', {
+      speaker: 'player',
+      category: 'progress',
+      priority: 'normal'
+    });
     return;
   }
   const saleValue = shopEntry.price * quantity;

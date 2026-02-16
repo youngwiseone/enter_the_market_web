@@ -12,6 +12,7 @@ export function mineGridTileAction(deps) {
     saveState,
     renderAll,
     getTileCenter,
+    getGridActionFxTargets,
     spawnBurst,
     spawnRing,
     triggerFxClass,
@@ -49,7 +50,8 @@ export function mineGridTileAction(deps) {
   saveState();
   renderAll();
   const center = getTileCenter(index);
-  const gridContainer = document.getElementById('grid-container');
+  const fxTargets = getGridActionFxTargets(index);
+  const gridContainer = fxTargets ? fxTargets.gridContainer : null;
   if (center) {
     if (didClear) {
       spawnBurst({
@@ -75,9 +77,9 @@ export function mineGridTileAction(deps) {
         gravity: 40,
         lifeRange: [200, 420]
       });
-      const cell = document.getElementById('grid')?.children[index];
+      const cell = fxTargets ? fxTargets.cell : null;
       if (cell) triggerFxClass(cell, 'fx-shake');
-      const toolButton = document.querySelector('.tool-button[data-tool=\"pickaxe\"]');
+      const toolButton = fxTargets ? fxTargets.pickaxeToolButton : null;
       if (toolButton) triggerFxClass(toolButton, 'fx-pop');
     }
     showXpGainFeedback(xpRewards.mine, center);
@@ -98,6 +100,7 @@ export function waterGridTileAction(deps) {
     saveState,
     renderAll,
     getTileCenter,
+    getGridActionFxTargets,
     spawnBurst,
     spawnRing,
     triggerFxClass,
@@ -118,7 +121,8 @@ export function waterGridTileAction(deps) {
       priority: 'normal',
       replaceKey: 'progress:water'
     });
-    const cell = document.getElementById('grid')?.children[index];
+    const fxTargets = getGridActionFxTargets(index);
+    const cell = fxTargets ? fxTargets.cell : null;
     if (cell) triggerFxClass(cell, 'fx-wobble');
     return true;
   }
@@ -138,7 +142,8 @@ export function waterGridTileAction(deps) {
         replaceKey: 'progress:water'
       }
     );
-    const cell = document.getElementById('grid')?.children[index];
+    const fxTargets = getGridActionFxTargets(index);
+    const cell = fxTargets ? fxTargets.cell : null;
     if (cell) triggerFxClass(cell, 'fx-wobble');
     return true;
   }
@@ -178,8 +183,8 @@ export function waterGridTileAction(deps) {
       lifeRange: [240, 520]
     });
     spawnRing({ x: center.x, y: center.y, radius: 10, color: 'rgba(80,160,255,0.7)', life: 220 });
-    const cell = document.getElementById('grid')?.children[index];
-    const overlay = cell ? cell.querySelector('img.grid-overlay[src*=\"water.png\"]') : null;
+    const fxTargets = getGridActionFxTargets(index);
+    const overlay = fxTargets ? fxTargets.waterOverlay : null;
     if (overlay) triggerFxClass(overlay, 'fx-pop');
     showXpGainFeedback(xpRewards.water, center);
   }

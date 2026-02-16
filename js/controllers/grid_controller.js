@@ -18,6 +18,7 @@ export function purchaseAndPlaceSelectedAction(deps) {
     saveState,
     renderAll,
     getTileCenter,
+    getGridActionFxTargets,
     spawnBurst,
     triggerFxClass,
     pulseHud,
@@ -41,7 +42,12 @@ export function purchaseAndPlaceSelectedAction(deps) {
   const freeQty = Math.min(getFreePurchaseCount(selectedShopItemId), 1);
   const totalCost = shopEntry.price * (1 - freeQty);
   if (state.player.cash < totalCost) {
-    alert('Insufficient funds.');
+    addMessage('Insufficient funds.', {
+      speaker: 'player',
+      emotion: 'wrong',
+      category: 'progress',
+      priority: 'high'
+    });
     return;
   }
   if (!consumeEnergy(1, 'plant a seed')) return;
@@ -83,7 +89,8 @@ export function purchaseAndPlaceSelectedAction(deps) {
       gravity: 30,
       lifeRange: [220, 460]
     });
-    const cell = document.getElementById('grid')?.children[cellIndex];
+    const fxTargets = getGridActionFxTargets(cellIndex);
+    const cell = fxTargets ? fxTargets.cell : null;
     if (cell) triggerFxClass(cell, 'fx-pop');
   }
   pulseHud(false);

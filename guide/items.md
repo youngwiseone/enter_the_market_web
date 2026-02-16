@@ -26,7 +26,7 @@ This guide describes item authoring in `data/items.json`.
 }
 ```
 
-## Required fields
+## Core fields (expected)
 - `id` (number, unique)
 - `name`
 - `description`
@@ -39,6 +39,9 @@ This guide describes item authoring in `data/items.json`.
 ## Optional fields
 - `plantStageImages`: explicit per-stage plant art.
 - `goalLocked`: `true` means the item starts locked until a goal reward unlocks it.
+
+Notes:
+- Runtime normalizers can backfill some asset fields from fallback defaults, but new/edited content should still include complete fields to avoid visual gaps.
 
 ## Paths
 - Paths are relative to `resources/`:

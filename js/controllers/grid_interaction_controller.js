@@ -1,11 +1,11 @@
-export function getGridIndexFromPointerEventAction(event) {
+export function getGridIndexFromPointerEventAction(event, getElementFromPoint) {
   if (!(event && typeof event === 'object')) return null;
   let targetCell = null;
   if (event.target instanceof Element) {
     targetCell = event.target.closest('.grid-cell');
   }
   if (!targetCell && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
-    const hovered = document.elementFromPoint(event.clientX, event.clientY);
+    const hovered = getElementFromPoint(event.clientX, event.clientY);
     if (hovered instanceof Element) {
       targetCell = hovered.closest('.grid-cell');
     }

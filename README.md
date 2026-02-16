@@ -26,12 +26,12 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
 - No framework and no build step.
 - Single page app with native ES modules:
   - `index.html` for UI shell and CSS
-  - `main.js` for bootstrap + dependency wiring
+  - `main.js` for runtime composition/wiring entrypoint
   - `js/` for feature modules:
-    - `js/app/` startup orchestration
-    - `js/controllers/` gameplay/domain controllers
+    - `js/app/` startup orchestration + bootstrap dependency builders
+    - `js/controllers/` gameplay/domain controllers (no direct DOM access)
     - `js/state/` persistence, normalization, runtime state helpers
-    - `js/ui/` rendering, tabs, modals, bindings, notifications
+    - `js/ui/` rendering, tabs, modals, bindings, notifications, DOM adapters
     - `js/sim/` market/news/rarity/day-roll simulation logic
     - `js/content/` JSON loading, normalization, fallback defaults
     - `js/fx/` particles and FX runtime
@@ -74,12 +74,23 @@ Authoring guides:
 
 - Runtime entry: `main()` in `main.js` (bootstrap/wiring layer).
 - Primary modules for behavior edits:
-  - Startup: `js/app/bootstrap.js`
+  - Startup/bootstrap:
+    - `js/app/bootstrap.js`
+    - `js/app/bootstrap/session.js`
+    - `js/app/bootstrap/farm.js`
+    - `js/app/bootstrap/market.js`
   - State init/save: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
   - Day progression: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
   - Farm actions: `js/controllers/farm_actions.js`, `js/controllers/grid_controller.js`, `js/controllers/harvest_controller.js`
   - Shop/store: `js/controllers/shop_controller.js`, `js/controllers/store_cosmetics.js`
   - Root render orchestration: `js/ui/render_root.js`
+  - DOM adapters (controller boundary): `js/ui/farm_ui_dom.js`, `js/ui/grid_fx_targets.js`, `js/ui/pointer_dom.js`, `js/ui/theme_dom.js`, `js/ui/render_guidance.js`
+
+Boundary rule for new code:
+
+- `js/sim/*` stays pure simulation/state math.
+- `js/controllers/*` should not call `document`, `window`, `alert`, or `confirm` directly.
+- DOM interaction belongs in `js/ui/*` and should be injected into controllers/runtime via dependencies.
 
 Basic validation after edits:
 
