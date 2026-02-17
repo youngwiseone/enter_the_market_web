@@ -81,10 +81,11 @@ export function createDayMarketRuntimeController(deps) {
     return getFatigueFromEnergyState(state);
   }
 
-  function generateDailyMarketRoll(impactMultiplier = 1) {
+  function generateDailyMarketRoll(impactMultiplier = 1, impactPercent = null) {
     return generateDailyMarketRollState({
       state,
       impactMultiplier,
+      impactPercent,
       isShopItemUnlocked,
       getDailyRollItemWeight,
       getMarketDirectionalBias,

@@ -207,12 +207,12 @@ export async function showDailyMarketRollModalAction(deps) {
   const animationToken = incrementDailyRollAnimationToken();
   const isCurrentAnimation = () => animationToken === getCurrentDailyRollAnimationToken() && isDailyRollOpen();
 
-  const fatigueClamped = Math.max(0, Math.min(100, Math.round(fatiguePercent)));
-  const fatigueDetail = `Leftover energy dampens both positive and negative roll movement. ${fatigueClamped}% dampening applied this day.`;
+  const fatigueClamped = Math.max(0, Math.round(fatiguePercent));
+  const fatigueDetail = `Energy used sets today's roll strength. ${fatigueClamped}% roll strength applied this day.`;
   if (fatigueEl) {
-    fatigueEl.textContent = `Fatigue: ${fatigueClamped}%`;
+    fatigueEl.textContent = `Roll Strength: ${fatigueClamped}%`;
     fatigueEl.title = fatigueDetail;
-    fatigueEl.setAttribute('aria-label', `Market fatigue ${fatigueClamped} percent. ${fatigueDetail}`);
+    fatigueEl.setAttribute('aria-label', `Market roll strength ${fatigueClamped} percent. ${fatigueDetail}`);
   }
   if (fatigueNoteEl) {
     fatigueNoteEl.title = fatigueDetail;

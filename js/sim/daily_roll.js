@@ -1,10 +1,11 @@
 export function getFatigueFromEnergyState(state) {
   const energyMax = Math.max(1, Number(state.player?.energyMax) || 1);
   const energy = Math.max(0, Math.min(energyMax, Number(state.player?.energy) || 0));
-  const energyRatio = energy / energyMax;
-  const impactMultiplier = Math.max(0, 1 - energyRatio);
-  const fatiguePercent = Math.round(energyRatio * 100);
-  return { fatiguePercent, impactMultiplier, energy, energyMax };
+  const energySpent = Math.max(0, energyMax - energy);
+  const impactPercent = energySpent;
+  const impactMultiplier = Math.max(0, impactPercent / 100);
+  const fatiguePercent = Math.round(impactPercent);
+  return { fatiguePercent, impactMultiplier, impactPercent, energySpent, energy, energyMax };
 }
 
 function getUnlockedRollItems(state, isShopItemUnlocked) {
@@ -48,6 +49,7 @@ export function generateDailyMarketRollState(deps) {
   const {
     state,
     impactMultiplier = 1,
+    impactPercent = null,
     isShopItemUnlocked,
     getDailyRollItemWeight,
     getMarketDirectionalBias,
@@ -67,7 +69,10 @@ export function generateDailyMarketRollState(deps) {
     const bias = getMarketDirectionalBias(target.id);
     const upChance = clampMarketBias(0.5 + (bias.upward * 0.35) - (bias.downward * 0.4), 0.1, 0.9);
     const sign = Math.random() < upChance ? 1 : -1;
-    const baseMagnitude = 6 + Math.floor(Math.random() * 8);
+    const fixedImpact = Number(impactPercent);
+    const baseMagnitude = Number.isFinite(fixedImpact)
+      ? Math.max(0, fixedImpact)
+      : (6 + Math.floor(Math.random() * 8));
     const story = getRollStoryForItem(target.name, defaultNewsEvents);
     picks.push({
       itemId: target.id,
@@ -98,9 +103,11 @@ export function generateDailyMarketRollState(deps) {
     row.baseSumPct += pick.impactPct;
   });
   grouped.forEach((row) => {
-    const bonusMultiplier = 1 + (Math.max(0, row.hits - 1) * 0.25);
-    row.totalImpactPct = row.baseSumPct * bonusMultiplier;
-    row.adjustedImpactPct = row.totalImpactPct * impactMultiplier;
+    row.totalImpactPct = row.baseSumPct;
+    const fixedImpact = Number(impactPercent);
+    row.adjustedImpactPct = Number.isFinite(fixedImpact)
+      ? row.totalImpactPct
+      : (row.totalImpactPct * impactMultiplier);
   });
   picks.forEach((pick) => {
     const row = grouped.get(pick.itemId);
@@ -116,15 +123,13 @@ export function applyDailyMarketRollToShopState(deps) {
     state,
     rollResult,
     isShopItemUnlocked,
-    ensureShopEntryMarketFields,
-    isShopEntryPriceRecoveryActive
+    ensureShopEntryMarketFields
   } = deps;
 
   if (!rollResult || !(rollResult.byItem instanceof Map)) return;
   state.shop.forEach((entry) => {
     if (!isShopItemUnlocked(entry.itemId)) return;
     ensureShopEntryMarketFields(entry);
-    if (isShopEntryPriceRecoveryActive(entry)) return;
     const effect = rollResult.byItem.get(entry.itemId);
     if (!effect) return;
     const factor = 1 + (effect.adjustedImpactPct / 100);
@@ -142,8 +147,8 @@ export function getDailyRollSummaryTextState(rollResult, fatiguePercent = 0) {
     const stackText = effect.hits > 1 ? ` x${effect.hits}` : '';
     parts.push(`${effect.itemName} ${sign}${effect.adjustedImpactPct.toFixed(0)}%${stackText}`);
   });
-  const fatigueText = `Fatigue ${Math.max(0, Math.min(100, Math.round(fatiguePercent)))}%`;
-  return `${fatigueText} | ${parts.join(' | ')}`;
+  const strengthText = `Roll Strength ${Math.max(0, Math.round(fatiguePercent))}%`;
+  return `${strengthText} | ${parts.join(' | ')}`;
 }
 
 export function getBestRollOpportunityTextState(rollResult) {

@@ -1,3 +1,5 @@
+const ROLL_MEAN_REVERSION_DAYS = 3;
+
 export function nextDayAction(deps) {
   const {
     state,
@@ -18,13 +20,7 @@ export function nextDayAction(deps) {
     ensureShopEntryMarketFields,
     isShopEntryPriceRecoveryActive,
     applyShopEntryPriceRecoveryStep,
-    clampMarketBias,
-    getMarketDirectionalBias,
     applyDailyMarketRollToShop,
-    getShopEntryAveragePrice,
-    startShopEntryPriceRecovery,
-    priceCrashThresholdPercent,
-    priceRecoveryDays,
     emitEconomyAlert,
     getBestRollOpportunityText,
     generateDailyTip,
@@ -51,12 +47,12 @@ export function nextDayAction(deps) {
   state.lastRollFatiguePercent = fatigue.fatiguePercent;
   state.lastRollImpactMultiplier = fatigue.impactMultiplier;
   addMessage(
-    `Market fatigue applied: ${fatigue.fatiguePercent}% reduced roll impact from leftover energy (${formatEnergyValue(fatigue.energy)}/${formatEnergyValue(fatigue.energyMax)}).`,
+    `Market roll strength: ${fatigue.fatiguePercent}% from energy used (${formatEnergyValue(fatigue.energySpent)}/${formatEnergyValue(fatigue.energyMax)}).`,
     { speaker: 'farmer', category: 'economy', priority: 'normal' }
   );
 
   updateMarketPressureForNextDay();
-  const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier);
+  const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier, fatigue.impactPercent);
   const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
   if (dailyRoll.picks.length > 0) {
     showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent);
@@ -80,46 +76,26 @@ export function nextDayAction(deps) {
     ensureShopEntryMarketFields(entry);
     entry.priceSum = (entry.priceSum || 0) + entry.price;
     entry.daysCount = (entry.daysCount || 0) + 1;
-    if (isShopEntryPriceRecoveryActive(entry)) {
-      const completed = applyShopEntryPriceRecoveryStep(entry);
-      if (completed) {
-        const item = state.items.find((it) => it.id === entry.itemId);
-        const itemName = item ? item.name : `Item ${entry.itemId}`;
-        addMessage(`${itemName} stabilized near its average after a price crash.`, {
-          speaker: 'farmer',
-          category: 'economy',
-          priority: 'normal'
-        });
-      }
-      return;
-    }
-    const bias = getMarketDirectionalBias(entry.itemId);
-    const upChance = clampMarketBias(0.5 + (bias.upward * 0.28) - (bias.downward * 0.32), 0.08, 0.92);
-    const swingMagnitude = Math.random() * 0.05;
-    const signedSwing = Math.random() < upChance ? swingMagnitude : -swingMagnitude;
-    const drift = (bias.upward * 0.012) - (bias.downward * 0.018);
-    const randomFactor = 1 + signedSwing + drift;
-    entry.price *= randomFactor;
-    entry.price = Math.max(0.01, entry.price);
   });
   applyDailyMarketRollToShop(dailyRoll);
+  const rolledItemIds = dailyRoll && dailyRoll.byItem instanceof Map
+    ? new Set(dailyRoll.byItem.keys())
+    : new Set();
   state.shop.forEach((entry) => {
     ensureShopEntryMarketFields(entry);
-    entry.price = Math.max(0.01, Number(entry.price) || 0.01);
     if (!isShopItemUnlocked(entry.itemId)) return;
-    if (isShopEntryPriceRecoveryActive(entry)) return;
-    const avgPrice = getShopEntryAveragePrice(entry);
-    if (avgPrice <= 0) return;
-    const deviationPct = ((entry.price - avgPrice) / avgPrice) * 100;
-    if (Math.abs(deviationPct) < priceCrashThresholdPercent) return;
-    if (!startShopEntryPriceRecovery(entry, avgPrice)) return;
     const item = state.items.find((it) => it.id === entry.itemId);
-    const itemName = item ? item.name : `Item ${entry.itemId}`;
-    const direction = deviationPct >= 0 ? 'above' : 'below';
-    addMessage(
-      `${itemName} moved ${Math.abs(deviationPct).toFixed(0)}% ${direction} average. Market crash reset started (back to average in ${priceRecoveryDays} days).`,
-      { speaker: 'farmer', category: 'economy', priority: 'high' }
-    );
+    const basePrice = Math.max(0.01, Number(item?.price) || Number(entry.price) || 0.01);
+    if (rolledItemIds.has(entry.itemId)) {
+      entry.priceRecoveryTarget = basePrice;
+      entry.priceRecoveryDaysRemaining = ROLL_MEAN_REVERSION_DAYS;
+      entry.price = Math.max(0.01, Number(entry.price) || 0.01);
+      return;
+    }
+    if (isShopEntryPriceRecoveryActive(entry)) {
+      applyShopEntryPriceRecoveryStep(entry);
+    }
+    entry.price = Math.max(0.01, Number(entry.price) || 0.01);
   });
 
   updateNetWorth();
