@@ -92,7 +92,12 @@ export function getDefaultUnlockedShopItemsAction(items, playerLevelRaw = 1) {
   const unlockOrder = items
     .filter((item) => item && typeof item.id === 'number')
     .slice()
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => {
+      const aPrice = Math.max(0, Number(a?.price) || 0);
+      const bPrice = Math.max(0, Number(b?.price) || 0);
+      if (aPrice !== bPrice) return aPrice - bPrice;
+      return a.id - b.id;
+    })
     .map((item) => item.id);
   unlockOrder.forEach((itemId, index) => {
     unlocked[itemId] = index < playerLevel;
@@ -131,7 +136,12 @@ export function syncGoalLockedShopUnlocksAction(
   const unlockOrder = state.items
     .filter((item) => item && typeof item.id === 'number')
     .slice()
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => {
+      const aPrice = Math.max(0, Number(a?.price) || 0);
+      const bPrice = Math.max(0, Number(b?.price) || 0);
+      if (aPrice !== bPrice) return aPrice - bPrice;
+      return a.id - b.id;
+    })
     .map((item) => item.id);
   const unlockedByLevel = new Set(unlockOrder.slice(0, playerLevel));
   let changed = false;

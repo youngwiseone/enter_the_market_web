@@ -514,7 +514,12 @@ function unlockShopItemForLevel(level) {
     ? state.items
       .filter((item) => item && typeof item.id === 'number')
       .slice()
-      .sort((a, b) => a.id - b.id)
+      .sort((a, b) => {
+        const aPrice = Math.max(0, Number(a?.price) || 0);
+        const bPrice = Math.max(0, Number(b?.price) || 0);
+        if (aPrice !== bPrice) return aPrice - bPrice;
+        return a.id - b.id;
+      })
       .map((item) => item.id)
     : [];
   const unlockItemId = unlockOrder[Math.max(0, Math.floor(Number(level) || 1) - 1)];
@@ -600,13 +605,14 @@ function ensurePlayerProgressState() {
   );
 }
 
-function enqueueLevelUpCelebration(level, changeText, unlockedItem = null) {
+function enqueueLevelUpCelebration(level, changeText, unlockedItem = null, rollCelebrationText = '') {
   enqueueLevelUpCelebrationAction(
     state,
     level,
     changeText,
     sessionRuntimeController.showNextGoalCelebration,
-    unlockedItem
+    unlockedItem,
+    rollCelebrationText
   );
 }
 
