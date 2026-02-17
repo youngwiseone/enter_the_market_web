@@ -335,7 +335,7 @@ export const DEFAULT_DATA = {
     },
     {
       id: 'unlock-tier2-first-expansion',
-      name: 'Tier 2 Contract',
+      name: 'Growth Contract',
       description: 'Reach Day 3 and $220 cash',
       type: 'economy',
       goal: {
@@ -344,12 +344,12 @@ export const DEFAULT_DATA = {
           { metric: 'cash', operator: '>=', value: 220 }
         ]
       },
-      reward: { unlockShopItems: [3, 7, 9, 10, 17] },
-      message: 'Goal complete: New crop contracts unlocked (Tier 2).'
+      reward: { cashBonus: 180 },
+      message: 'Goal complete: Growth contract paid out ($180).'
     },
     {
       id: 'unlock-tier3-growth',
-      name: 'Tier 3 Supply',
+      name: 'Supply Chain Win',
       description: 'Harvest 14 crops and reach $400 cash',
       type: 'economy',
       goal: {
@@ -358,12 +358,12 @@ export const DEFAULT_DATA = {
           { metric: 'cash', operator: '>=', value: 400 }
         ]
       },
-      reward: { unlockShopItems: [1, 11, 13, 16] },
-      message: 'Goal complete: Advanced crop supply unlocked (Tier 3).'
+      reward: { cashBonus: 300 },
+      message: 'Goal complete: Supply chain bonus awarded ($300).'
     },
     {
       id: 'unlock-tier4-elite',
-      name: 'Tier 4 Elite Futures',
+      name: 'Elite Futures',
       description: 'Reach $1,200 cash and unlock 8 farm tiles',
       type: 'economy',
       goal: {
@@ -372,8 +372,8 @@ export const DEFAULT_DATA = {
           { metric: 'gridUnlockedCount', operator: '>=', value: 8 }
         ]
       },
-      reward: { unlockShopItems: [8] },
-      message: 'Goal complete: Elite crop futures unlocked (Tier 4).'
+      reward: { cashBonus: 750 },
+      message: 'Goal complete: Elite futures bonus awarded ($750).'
     },
     {
       id: 'cash-150-theme',

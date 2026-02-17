@@ -485,7 +485,7 @@ function applyShopEntryPriceRecoveryStep(entry) {
 }
 
 function getDefaultUnlockedShopItems(items) {
-  return getDefaultUnlockedShopItemsAction(items);
+  return getDefaultUnlockedShopItemsAction(items, state.player?.playerLevel);
 }
 
 function getGoalRewardUnlockedItemIds(goal) {
@@ -503,6 +503,30 @@ function syncGoalLockedShopUnlocks() {
     hasPlayerHandledItem,
     resetShopEntryToBasePrice
   );
+}
+
+function unlockShopItemForLevel(level) {
+  const unlockOrder = Array.isArray(state.items)
+    ? state.items
+      .filter((item) => item && typeof item.id === 'number')
+      .slice()
+      .sort((a, b) => a.id - b.id)
+      .map((item) => item.id)
+    : [];
+  const unlockItemId = unlockOrder[Math.max(0, Math.floor(Number(level) || 1) - 1)];
+  if (!Number.isInteger(unlockItemId)) return null;
+  const wasUnlocked = !!(state.unlockedShopItems && state.unlockedShopItems[unlockItemId]);
+  syncGoalLockedShopUnlocks();
+  const isUnlocked = !!(state.unlockedShopItems && state.unlockedShopItems[unlockItemId]);
+  if (!isUnlocked || wasUnlocked) return null;
+  const item = Array.isArray(state.items) ? state.items.find((it) => it && it.id === unlockItemId) : null;
+  if (!item) return null;
+  return {
+    id: item.id,
+    name: item.name || `Item ${item.id}`,
+    imageSrc: getSeedImagePath(item) || 'resources/profiles/player_level_up.png',
+    imageAlt: item.name || `Item ${item.id}`
+  };
 }
 
 function isToolUnlocked(tool) {
@@ -572,8 +596,14 @@ function ensurePlayerProgressState() {
   );
 }
 
-function enqueueLevelUpCelebration(level, changeText) {
-  enqueueLevelUpCelebrationAction(state, level, changeText, sessionRuntimeController.showNextGoalCelebration);
+function enqueueLevelUpCelebration(level, changeText, unlockedItem = null) {
+  enqueueLevelUpCelebrationAction(
+    state,
+    level,
+    changeText,
+    sessionRuntimeController.showNextGoalCelebration,
+    unlockedItem
+  );
 }
 
 function awardPlayerXp(amount, options = {}) {
@@ -585,6 +615,7 @@ function awardPlayerXp(amount, options = {}) {
     getEnergyMaxForLevel,
     formatEnergyValue,
     addMessage,
+    unlockShopItemForLevel,
     enqueueLevelUpCelebration,
     showXpGainFeedback
   });
@@ -626,7 +657,6 @@ function applyGoalReward(goal) {
     goal,
     updateNetWorth,
     TOOL_LIST,
-    resetShopEntryToBasePrice,
     getFreePurchaseCount
   });
 }

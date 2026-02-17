@@ -26,17 +26,17 @@ This guide describes the goal schema used by `data/goals.json`.
 ```json
 {
   "id": "unlock-tier2-first-expansion",
-  "name": "Tier 2 Contract",
-  "description": "Reach Day 4 and $300 cash",
+  "name": "Growth Contract",
+  "description": "Reach Day 3 and $220 cash",
   "type": "economy",
   "goal": {
     "all": [
-      { "metric": "day", "operator": ">=", "value": 4 },
-      { "metric": "cash", "operator": ">=", "value": 300 }
+      { "metric": "day", "operator": ">=", "value": 3 },
+      { "metric": "cash", "operator": ">=", "value": 220 }
     ]
   },
-  "reward": { "unlockShopItems": [3, 7, 9, 10, 17] },
-  "message": "Goal complete: New crop contracts unlocked (Tier 2)."
+  "reward": { "cashBonus": 180 },
+  "message": "Goal complete: Growth contract paid out ($180)."
 }
 ```
 
@@ -57,11 +57,16 @@ This guide describes the goal schema used by `data/goals.json`.
 
 ## Supported rewards
 - `unlockTool`: unlock gameplay tool id.
-- `unlockShopItem`: unlock one market item id.
-- `unlockShopItems`: unlock multiple market item ids.
+- `cashBonus`: grants cash immediately.
 - `freePurchases`: `{ "itemId": number, "count": number }`
 - `grantCosmetic`: unlock cosmetic/theme id.
 - `setFlag`: sets a goal flag string in save state.
+
+## Item unlock progression
+- Shop item unlocks are now level-based, not goal-based.
+- Rule: `playerLevel = N` unlocks the first `N` items (ordered by item id).
+- Level-up UI shows the unlocked item image/name when available.
+- If player level exceeds available item count, level still increases and the generic level-up image is shown.
 
 ## Authoring rules
 - Keep goal `id` stable forever (used by save data).

@@ -17,12 +17,6 @@ export function getCurrentStoreUnlockIdsAction(state, isShopItemUnlocked) {
       if (isShopItemUnlocked(item.id)) ids.push(`shop:${item.id}`);
     });
   }
-  if (state.store && Array.isArray(state.store.cosmetics)) {
-    state.store.cosmetics.forEach((cosmetic) => {
-      if (!cosmetic || typeof cosmetic.id !== 'string') return;
-      if (cosmetic.unlocked) ids.push(`cosmetic:${cosmetic.id}`);
-    });
-  }
   return ids;
 }
 
@@ -61,11 +55,11 @@ export function updateTabNotificationBadgesAction(deps) {
     getPendingGoalsCount,
     getNewStoreUnlockCount
   } = deps;
-  if (activeMainTab === 'store') {
+  if (activeMainTab === 'market') {
     markStoreUnlocksSeen();
   }
   setTabBadgeCount('tab-goals-badge', getPendingGoalsCount());
-  setTabBadgeCount('tab-store-badge', getNewStoreUnlockCount());
+  setTabBadgeCount('tab-market-badge', getNewStoreUnlockCount());
 }
 
 export function renderProfileGoalSummaryAction(deps) {

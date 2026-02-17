@@ -127,7 +127,7 @@ export function showTabDom(tabName, deps) {
     }
     if (tabName !== 'messages') setTabBeforeMessages(tabName);
     setActiveMainTab(tabName);
-    if (tabName === 'store') markStoreUnlocksSeen();
+    if (tabName === 'market') markStoreUnlocksSeen();
     updateMainViewVisibility();
     updateMainTabButtons();
     renderMarket();

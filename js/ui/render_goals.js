@@ -53,17 +53,6 @@ function formatGoalReward(reward, state) {
   const cashBonus = Math.max(0, Number(reward.cashBonus) || 0);
   if (cashBonus > 0) parts.push(`Cash: $${cashBonus.toFixed(2)}`);
   if (typeof reward.unlockTool === 'string') parts.push(`Tool: ${reward.unlockTool}`);
-  if (typeof reward.unlockShopItem === 'number') {
-    const item = state.items.find((it) => it.id === reward.unlockShopItem);
-    parts.push(`Shop item: ${item ? item.name : reward.unlockShopItem}`);
-  }
-  if (Array.isArray(reward.unlockShopItems) && reward.unlockShopItems.length > 0) {
-    const labels = reward.unlockShopItems
-      .map((itemId) => state.items.find((it) => it.id === Number(itemId)))
-      .filter(Boolean)
-      .map((item) => item.name);
-    if (labels.length > 0) parts.push(`Shop items: ${labels.join(', ')}`);
-  }
   if (reward.freePurchases && typeof reward.freePurchases === 'object') {
     const itemId = Number(reward.freePurchases.itemId);
     const count = Number(reward.freePurchases.count) || 0;

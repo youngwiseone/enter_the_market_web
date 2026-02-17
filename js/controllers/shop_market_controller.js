@@ -85,32 +85,23 @@ export function applyShopEntryPriceRecoveryStepAction(entry, isShopEntryPriceRec
   return true;
 }
 
-export function getDefaultUnlockedShopItemsAction(items) {
+export function getDefaultUnlockedShopItemsAction(items, playerLevelRaw = 1) {
   const unlocked = {};
   if (!Array.isArray(items)) return unlocked;
-  items.forEach((item) => {
-    if (!item || typeof item.id !== 'number') return;
-    unlocked[item.id] = item.goalLocked !== true;
+  const playerLevel = Math.max(1, Math.floor(Number(playerLevelRaw) || 1));
+  const unlockOrder = items
+    .filter((item) => item && typeof item.id === 'number')
+    .slice()
+    .sort((a, b) => a.id - b.id)
+    .map((item) => item.id);
+  unlockOrder.forEach((itemId, index) => {
+    unlocked[itemId] = index < playerLevel;
   });
   return unlocked;
 }
 
 export function getGoalRewardUnlockedItemIdsAction(goal) {
-  if (!goal || typeof goal !== 'object') return [];
-  const reward = goal.reward || {};
-  const ids = [];
-  if (typeof reward.unlockShopItem === 'number') {
-    ids.push(reward.unlockShopItem);
-  }
-  if (Array.isArray(reward.unlockShopItems)) {
-    reward.unlockShopItems.forEach((itemId) => {
-      const numericId = Number(itemId);
-      if (Number.isInteger(numericId)) {
-        ids.push(numericId);
-      }
-    });
-  }
-  return ids;
+  return [];
 }
 
 export function hasPlayerHandledItemAction(state, itemId) {
@@ -128,42 +119,39 @@ export function hasPlayerHandledItemAction(state, itemId) {
 
 export function syncGoalLockedShopUnlocksAction(
   state,
-  getGoalRewardUnlockedItemIds,
-  hasPlayerHandledItem,
+  _getGoalRewardUnlockedItemIds,
+  _hasPlayerHandledItem,
   resetShopEntryToBasePrice
 ) {
   if (!Array.isArray(state.items)) return false;
   if (!state.unlockedShopItems || typeof state.unlockedShopItems !== 'object') {
     state.unlockedShopItems = {};
   }
+  const playerLevel = Math.max(1, Math.floor(Number(state.player?.playerLevel) || 1));
+  const unlockOrder = state.items
+    .filter((item) => item && typeof item.id === 'number')
+    .slice()
+    .sort((a, b) => a.id - b.id)
+    .map((item) => item.id);
+  const unlockedByLevel = new Set(unlockOrder.slice(0, playerLevel));
   let changed = false;
-  const claimedUnlocks = new Set();
-  if (state.goalsClaimed && typeof state.goalsClaimed === 'object' && Array.isArray(state.goals)) {
-    state.goals.forEach((goal) => {
-      if (!goal || typeof goal.id !== 'string') return;
-      if (!state.goalsClaimed[goal.id]) return;
-      getGoalRewardUnlockedItemIds(goal).forEach((itemId) => claimedUnlocks.add(itemId));
-    });
-  }
   state.items.forEach((item) => {
     if (!item || typeof item.id !== 'number') return;
     const itemId = item.id;
     const currentlyUnlocked = !!state.unlockedShopItems[itemId];
-    if (item.goalLocked === true) {
-      const shouldUnlock = claimedUnlocks.has(itemId) || hasPlayerHandledItem(itemId);
-      if (currentlyUnlocked !== shouldUnlock) {
-        state.unlockedShopItems[itemId] = shouldUnlock;
-        if (!shouldUnlock) {
-          resetShopEntryToBasePrice(itemId);
-        }
-        changed = true;
-      }
-      return;
-    }
-    if (!currentlyUnlocked) {
-      state.unlockedShopItems[itemId] = true;
+    const shouldUnlock = unlockedByLevel.has(itemId);
+    if (currentlyUnlocked !== shouldUnlock) {
+      state.unlockedShopItems[itemId] = shouldUnlock;
+      resetShopEntryToBasePrice(itemId);
       changed = true;
     }
+  });
+  Object.keys(state.unlockedShopItems).forEach((itemIdText) => {
+    const itemId = Number(itemIdText);
+    if (!Number.isInteger(itemId)) return;
+    if (unlockOrder.includes(itemId)) return;
+    delete state.unlockedShopItems[itemIdText];
+    changed = true;
   });
   return changed;
 }

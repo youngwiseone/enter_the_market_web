@@ -21,8 +21,7 @@ This guide describes item authoring in `data/items.json`.
   "seedImage": "seeds/corn_seeds.png",
   "harvestImage": "items/corn.png",
   "growDays": 6,
-  "plantStages": 6,
-  "goalLocked": true
+  "plantStages": 6
 }
 ```
 
@@ -38,7 +37,7 @@ This guide describes item authoring in `data/items.json`.
 
 ## Optional fields
 - `plantStageImages`: explicit per-stage plant art.
-- `goalLocked`: `true` means the item starts locked until a goal reward unlocks it.
+- `goalLocked`: legacy field from older progression. Current runtime unlocks items by level and does not require this flag.
 
 Notes:
 - Runtime normalizers can backfill some asset fields from fallback defaults, but new/edited content should still include complete fields to avoid visual gaps.
@@ -50,16 +49,17 @@ Notes:
   - `items/*.png`
 
 ## Current progression notes
-- Tiered pricing is currently used:
-  - Tier 1: `1-5`
-  - Tier 2: `4-12`
-  - Tier 3: `15-25`
-  - Tier 4: `22-40`
-- Goal-locked items are hidden from purchase and excluded from market/news simulation until unlocked.
+- Item unlocks are level-based:
+  - Level 1: first item unlocked
+  - Level 2: second item unlocked
+  - ...
+  - Level `N`: first `N` items unlocked (ordered by `id`)
+- If level exceeds item count, no additional item unlock is applied, but leveling still continues.
+- Locked items are excluded from market/news simulation until unlocked.
 
 ## Authoring checklist
 1. IDs are unique and stable.
 2. All image files exist in `resources/`.
 3. Price and growth values are positive.
-4. `goalLocked` matches intended progression.
+4. Item order by `id` matches intended level unlock order.
 5. Item appears and behaves correctly after unlock.

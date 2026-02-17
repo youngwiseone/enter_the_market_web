@@ -108,16 +108,25 @@ export function ensurePlayerProgressStateAction(
   state.player.energy = Math.max(0, Math.min(currentEnergy, maxEnergy));
 }
 
-export function enqueueLevelUpCelebrationAction(state, level, changeText, showNextGoalCelebration) {
+export function enqueueLevelUpCelebrationAction(
+  state,
+  level,
+  changeText,
+  showNextGoalCelebration,
+  unlockedItem
+) {
   if (!Array.isArray(state.goalCelebrationQueue)) {
     state.goalCelebrationQueue = [];
   }
+  const unlockedText = unlockedItem && unlockedItem.name
+    ? ` | Unlocked item: ${unlockedItem.name}`
+    : '';
   state.goalCelebrationQueue.push({
     id: `level-up-${level}-${Date.now()}`,
     title: 'Level Up',
-    rewardText: `Level ${level} reached | ${changeText}`,
-    imageSrc: 'resources/profiles/player_level_up.png',
-    imageAlt: 'Level up'
+    rewardText: `Level ${level} reached${unlockedText} | ${changeText}`,
+    imageSrc: unlockedItem?.imageSrc || 'resources/profiles/player_level_up.png',
+    imageAlt: unlockedItem?.imageAlt || 'Level up'
   });
   showNextGoalCelebration();
 }
@@ -131,6 +140,7 @@ export function awardPlayerXpAction(amount, options, deps) {
     getEnergyMaxForLevel,
     formatEnergyValue,
     addMessage,
+    unlockShopItemForLevel,
     enqueueLevelUpCelebration,
     showXpGainFeedback
   } = deps;
@@ -154,13 +164,17 @@ export function awardPlayerXpAction(amount, options, deps) {
     const changeText = currentEnergyMax > previousEnergyMax
       ? `Max energy increased to ${formatEnergyValue(currentEnergyMax)}. Energy fully refilled.`
       : `Energy fully refilled to ${formatEnergyValue(currentEnergyMax)}.`;
-    addMessage(`Level up! Reached Level ${state.player.playerLevel}. ${changeText}`, {
+    const unlockedItem = unlockShopItemForLevel(state.player.playerLevel);
+    const unlockedText = unlockedItem && unlockedItem.name
+      ? ` Unlocked item: ${unlockedItem.name}.`
+      : '';
+    addMessage(`Level up! Reached Level ${state.player.playerLevel}.${unlockedText} ${changeText}`, {
       speaker: 'player',
       emotion: 'level_up',
       category: 'progress',
       priority: 'high'
     });
-    enqueueLevelUpCelebration(state.player.playerLevel, changeText);
+    enqueueLevelUpCelebration(state.player.playerLevel, changeText, unlockedItem);
   }
 
   if (state.player.playerLevel >= playerLevelCap) {

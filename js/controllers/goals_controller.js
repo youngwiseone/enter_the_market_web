@@ -65,7 +65,6 @@ export function applyGoalRewardAction(deps) {
     goal,
     updateNetWorth,
     TOOL_LIST,
-    resetShopEntryToBasePrice,
     getFreePurchaseCount
   } = deps;
 
@@ -83,25 +82,6 @@ export function applyGoalRewardAction(deps) {
       state.unlockedTools[reward.unlockTool] = true;
       changed = true;
     }
-  }
-  if (typeof reward.unlockShopItem === 'number') {
-    const itemId = reward.unlockShopItem;
-    if (!state.unlockedShopItems[itemId]) {
-      state.unlockedShopItems[itemId] = true;
-      resetShopEntryToBasePrice(itemId);
-      changed = true;
-    }
-  }
-  if (Array.isArray(reward.unlockShopItems)) {
-    reward.unlockShopItems.forEach((itemIdRaw) => {
-      const itemId = Number(itemIdRaw);
-      if (!Number.isInteger(itemId)) return;
-      if (!state.unlockedShopItems[itemId]) {
-        state.unlockedShopItems[itemId] = true;
-        resetShopEntryToBasePrice(itemId);
-        changed = true;
-      }
-    });
   }
   if (reward.freePurchases && typeof reward.freePurchases === 'object') {
     const itemId = reward.freePurchases.itemId;

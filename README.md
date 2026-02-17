@@ -16,7 +16,7 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
   - day summary and tips
   - goal evaluation and rewards
 - Progression:
-  - crop unlock tiers via goals (`goalLocked`)
+  - shop items unlock by player level (1 item per level, ordered by item id)
   - tool unlocks and free purchase rewards
   - second farm unlock after fully unlocking Farm 1
   - cosmetic themes from milestones

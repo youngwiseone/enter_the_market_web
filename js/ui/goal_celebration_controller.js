@@ -60,19 +60,6 @@ export function createGoalCelebrationController(deps) {
     if (typeof reward.unlockTool === 'string') {
       parts.push(`Unlocked: ${getToolDisplayName(reward.unlockTool)}`);
     }
-    if (typeof reward.unlockShopItem === 'number') {
-      const item = state.items.find((it) => it.id === reward.unlockShopItem);
-      parts.push(`Unlocked in shop: ${item ? item.name : `Item ${reward.unlockShopItem}`}`);
-    }
-    if (Array.isArray(reward.unlockShopItems) && reward.unlockShopItems.length > 0) {
-      const labels = reward.unlockShopItems
-        .map((itemId) => state.items.find((it) => it.id === Number(itemId)))
-        .filter(Boolean)
-        .map((item) => item.name);
-      if (labels.length > 0) {
-        parts.push(`Unlocked in shop: ${labels.join(', ')}`);
-      }
-    }
     if (reward.freePurchases && typeof reward.freePurchases === 'object') {
       const itemId = Number(reward.freePurchases.itemId);
       const count = Math.max(0, Number(reward.freePurchases.count) || 0);
