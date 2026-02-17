@@ -452,6 +452,7 @@
             box-sizing: border-box;
             border: 1px solid var(--header-border, #808080);
             cursor: inherit;
+            touch-action: none;
         }
         .grid-cell { 
             box-sizing: border-box; 
@@ -2177,6 +2178,31 @@
                 --font-title: var(--font-ui); 
                 --font-button: var(--font-ui); 
             } 
+            html,
+            body,
+            *,
+            *::before,
+            *::after {
+                -webkit-tap-highlight-color: transparent;
+            }
+            #grid,
+            .grid-cell,
+            .market-row,
+            .tool-button,
+            .tab-button,
+            .button,
+            button {
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
+            }
+            .tool-button:focus,
+            .tab-button:focus,
+            .button:focus,
+            button:focus,
+            .market-row:focus,
+            .grid-cell:focus {
+                outline: none;
+            }
         } 
         .fx-canvas { 
             position: absolute; 
