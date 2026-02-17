@@ -40,11 +40,17 @@ export function getNewStoreUnlockCountAction(seenStoreUnlockIds, getCurrentStore
 }
 
 export function setTabBadgeCountAction(badgeId, count) {
-  const badge = document.getElementById(badgeId);
-  if (!badge) return;
   const value = Math.max(0, Number(count) || 0);
-  badge.textContent = String(value);
-  badge.classList.toggle('has-count', value > 0);
+  const candidates = [];
+  const primary = document.getElementById(badgeId);
+  if (primary) candidates.push(primary);
+  document.querySelectorAll(`[data-badge-for="${badgeId}"]`).forEach((node) => {
+    if (!candidates.includes(node)) candidates.push(node);
+  });
+  candidates.forEach((badge) => {
+    badge.textContent = String(value);
+    badge.classList.toggle('has-count', value > 0);
+  });
 }
 
 export function updateTabNotificationBadgesAction(deps) {

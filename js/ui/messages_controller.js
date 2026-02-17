@@ -19,6 +19,36 @@ export function createMessagesController(deps) {
   const messageReplaceMap = new Map();
   const typingTimersByEntry = new WeakMap();
   let messageJustEmitted = false;
+  let latestMobileMessageText = '';
+
+  function syncMobileChatStrip(latestText = '') {
+    const mobileLog = document.getElementById('mobile-chat-log');
+    const chatLog = document.getElementById('chat-log');
+    if (!mobileLog || !chatLog) return;
+    if (latestText) {
+      latestMobileMessageText = String(latestText);
+    }
+    if (latestMobileMessageText) {
+      mobileLog.innerHTML = '';
+      const row = document.createElement('div');
+      row.className = 'mobile-chat-entry';
+      row.textContent = latestMobileMessageText;
+      mobileLog.appendChild(row);
+      return;
+    }
+    const entries = Array.from(chatLog.querySelectorAll('.chat-entry'));
+    const recent = entries.slice(Math.max(0, entries.length - 1));
+    mobileLog.innerHTML = '';
+    recent.forEach((entry) => {
+      const row = document.createElement('div');
+      row.className = 'mobile-chat-entry';
+      row.textContent = entry.textContent || '';
+      mobileLog.appendChild(row);
+    });
+    if (mobileLog.children.length === 0) {
+      mobileLog.textContent = '';
+    }
+  }
 
   function getMessageDayPrefix(dayIndex) {
     const dowNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -163,6 +193,7 @@ export function createMessagesController(deps) {
     if (wasNearBottom) {
       chatLog.scrollTop = chatLog.scrollHeight;
     }
+    syncMobileChatStrip(normalized.text);
     updateGridSize();
     return entry;
   }
@@ -180,6 +211,7 @@ export function createMessagesController(deps) {
     if (closeButton) {
       closeButton.addEventListener('click', () => toggleMessagesPanel());
     }
+    syncMobileChatStrip();
     updateTabNotificationBadges();
   }
 

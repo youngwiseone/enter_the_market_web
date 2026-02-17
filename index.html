@@ -38,7 +38,7 @@
         body {
             background-color: #c0c0c0;
             margin: 0;
-            padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(76px + var(--safe-bottom)) calc(10px + var(--safe-left));
+            padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(60px + var(--safe-bottom) + var(--bottom-bar-height)) calc(10px + var(--safe-left));
             font-family: 'MS Sans Serif', sans-serif;
             font-size: var(--font-ui);
             --energy-fill: #00a2ff;
@@ -1668,7 +1668,7 @@
             position: fixed;
             left: calc(10px + var(--safe-left));
             right: calc(10px + var(--safe-right));
-            bottom: calc(10px + var(--safe-bottom));
+            bottom: calc(10px + var(--safe-bottom) + var(--bottom-bar-height));
             z-index: 150;
         }
         #next-day.bottom-rest-button {
@@ -1709,7 +1709,7 @@
             #rest-dock {
                 left: calc(8px + var(--safe-left));
                 right: calc(8px + var(--safe-right));
-                bottom: calc(8px + var(--safe-bottom));
+                bottom: calc(8px + var(--safe-bottom) + var(--bottom-bar-height));
             }
             .tool-button {
                 width: 44px;
@@ -1744,6 +1744,264 @@
             .day-summary-grid {
                 grid-template-columns: 1fr;
             }
+            body:not(.mobile-layout) #market-layout {
+                grid-template-columns: 96px minmax(220px, var(--grid-size, 580px)) minmax(220px, 1fr);
+                grid-template-rows: minmax(0, 1fr);
+                grid-template-areas: "profile farm side";
+                align-items: stretch;
+            }
+            body:not(.mobile-layout) #farm-panel {
+                align-self: start;
+            }
+        }
+        #mobile-bottom-tabs {
+            display: none;
+        }
+        body.mobile-layout #market-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+            min-height: 0;
+            width: 100%;
+            max-width: 100%;
+            align-items: stretch;
+        }
+        body.mobile-layout #hud-profile-panel {
+            width: 100%;
+            max-width: none;
+            min-width: 0;
+            align-self: stretch;
+            box-sizing: border-box;
+            overflow: visible;
+            flex: 0 0 auto;
+        }
+        body.mobile-layout #farm-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            align-self: stretch;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        body.mobile-layout #market {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            align-self: stretch;
+            width: 100%;
+            max-width: 100%;
+        }
+        body.mobile-layout .market-tabs {
+            display: none;
+        }
+        #mobile-profile-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #mobile-profile-side {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+        #mobile-chat-log {
+            display: none;
+        }
+        body.mobile-layout .mobile-chat-entry {
+            color: #34ff6a;
+            margin: 0 0 2px;
+            line-height: 1.15;
+            font-size: clamp(12px, 2.4vw, 14px);
+        }
+        body.mobile-layout #mobile-profile-row {
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: visible;
+            flex: 0 0 auto;
+        }
+        body.mobile-layout .hud-profile-avatar {
+            width: 15%;
+            min-width: 44px;
+            max-width: 68px;
+            flex: 0 0 auto;
+            border: 1px solid #808080;
+        }
+        body.mobile-layout #mobile-profile-side {
+            flex: 1 1 0;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
+            min-height: 0;
+        }
+        body.mobile-layout .player-level-info {
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+        body.mobile-layout .player-level-label {
+            margin: 0;
+            font-size: clamp(12px, 2.6vw, 14px);
+        }
+        body.mobile-layout .player-xp-bar,
+        body.mobile-layout .player-xp-text {
+            display: none;
+        }
+        body.mobile-layout .profile-energy-info {
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+        body.mobile-layout .profile-section-label {
+            display: none;
+        }
+        body.mobile-layout .profile-energy-bar.progress-indicator {
+            height: 14px;
+            padding: 1px;
+            box-shadow: none;
+            border: none;
+            background: #4f4f4f;
+        }
+        body.mobile-layout .profile-energy-bar.progress-indicator.energy-bar-compact {
+            box-shadow: none;
+            border: none;
+            font-size: clamp(10px, 2.2vw, 12px);
+        }
+        body.mobile-layout .profile-energy-bar .energy-compact-label {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        body.mobile-layout #mobile-chat-log {
+            display: block;
+            height: 20px;
+            min-height: 20px;
+            max-height: 20px;
+            overflow: hidden;
+            padding: 3px 5px;
+            background: #0c160c;
+            border: 1px solid #1d7f1d;
+            box-shadow: inset 0 0 0 1px #053705;
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+        }
+        body.mobile-layout .profile-goals-info {
+            display: none;
+        }
+        body.mobile-layout #mobile-chat-log .mobile-chat-entry {
+            display: block;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        body.mobile-layout #mobile-profile-side .player-level-info {
+            padding: 0;
+            border: none;
+            background: transparent;
+            order: 3;
+            width: 100%;
+            min-width: 0;
+        }
+        body.mobile-layout #mobile-profile-side .profile-energy-info {
+            order: 1;
+        }
+        body.mobile-layout #mobile-profile-side #mobile-chat-log {
+            order: 2;
+        }
+        body.mobile-layout #grid-container {
+            margin: 0 auto;
+            width: min(100%, var(--grid-size, 580px));
+            height: auto;
+            aspect-ratio: 1 / 1;
+            order: 2;
+        }
+        body.mobile-layout .farm-toolbar {
+            order: 3;
+            max-width: 100%;
+            margin-top: 6px;
+            margin-bottom: 0;
+            position: relative;
+            z-index: 170;
+        }
+        body.mobile-layout #farm-title {
+            order: 1;
+        }
+        body.mobile-layout #store-tabs {
+            width: auto !important;
+            float: none !important;
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        body.mobile-layout #store-tabs button {
+            flex: 1 1 auto;
+            margin-bottom: 0;
+        }
+        body.mobile-layout #store-content {
+            margin-left: 0 !important;
+        }
+        body.mobile-layout #mobile-bottom-tabs {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 4px;
+            position: fixed;
+            left: calc(8px + var(--safe-left));
+            right: calc(8px + var(--safe-right));
+            bottom: calc(8px + var(--safe-bottom));
+            z-index: 140;
+            padding: 4px;
+            background: #d4d0c8;
+            border: 1px solid #808080;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+        }
+        body.mobile-layout #mobile-bottom-tabs .tab-button {
+            min-height: 42px;
+            padding: 4px;
+            font-size: clamp(12px, 2.8vw, 14px);
+        }
+        body.mobile-layout #market-header {
+            display: none;
+        }
+        .mobile-insight-panel {
+            display: none;
+        }
+        body.mobile-layout[data-active-main-tab="market"] .mobile-insight-panel {
+            display: block;
+            margin-top: 6px;
+            padding: 6px;
+        }
+        #farm-action-dock {
+            display: none;
+            position: fixed;
+            left: calc(8px + var(--safe-left));
+            right: calc(8px + var(--safe-right));
+            bottom: calc(8px + var(--safe-bottom) + var(--bottom-bar-height));
+            z-index: 151;
+        }
+        body.mobile-layout #farm-action-dock.is-visible {
+            display: block;
+        }
+        body.mobile-layout.farm-action-replaces-rest #rest-dock {
+            display: none;
+        }
+        #farm-action-button {
+            width: 100%;
+            min-height: 42px;
         }
         @media (hover: none) and (pointer: coarse) { 
             :root { 
@@ -1946,18 +2204,23 @@
     <div id="market-layout">
         <!-- Farmer's Market content consists of a single unified table and a 7x7 farm. The farm sits on the left and the market table on the right. -->
         <div id="hud-profile-panel" class="panel">
-            <img id="chat-profile" class="hud-profile-avatar" src="resources/profiles/player.png" alt="player neutral">
             <div id="profile-message-bubble" class="profile-message-bubble is-hidden"></div>
-            <div class="player-level-info">
-                <div id="player-level-label" class="player-level-label">Level: 1</div>
-                <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
-                    <div id="player-xp-fill" class="player-xp-fill"></div>
+            <div id="mobile-profile-row">
+                <img id="chat-profile" class="hud-profile-avatar" src="resources/profiles/player.png" alt="player neutral">
+                <div id="mobile-profile-side">
+                    <div class="profile-energy-info">
+                        <div class="profile-section-label">Energy</div>
+                        <div id="energy-bar" class="progress-indicator profile-energy-bar" role="progressbar" aria-valuemin="0"></div>
+                    </div>
+                    <div id="mobile-chat-log" aria-live="polite"></div>
+                    <div class="player-level-info">
+                        <div id="player-level-label" class="player-level-label">Level: 1</div>
+                        <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
+                            <div id="player-xp-fill" class="player-xp-fill"></div>
+                        </div>
+                        <div id="player-xp-text" class="player-xp-text">0 / 30 XP</div>
+                    </div>
                 </div>
-                <div id="player-xp-text" class="player-xp-text">0 / 30 XP</div>
-            </div>
-            <div class="profile-energy-info">
-                <div class="profile-section-label">Energy</div>
-                <div id="energy-bar" class="progress-indicator profile-energy-bar" role="progressbar" aria-valuemin="0"></div>
             </div>
             <div class="profile-goals-info">
                 <div class="profile-goals-title">Goals</div>
@@ -1989,9 +2252,9 @@
         <div id="market">
                 <div id="market-header" class="panel market-header">
                     <div class="market-tabs" role="tablist">
-                        <button id="tab-market" class="tab-button active" role="tab" aria-selected="true">Market</button>
-                        <button id="tab-store" class="tab-button" role="tab" aria-selected="false">Shop <span id="tab-store-badge" class="tab-badge">0</span></button>
-                        <button id="tab-goals" class="tab-button" role="tab" aria-selected="false">Goal <span id="tab-goals-badge" class="tab-badge">0</span></button>
+                        <button id="tab-market" data-main-tab="market" class="tab-button active" role="tab" aria-selected="true">Market</button>
+                        <button id="tab-store" data-main-tab="store" class="tab-button" role="tab" aria-selected="false">Shop <span id="tab-store-badge" class="tab-badge">0</span></button>
+                        <button id="tab-goals" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goal <span id="tab-goals-badge" class="tab-badge">0</span></button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
                     <div id="market-guidance" class="market-guidance" aria-live="polite">
@@ -2015,6 +2278,7 @@
         <div id="goals-panel" class="panel">
             <div id="goals-content"></div>
         </div>
+        <div id="market-insight-panel-mobile-market" class="market-insight-panel panel mobile-insight-panel" data-insight-panel="mobile-market" aria-live="polite"></div>
         <div id="messages-history-panel" class="panel">
             <div class="panel-title">Messages</div>
             <div class="messages-history-toolbar">
@@ -2025,6 +2289,15 @@
     </div>
     <div id="rest-dock">
         <button id="next-day" class="button bottom-rest-button" type="button">Rest</button>
+    </div>
+    <div id="farm-action-dock">
+        <button id="farm-action-button" class="button bottom-rest-button" type="button"></button>
+    </div>
+    <div id="mobile-bottom-tabs" role="tablist" aria-label="Mobile navigation">
+        <button id="tab-farm-mobile" data-main-tab="farm" class="tab-button active" role="tab" aria-selected="true">Farm</button>
+        <button id="tab-market-mobile" data-main-tab="market" class="tab-button" role="tab" aria-selected="false">Market</button>
+        <button id="tab-store-mobile" data-main-tab="store" class="tab-button" role="tab" aria-selected="false">Shop <span class="tab-badge" data-badge-for="tab-store-badge">0</span></button>
+        <button id="tab-goals-mobile" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goals <span class="tab-badge" data-badge-for="tab-goals-badge">0</span></button>
     </div>
 
     <div id="feedback-modal" class="feedback-modal" aria-hidden="true">

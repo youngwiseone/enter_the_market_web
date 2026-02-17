@@ -18,6 +18,8 @@ export async function runAppBootstrap(deps) {
     renderHUD,
     applyTheme,
     updateGridSize,
+    getInitialMainTab,
+    onViewportChange,
     setReduceMotion,
     initFxLayer
   } = deps;
@@ -46,10 +48,14 @@ export async function runAppBootstrap(deps) {
     saveState();
   }
 
-  showTab('market');
+  const initialMainTab = typeof getInitialMainTab === 'function' ? getInitialMainTab() : 'market';
+  showTab(initialMainTab === 'farm' ? 'farm' : 'market');
   renderHUD();
   applyTheme(state.player.theme);
   updateGridSize();
+  if (initialMainTab === 'farm') {
+    showTab('farm');
+  }
 
   const reduceMotionQuery = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -65,17 +71,22 @@ export async function runAppBootstrap(deps) {
   window.addEventListener('resize', () => {
     updateGridSize();
     updateToolButtons();
+    if (typeof onViewportChange === 'function') onViewportChange();
   });
   window.addEventListener('orientationchange', () => {
     updateGridSize();
     updateToolButtons();
+    if (typeof onViewportChange === 'function') onViewportChange();
   });
   if ('ResizeObserver' in window) {
     const observedElements = ['market-header', 'market-table-container', 'messages-history-panel']
       .map((id) => document.getElementById(id))
       .filter(Boolean);
     if (observedElements.length > 0) {
-      const resizeObserver = new ResizeObserver(() => updateGridSize());
+      const resizeObserver = new ResizeObserver(() => {
+        updateGridSize();
+        if (typeof onViewportChange === 'function') onViewportChange();
+      });
       observedElements.forEach((el) => resizeObserver.observe(el));
     }
   }

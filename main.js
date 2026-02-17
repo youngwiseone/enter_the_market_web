@@ -1253,7 +1253,8 @@ function renderSelectedItemInsight() {
     getSelectedShopItemInsightData,
     clearCurrentInfoSelection,
     sellBulkSelectedGridItems,
-    sellSelectedGridItem
+    sellSelectedGridItem,
+    updateGridSize
   });
 }
 
@@ -1936,6 +1937,20 @@ async function main() {
     renderHUD,
     applyTheme,
     updateGridSize,
+    getInitialMainTab: () => {
+      const isNarrowViewport = window.matchMedia('(max-width: 900px)').matches;
+      const isTouchViewport = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+      const isLandscapeViewport = window.innerWidth > window.innerHeight;
+      if (!isLandscapeViewport && (isNarrowViewport || (isTouchViewport && window.matchMedia('(max-width: 1100px)').matches))) {
+        return 'farm';
+      }
+      return 'market';
+    },
+    onViewportChange: () => {
+      updateMainViewVisibility();
+      updateMainTabButtons();
+      renderSelectedItemInsight();
+    },
     setReduceMotion,
     initFxLayer
   });

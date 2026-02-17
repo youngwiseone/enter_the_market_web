@@ -29,9 +29,13 @@ export function attachCoreEventHandlers(deps) {
     TOOL_WATERING
   } = deps;
 
-  document.getElementById('tab-market').onclick = () => showTab('market');
-  document.getElementById('tab-store').onclick = () => showTab('store');
-  document.getElementById('tab-goals').onclick = () => showTab('goals');
+  document.querySelectorAll('[data-main-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tabName = String(button.getAttribute('data-main-tab') || '').trim();
+      if (!tabName) return;
+      showTab(tabName);
+    });
+  });
   const feedbackButton = document.getElementById('feedbackButton');
   if (feedbackButton) {
     feedbackButton.addEventListener('click', async (event) => {

@@ -1,12 +1,33 @@
 export function updateMainViewVisibilityDom(activeMainTab) {
+  const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
+  const effectiveTab = (!isMobileLayout && activeMainTab === 'farm') ? 'market' : activeMainTab;
+  if (document.body) {
+    document.body.setAttribute('data-active-main-tab', effectiveTab);
+  }
+  const farmPanel = document.getElementById('farm-panel');
+  const marketRoot = document.getElementById('market');
   const marketTable = document.getElementById('market-table-container');
   const storePanel = document.getElementById('store');
   const goalsPanel = document.getElementById('goals-panel');
   const messagesPanel = document.getElementById('messages-history-panel');
-  const isMarket = activeMainTab === 'market';
-  const isStore = activeMainTab === 'store';
-  const isGoals = activeMainTab === 'goals';
-  const isMessages = activeMainTab === 'messages';
+  const isFarm = effectiveTab === 'farm';
+  const isMarket = effectiveTab === 'market';
+  const isStore = effectiveTab === 'store';
+  const isGoals = effectiveTab === 'goals';
+  const isMessages = effectiveTab === 'messages';
+
+  if (isMobileLayout) {
+    if (farmPanel) farmPanel.style.display = isFarm ? 'flex' : 'none';
+    if (marketRoot) marketRoot.style.display = isFarm ? 'none' : 'flex';
+    if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
+    if (storePanel) storePanel.style.display = isStore ? 'block' : 'none';
+    if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
+    if (messagesPanel) messagesPanel.style.display = isMessages ? 'flex' : 'none';
+    return;
+  }
+
+  if (farmPanel) farmPanel.style.display = '';
+  if (marketRoot) marketRoot.style.display = 'flex';
   if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
   if (storePanel) storePanel.style.display = isStore ? 'block' : 'none';
   if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
@@ -14,32 +35,43 @@ export function updateMainViewVisibilityDom(activeMainTab) {
 }
 
 export function updateMainTabButtonsDom(activeMainTab, isStoreTabUnlocked, isGoalsTabUnlocked) {
+  const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
+  const effectiveTab = (!isMobileLayout && activeMainTab === 'farm') ? 'market' : activeMainTab;
+  const farmTabs = Array.from(document.querySelectorAll('[data-main-tab="farm"]'));
   const marketTab = document.getElementById('tab-market');
   const storeTab = document.getElementById('tab-store');
   const goalsTab = document.getElementById('tab-goals');
+  const marketTabs = Array.from(new Set([marketTab, ...Array.from(document.querySelectorAll('[data-main-tab="market"]'))].filter(Boolean)));
+  const storeTabs = Array.from(new Set([storeTab, ...Array.from(document.querySelectorAll('[data-main-tab="store"]'))].filter(Boolean)));
+  const goalsTabs = Array.from(new Set([goalsTab, ...Array.from(document.querySelectorAll('[data-main-tab="goals"]'))].filter(Boolean)));
   const storeUnlocked = isStoreTabUnlocked();
   const goalsUnlocked = isGoalsTabUnlocked();
-  const isMarket = activeMainTab === 'market';
-  const isStore = activeMainTab === 'store';
-  const isGoals = activeMainTab === 'goals';
-  if (marketTab) {
-    marketTab.classList.toggle('active', isMarket);
-    marketTab.setAttribute('aria-selected', isMarket ? 'true' : 'false');
-  }
-  if (storeTab) {
-    storeTab.classList.toggle('active', isStore);
-    storeTab.setAttribute('aria-selected', isStore ? 'true' : 'false');
-    storeTab.disabled = !storeUnlocked;
-    storeTab.setAttribute('aria-disabled', storeUnlocked ? 'false' : 'true');
-    storeTab.title = storeUnlocked ? 'Open Shop' : 'Unlocks after first harvest';
-  }
-  if (goalsTab) {
-    goalsTab.classList.toggle('active', isGoals);
-    goalsTab.setAttribute('aria-selected', isGoals ? 'true' : 'false');
-    goalsTab.disabled = !goalsUnlocked;
-    goalsTab.setAttribute('aria-disabled', goalsUnlocked ? 'false' : 'true');
-    goalsTab.title = goalsUnlocked ? 'Open Goal' : 'Unlocks after first harvest and rest';
-  }
+  const isFarm = effectiveTab === 'farm';
+  const isMarket = effectiveTab === 'market';
+  const isStore = effectiveTab === 'store';
+  const isGoals = effectiveTab === 'goals';
+  farmTabs.forEach((tab) => {
+    tab.classList.toggle('active', isFarm);
+    tab.setAttribute('aria-selected', isFarm ? 'true' : 'false');
+  });
+  marketTabs.forEach((tab) => {
+    tab.classList.toggle('active', isMarket);
+    tab.setAttribute('aria-selected', isMarket ? 'true' : 'false');
+  });
+  storeTabs.forEach((tab) => {
+    tab.classList.toggle('active', isStore);
+    tab.setAttribute('aria-selected', isStore ? 'true' : 'false');
+    tab.disabled = !storeUnlocked;
+    tab.setAttribute('aria-disabled', storeUnlocked ? 'false' : 'true');
+    tab.title = storeUnlocked ? 'Open Shop' : 'Unlocks after first harvest';
+  });
+  goalsTabs.forEach((tab) => {
+    tab.classList.toggle('active', isGoals);
+    tab.setAttribute('aria-selected', isGoals ? 'true' : 'false');
+    tab.disabled = !goalsUnlocked;
+    tab.setAttribute('aria-disabled', goalsUnlocked ? 'false' : 'true');
+    tab.title = goalsUnlocked ? 'Open Goal' : 'Unlocks after first harvest and rest';
+  });
 }
 
 export function toggleMessagesPanelDom(deps) {

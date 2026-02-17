@@ -65,7 +65,8 @@ export function renderEnergyBarAction(deps) {
   if (!bar || !state.player) return;
   const max = Math.max(1, Number(state.player.energyMax) || 10);
   const current = Math.max(0, Math.min(roundEnergyValue(state.player.energy ?? max), max));
-  const useCompactLabel = max > ENERGY_SEGMENT_CAP;
+  const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
+  const useCompactLabel = isMobileLayout || max > ENERGY_SEGMENT_CAP;
   bar.classList.toggle('energy-bar-compact', useCompactLabel);
   bar.innerHTML = '';
   if (useCompactLabel) {
