@@ -69,6 +69,7 @@ Authoring guides:
 - `guide/items.md`
 - `guide/goals.md`
 - `guide/news.md`
+- `guide/messages.md`
 
 ## Dev Notes
 
@@ -96,6 +97,12 @@ Basic validation after edits:
 
 ```powershell
 $files = Get-ChildItem -Recurse -File -Include *.js; foreach ($f in $files) { node --check $f.FullName }
+```
+
+Message catalog validation:
+
+```bash
+node js/dev/validate_messages.cjs
 ```
 
 ## License and AI Usage

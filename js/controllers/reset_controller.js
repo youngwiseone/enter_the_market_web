@@ -68,13 +68,9 @@ export async function resetGameAction(deps) {
   updateToolButtons();
   updateCursorForTool();
   if (!state.player.welcomeShown) {
-    addMessage('Welcome to the market!');
+    addMessage({ id: 'intro.welcome_new_game' });
     state.player.welcomeShown = true;
     saveState();
   }
-  addMessage('Game has been reset to default values.', {
-    speaker: 'farmer',
-    category: 'progress',
-    priority: 'high'
-  });
+  addMessage({ id: 'system.game_reset', meta: { priority: 'high' } });
 }

@@ -471,6 +471,129 @@ export const DEFAULT_DATA = {
       duration: 3
     }
   ],
+  messages: [
+    {
+      id: 'system.fallback_forgot',
+      type: 'system',
+      icon: 'chat',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'system',
+      priority: 'low',
+      template: 'I was gonna say something, but I forgot'
+    },
+    {
+      id: 'intro.welcome_new_game',
+      type: 'intro',
+      icon: 'sparkle',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'tutorial',
+      priority: 'high',
+      maxPerDay: 1,
+      template: 'Welcome to the Market!'
+    },
+    {
+      id: 'tip.day1.mine_pickaxe',
+      type: 'tip',
+      icon: 'pickaxe',
+      speaker: 'player',
+      emotion: 'mining',
+      category: 'tips',
+      priority: 'normal',
+      cooldownMs: 90000,
+      replaceKey: 'tip:mine-pickaxe',
+      replaceScope: 'global',
+      template: 'Tip: Click the pickaxe button, then click a farm tile to mine.'
+    },
+    {
+      id: 'tip.day1.plant_after_mine',
+      type: 'tip',
+      icon: 'sprout',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'tips',
+      priority: 'normal',
+      cooldownMs: 90000,
+      replaceKey: 'tip:plant-after-mine',
+      replaceScope: 'global',
+      template: 'Tip: You can plant items on tiles you have freed up!'
+    },
+    {
+      id: 'tip.day1.select_market_then_tile',
+      type: 'tip',
+      icon: 'sprout',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'tips',
+      priority: 'normal',
+      cooldownMs: 90000,
+      replaceKey: 'tip:select-market-then-tile',
+      replaceScope: 'global',
+      template: 'Tip: Click an item from Market, then click a free tile to plant.'
+    },
+    {
+      id: 'tip.day1.water_crops',
+      type: 'tip',
+      icon: 'watering',
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'tips',
+      priority: 'normal',
+      cooldownMs: 90000,
+      replaceKey: 'tip:water-crops',
+      replaceScope: 'global',
+      template: 'Tip: Use the watering can tool on planted crops to help them grow.'
+    },
+    {
+      id: 'tip.day1.harvest_ready',
+      type: 'tip',
+      icon: 'sprout',
+      speaker: 'player',
+      emotion: 'excited',
+      category: 'tips',
+      priority: 'normal',
+      cooldownMs: 90000,
+      replaceKey: 'tip:harvest-ready',
+      replaceScope: 'global',
+      template: 'Tip: A crop is ready. Click it with gloves to harvest.'
+    },
+    {
+      id: 'tip.low_energy_rest',
+      type: 'tip',
+      icon: 'clock',
+      speaker: 'player',
+      emotion: 'tired',
+      category: 'tips',
+      priority: 'low',
+      cooldownMs: 70000,
+      replaceKey: 'tip:low-energy',
+      replaceScope: 'global',
+      template: 'Low energy. Rest to start the next day and refill energy.'
+    },
+    {
+      id: 'idle.session_time',
+      type: 'idle',
+      icon: 'clock',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: 'You have played for {sessionDuration} this session!'
+    },
+    {
+      id: 'idle.grow_hype',
+      type: 'idle',
+      icon: 'chat',
+      speaker: 'player',
+      emotion: 'excited',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: 'I love seeing all the {itemNamePlural} growing!'
+    }
+  ],
   // History of news events by week. This structure records which
   // events were generated on each week so that players can browse
   // previous news. Each entry is an array of event objects.

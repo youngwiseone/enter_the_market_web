@@ -204,11 +204,15 @@ export function renderMarketAction(deps) {
             if (normalizedRarity === 'rare' || normalizedRarity === 'mythic') {
               addRareGrowthMessage(it, normalizedRarity);
             } else {
-              addMessage(`${it.name} is ready to harvest.`, {
-                speaker: 'player',
-                emotion: 'excited',
-                category: 'progress',
-                priority: 'normal'
+              addMessage({
+                id: 'progress.harvest_ready',
+                vars: { itemName: it.name },
+                meta: {
+                  speaker: 'player',
+                  emotion: 'excited',
+                  category: 'progress',
+                  priority: 'normal'
+                }
               });
             }
           }

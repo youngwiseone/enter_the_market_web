@@ -1,6 +1,7 @@
 export function createMessagesController(deps) {
   const {
     getMessageDayIndex,
+    messageDefinitions,
     setChatProfile,
     showProfileMessageBubble,
     hideProfileMessageBubbleImmediately,
@@ -18,36 +19,101 @@ export function createMessagesController(deps) {
   const TYPEWRITER_MIN_STEP_MS = 12;
   const messageReplaceMap = new Map();
   const typingTimersByEntry = new WeakMap();
+  const messageStatsById = new Map();
+  const messageDebugStats = {
+    emittedById: Object.create(null),
+    suppressedById: Object.create(null),
+    fallbackHits: 0,
+    missingIdHits: Object.create(null),
+    lastFallbackAt: 0
+  };
   let messageJustEmitted = false;
   let latestMobileMessageText = '';
+  const FALLBACK_MESSAGE_ID = 'system.fallback_forgot';
+  const FALLBACK_MESSAGE_TEXT = 'I was gonna say something, but I forgot';
+  const FALLBACK_WARN_INTERVAL_MS = 15000;
+  const messageDefinitionsById = new Map();
+  let activeMessageDefinitions = messageDefinitions;
+  let lastFallbackWarnAt = 0;
 
-  function syncMobileChatStrip(latestText = '') {
+  function incrementCounter(counterMap, key) {
+    const safeKey = String(key || 'unknown');
+    counterMap[safeKey] = Math.max(0, Number(counterMap[safeKey]) || 0) + 1;
+  }
+
+  function exposeDebugStats() {
+    if (typeof window !== 'undefined') {
+      window.__etmMessageStats = messageDebugStats;
+    }
+  }
+
+  function snapshotDebugStats() {
+    return {
+      emittedById: { ...messageDebugStats.emittedById },
+      suppressedById: { ...messageDebugStats.suppressedById },
+      fallbackHits: messageDebugStats.fallbackHits,
+      missingIdHits: { ...messageDebugStats.missingIdHits },
+      lastFallbackAt: messageDebugStats.lastFallbackAt
+    };
+  }
+
+  exposeDebugStats();
+
+  function normalizeMessageDefinitions(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object' && Array.isArray(raw.messages)) return raw.messages;
+    return [];
+  }
+
+  function buildMessageCatalog(rawDefinitions = activeMessageDefinitions) {
+    messageDefinitionsById.clear();
+    const defs = normalizeMessageDefinitions(rawDefinitions);
+    defs.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const id = String(entry.id || '').trim();
+      if (!id) return;
+      messageDefinitionsById.set(id, entry);
+    });
+  }
+
+  buildMessageCatalog();
+
+  function setMessageDefinitions(nextDefinitions) {
+    activeMessageDefinitions = nextDefinitions;
+    buildMessageCatalog(activeMessageDefinitions);
+  }
+
+  function syncSingleLineChatStrips(latestText = '') {
     const mobileLog = document.getElementById('mobile-chat-log');
+    const desktopLog = document.getElementById('desktop-chat-log');
     const chatLog = document.getElementById('chat-log');
-    if (!mobileLog || !chatLog) return;
+    if (!chatLog) return;
     if (latestText) {
       latestMobileMessageText = String(latestText);
     }
-    if (latestMobileMessageText) {
-      mobileLog.innerHTML = '';
+    const updateSingleLineLog = (container, rowClassName, fallbackClassName) => {
+      if (!container) return;
+      container.innerHTML = '';
+      if (latestMobileMessageText) {
+        const row = document.createElement('div');
+        row.className = rowClassName;
+        row.textContent = latestMobileMessageText;
+        container.appendChild(row);
+        return;
+      }
+      const entries = Array.from(chatLog.querySelectorAll('.chat-entry'));
+      const mostRecentEntry = entries.length ? entries[entries.length - 1] : null;
+      if (!mostRecentEntry) {
+        container.textContent = '';
+        return;
+      }
       const row = document.createElement('div');
-      row.className = 'mobile-chat-entry';
-      row.textContent = latestMobileMessageText;
-      mobileLog.appendChild(row);
-      return;
-    }
-    const entries = Array.from(chatLog.querySelectorAll('.chat-entry'));
-    const recent = entries.slice(Math.max(0, entries.length - 1));
-    mobileLog.innerHTML = '';
-    recent.forEach((entry) => {
-      const row = document.createElement('div');
-      row.className = 'mobile-chat-entry';
-      row.textContent = entry.textContent || '';
-      mobileLog.appendChild(row);
-    });
-    if (mobileLog.children.length === 0) {
-      mobileLog.textContent = '';
-    }
+      row.className = fallbackClassName;
+      row.textContent = mostRecentEntry.textContent || '';
+      container.appendChild(row);
+    };
+    updateSingleLineLog(mobileLog, 'mobile-chat-entry', 'mobile-chat-entry');
+    updateSingleLineLog(desktopLog, 'desktop-chat-entry', 'desktop-chat-entry');
   }
 
   function getMessageDayPrefix(dayIndex) {
@@ -151,18 +217,27 @@ export function createMessagesController(deps) {
       category: payload?.category || 'system',
       timestamp: Number(payload?.timestamp) || Date.now(),
       dayIndex: Number(payload?.dayIndex) || getMessageDayIndex(),
-      replaceKey: payload?.replaceKey || ''
+      replaceKey: payload?.replaceKey || '',
+      replaceScope: payload?.replaceScope || 'day',
+      messageId: payload?.messageId || ''
     };
     if (!normalized.text) return null;
 
     const wasNearBottom = isChatNearBottom();
     setChatProfile(normalized.speaker, normalized.emotion);
-    showProfileMessageBubble(normalized.text);
+    const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
+    if (isMobileLayout) {
+      showProfileMessageBubble(normalized.text);
+    } else {
+      hideProfileMessageBubbleImmediately();
+    }
     messageJustEmitted = true;
 
     let scopedReplaceKey = '';
     if (normalized.replaceKey) {
-      scopedReplaceKey = `${normalized.replaceKey}:day:${normalized.dayIndex}`;
+      scopedReplaceKey = normalized.replaceScope === 'global'
+        ? normalized.replaceKey
+        : `${normalized.replaceKey}:day:${normalized.dayIndex}`;
     }
     const existingReplaceEntry = scopedReplaceKey ? messageReplaceMap.get(scopedReplaceKey) : null;
     let entry = existingReplaceEntry && existingReplaceEntry.element ? existingReplaceEntry.element : null;
@@ -186,6 +261,11 @@ export function createMessagesController(deps) {
     entry.dataset.priority = normalized.priority;
     entry.dataset.category = normalized.category;
     entry.dataset.replaceKey = scopedReplaceKey;
+    if (normalized.messageId) {
+      entry.dataset.messageId = normalized.messageId;
+    } else {
+      delete entry.dataset.messageId;
+    }
     if (wasReplace) {
       triggerFxClass(entry, 'fx-pulse-up');
     }
@@ -193,9 +273,134 @@ export function createMessagesController(deps) {
     if (wasNearBottom) {
       chatLog.scrollTop = chatLog.scrollHeight;
     }
-    syncMobileChatStrip(normalized.text);
+    syncSingleLineChatStrips(normalized.text);
     updateGridSize();
     return entry;
+  }
+
+  function formatTemplate(template, vars) {
+    const source = String(template ?? '');
+    const safeVars = vars && typeof vars === 'object' ? vars : {};
+    return source.replace(/\{([a-zA-Z0-9_]+)\}/g, (full, key) => {
+      if (!(key in safeVars) || safeVars[key] === undefined || safeVars[key] === null) {
+        return full;
+      }
+      return String(safeVars[key]);
+    });
+  }
+
+  function getMessageDefinitionById(messageId) {
+    const id = String(messageId || '').trim();
+    if (!id) return null;
+    return messageDefinitionsById.get(id) || null;
+  }
+
+  function canEmitMessageByDefinition(messageId, definition, dayIndex) {
+    if (!messageId || !definition || typeof definition !== 'object') return true;
+    const cooldownMs = Math.max(0, Number(definition.cooldownMs) || 0);
+    const maxPerDay = Math.max(0, Number(definition.maxPerDay) || 0);
+    if (cooldownMs <= 0 && maxPerDay <= 0) return true;
+    const now = Date.now();
+    const stats = messageStatsById.get(messageId) || {
+      lastTs: 0,
+      dayCounts: Object.create(null)
+    };
+    if (cooldownMs > 0 && (now - stats.lastTs) < cooldownMs) {
+      return false;
+    }
+    if (maxPerDay > 0) {
+      const countForDay = Math.max(0, Number(stats.dayCounts[dayIndex]) || 0);
+      if (countForDay >= maxPerDay) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function markMessageEmission(messageId, dayIndex) {
+    if (!messageId) return;
+    const now = Date.now();
+    const stats = messageStatsById.get(messageId) || {
+      lastTs: 0,
+      dayCounts: Object.create(null)
+    };
+    stats.lastTs = now;
+    stats.dayCounts[dayIndex] = Math.max(0, Number(stats.dayCounts[dayIndex]) || 0) + 1;
+    const keys = Object.keys(stats.dayCounts);
+    if (keys.length > 12) {
+      const sorted = keys.map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => b - a)
+        .slice(0, 12);
+      const keep = new Set(sorted.map((value) => String(value)));
+      Object.keys(stats.dayCounts).forEach((key) => {
+        if (!keep.has(key)) {
+          delete stats.dayCounts[key];
+        }
+      });
+    }
+    messageStatsById.set(messageId, stats);
+  }
+
+  function emitMessageById(messageId, vars, overrides) {
+    const metadata = overrides && typeof overrides === 'object' ? overrides : {};
+    const definition = getMessageDefinitionById(messageId);
+    const resolvedFallbackDefinition = getMessageDefinitionById(FALLBACK_MESSAGE_ID);
+    const fallbackDefinition = resolvedFallbackDefinition || {
+      id: FALLBACK_MESSAGE_ID,
+      speaker: 'farmer',
+      emotion: 'neutral',
+      priority: 'low',
+      category: 'system',
+      template: FALLBACK_MESSAGE_TEXT
+    };
+    const usingFallback = !definition;
+    const activeDefinition = usingFallback ? fallbackDefinition : definition;
+    const dayIndex = Number(metadata.dayIndex) || getMessageDayIndex();
+    const activeMessageId = usingFallback ? FALLBACK_MESSAGE_ID : String(messageId || '').trim();
+
+    if (!canEmitMessageByDefinition(activeMessageId, activeDefinition, dayIndex)) {
+      incrementCounter(messageDebugStats.suppressedById, activeMessageId);
+      exposeDebugStats();
+      return null;
+    }
+    if (usingFallback) {
+      messageDebugStats.fallbackHits += 1;
+      messageDebugStats.lastFallbackAt = Date.now();
+      const requestedId = String(messageId || '').trim();
+      if (requestedId && requestedId !== FALLBACK_MESSAGE_ID) {
+        incrementCounter(messageDebugStats.missingIdHits, requestedId);
+        const elapsedSinceLastWarn = Date.now() - lastFallbackWarnAt;
+        if (elapsedSinceLastWarn >= FALLBACK_WARN_INTERVAL_MS) {
+          console.warn(`Message catalog fallback used for unknown id: ${requestedId}`);
+          lastFallbackWarnAt = Date.now();
+        }
+      }
+      exposeDebugStats();
+    }
+
+    const text = formatTemplate(
+      activeDefinition.template || FALLBACK_MESSAGE_TEXT,
+      vars && typeof vars === 'object' ? vars : {}
+    ).trim() || FALLBACK_MESSAGE_TEXT;
+
+    const emitted = emitMessage({
+      text,
+      speaker: metadata.speaker || activeDefinition.speaker || 'player',
+      emotion: metadata.emotion || activeDefinition.emotion || 'neutral',
+      priority: metadata.priority || activeDefinition.priority || 'normal',
+      category: metadata.category || activeDefinition.category || activeDefinition.type || 'system',
+      replaceKey: metadata.replaceKey || activeDefinition.replaceKey || '',
+      replaceScope: metadata.replaceScope || activeDefinition.replaceScope || 'day',
+      dayIndex,
+      messageId: activeMessageId
+    });
+    if (emitted) {
+      markMessageEmission(activeMessageId, dayIndex);
+      incrementCounter(messageDebugStats.emittedById, activeMessageId);
+      exposeDebugStats();
+    }
+    return emitted;
   }
 
   function initialiseMessageUI() {
@@ -211,21 +416,19 @@ export function createMessagesController(deps) {
     if (closeButton) {
       closeButton.addEventListener('click', () => toggleMessagesPanel());
     }
-    syncMobileChatStrip();
+    syncSingleLineChatStrips();
     updateTabNotificationBadges();
   }
 
-  function addMessage(text, meta) {
-    const metadata = meta && typeof meta === 'object' ? meta : {};
-    emitMessage({
-      text,
-      speaker: metadata.speaker || 'player',
-      emotion: metadata.emotion || 'neutral',
-      priority: metadata.priority || 'normal',
-      category: metadata.category || 'system',
-      replaceKey: metadata.replaceKey || '',
-      dayIndex: metadata.dayIndex
-    });
+  function addMessage(payload) {
+    if (!payload || typeof payload !== 'object') {
+      return emitMessageById(FALLBACK_MESSAGE_ID);
+    }
+    return emitMessageById(payload.id, payload.vars, payload.meta || {});
+  }
+
+  function addMessageById(messageId, vars, meta) {
+    return emitMessageById(messageId, vars, meta);
   }
 
   function setMessageJustEmitted(value) {
@@ -235,6 +438,9 @@ export function createMessagesController(deps) {
   return {
     initialiseMessageUI,
     addMessage,
-    setMessageJustEmitted
+    addMessageById,
+    setMessageJustEmitted,
+    setMessageDefinitions,
+    getMessageDebugStats: snapshotDebugStats
   };
 }

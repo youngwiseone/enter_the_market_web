@@ -165,14 +165,19 @@ export function awardPlayerXpAction(amount, options, deps) {
       ? `Max energy increased to ${formatEnergyValue(currentEnergyMax)}. Energy fully refilled.`
       : `Energy fully refilled to ${formatEnergyValue(currentEnergyMax)}.`;
     const unlockedItem = unlockShopItemForLevel(state.player.playerLevel);
-    const unlockedText = unlockedItem && unlockedItem.name
-      ? ` Unlocked item: ${unlockedItem.name}.`
-      : '';
-    addMessage(`Level up! Reached Level ${state.player.playerLevel}.${unlockedText} ${changeText}`, {
-      speaker: 'player',
-      emotion: 'level_up',
-      category: 'progress',
-      priority: 'high'
+    addMessage({
+      id: 'progress.level_up',
+      vars: {
+        level: state.player.playerLevel,
+        unlockedText: unlockedItem && unlockedItem.name ? ` Unlocked item: ${unlockedItem.name}.` : '',
+        changeText
+      },
+      meta: {
+        speaker: 'player',
+        emotion: 'level_up',
+        category: 'progress',
+        priority: 'high'
+      }
     });
     enqueueLevelUpCelebration(state.player.playerLevel, changeText, unlockedItem);
   }

@@ -58,10 +58,17 @@ export function createGrowthRuntimeController(deps) {
     const multiplier = getRarityMultiplier(normalized);
     const multiplierLabel = Number.isInteger(multiplier) ? String(multiplier) : multiplier.toFixed(2);
     const basePrice = getItemCurrentPrice(item.id);
-    addMessage(
-      `1x ${rarityLabel} ${item.name} grown! Worth ${multiplierLabel}x buy price ($${basePrice.toFixed(2)} -> $${(basePrice * multiplier).toFixed(2)}).`,
-      { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' }
-    );
+    addMessage({
+      id: 'progress.rare_growth',
+      vars: {
+        rarityLabel,
+        itemName: item.name,
+        multiplierLabel,
+        basePrice: basePrice.toFixed(2),
+        sellPrice: (basePrice * multiplier).toFixed(2)
+      },
+      meta: { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' }
+    });
   }
 
   return {

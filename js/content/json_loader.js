@@ -43,4 +43,15 @@ export async function loadJSONDataIntoDefaults(defaultData) {
   } catch (err) {
     console.error('Failed to load goals.json', err);
   }
+  try {
+    const messagesResp = await fetch('data/messages.json');
+    if (messagesResp.ok) {
+      const messagesData = await messagesResp.json();
+      if (messagesData && Array.isArray(messagesData.messages)) {
+        defaultData.messages = messagesData.messages;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load messages.json', err);
+  }
 }

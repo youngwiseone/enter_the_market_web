@@ -62,6 +62,7 @@ If short on time, start with `README.md` first.
   - guidance panel
   - day summary modal
   - goal celebration modal
+  - JSON-driven message system (tips/progress/idle) with desktop+mobile single-line latest message strip
   - particle FX layer
 
 ## High-Impact Code Areas
@@ -69,6 +70,7 @@ If short on time, start with `README.md` first.
 - Startup and wiring: `main.js`, `js/app/bootstrap.js`, `js/app/bootstrap/session.js`, `js/app/bootstrap/farm.js`, `js/app/bootstrap/market.js`
 - Save and migration: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
 - Game-day simulation: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
+- Messaging runtime: `js/controllers/message_runtime_controller.js`, `js/ui/messages_controller.js`, `js/ui/profile_chat_controller.js`
 - Grid actions: `js/controllers/grid_controller.js`, `js/controllers/farm_actions.js`, `js/controllers/harvest_controller.js`, `js/controllers/grid_interaction_controller.js`
 - Player progression/rewards: `js/controllers/player_progress_controller.js`, `js/controllers/goals_controller.js`
 - Render path: `js/ui/render_root.js`, `js/ui/render_market.js`, `js/ui/render_store.js`, `js/ui/render_goals.js`, `js/ui/render_player.js`
@@ -122,6 +124,7 @@ If short on time, start with `README.md` first.
   - `js/controllers/goals_controller.js`: goal condition/reward/evaluation logic.
   - `js/controllers/guided_controller.js`: guided unlock + guidance payload generation.
   - `js/controllers/player_progress_controller.js`: XP/level/energy/net-worth/tool unlock helpers.
+  - `js/controllers/message_runtime_controller.js`: state-driven stuck tips + idle message scheduling.
   - `js/controllers/reset_controller.js`: reset-game orchestration.
   - `js/controllers/gameplay_runtime_controller.js`: gameplay runtime composition.
   - `js/controllers/session_runtime_controller.js`: session/feedback/modal/celebration runtime.
@@ -130,7 +133,7 @@ If short on time, start with `README.md` first.
   - `js/ui/render_market.js`, `js/ui/render_market_insight.js`: market + insight rendering.
   - `js/ui/render_player.js`: HUD/energy/level/time-of-day rendering.
   - `js/ui/render_store.js`, `js/ui/render_goals.js`: store/goals rendering.
-  - `js/ui/messages_controller.js`: chat history/typing/message emission flow.
+  - `js/ui/messages_controller.js`: ID-based message catalog emit flow + history/typing + dedupe/cooldowns.
   - `js/ui/daily_roll_modal.js`: daily roll + day summary modal flow.
   - `js/ui/goal_celebration_controller.js`: goal celebration modal queue + sparkles.
   - `js/ui/tab_controller.js`: tab switching and tab button state.
@@ -152,6 +155,13 @@ If short on time, start with `README.md` first.
 - Items: `data/items.json` (`id`, prices, growth, lock state)
 - Goals: `data/goals.json` (`id`, conditions, rewards)
 - News: `data/news.json` (template text with `sku` replacement)
+- Messages: `data/messages.json` (`id`, `type`, `icon`, `speaker`, `emotion`, `category`, `priority`, `template`, optional cooldown/replacement fields)
+
+Message/image mapping notes:
+
+- Message entries are emitted by ID (`addMessage({ id, vars, meta })`) rather than raw strings.
+- `icon` is metadata/category intent; profile image selection is currently driven by `speaker + emotion`.
+- Profile mapping lives in `js/ui/profile_chat_controller.js` (`PROFILE_IMAGES`), using image assets under `resources/profiles/`.
 
 Rules:
 
@@ -168,11 +178,18 @@ Rules:
 $files = Get-ChildItem -Recurse -File -Include *.js; foreach ($f in $files) { node --check $f.FullName }
 ```
 
+3.1 Validate message catalog:
+
+```bash
+node js/dev/validate_messages.cjs
+```
+
 4. Manually smoke test:
    - start game
    - plant/water/harvest
    - rest day
    - confirm goals and store unlock behavior
+   - confirm Day 1-10 stuck tips and idle messages appear without spam in both desktop and mobile single-line message strips
 
 ## Current Constraints
 

@@ -1,4 +1,4 @@
-const PROFILE_IMAGES = {
+export const PROFILE_IMAGES = {
   player: {
     neutral: 'resources/profiles/player.png',
     excited: 'resources/profiles/player_excited.png',
@@ -11,10 +11,12 @@ const PROFILE_IMAGES = {
     level_up: 'resources/profiles/player_level_up.png'
   },
   farmer: {
-    neutral: 'resources/profiles/farmer.png'
+    neutral: 'resources/profiles/farmer.png',
+    excited: 'resources/profiles/farmer.png'
   },
   merchant: {
-    neutral: 'resources/profiles/merchant.png'
+    neutral: 'resources/profiles/merchant.png',
+    excited: 'resources/profiles/merchant.png'
   }
 };
 

@@ -18,29 +18,21 @@ export function buyItemAction(deps) {
   } = deps;
 
   if (!isShopItemUnlocked(itemId)) {
-    addMessage('This item is not available yet.');
+    addMessage({ id: 'progress.item_not_available' });
     return;
   }
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);
   const item = state.items.find((it) => it.id === itemId);
   if (!shopEntry || !item) return;
   if (shopEntry.quantity < quantity) {
-    addMessage('Not enough stock available.', {
-      speaker: 'merchant',
-      category: 'progress',
-      priority: 'normal'
-    });
+    addMessage({ id: 'warning.not_enough_stock' });
     return;
   }
   const freeQty = Math.min(getFreePurchaseCount(itemId), quantity);
   const paidQty = quantity - freeQty;
   const totalCost = shopEntry.price * paidQty;
   if (state.player.cash < totalCost) {
-    addMessage('Insufficient funds.', {
-      speaker: 'merchant',
-      category: 'progress',
-      priority: 'normal'
-    });
+    addMessage({ id: 'progress.insufficient_funds', meta: { speaker: 'merchant', priority: 'normal' } });
     return;
   }
   if (freeQty > 0) {
@@ -61,9 +53,15 @@ export function buyItemAction(deps) {
   evaluateGoals();
   saveState();
   if (freeQty > 0) {
-    addMessage(`Bought ${quantity} x ${item.name} for $${totalCost.toFixed(2)} (${freeQty} free).`, { speaker: 'merchant' });
+    addMessage({
+      id: 'commerce.bought_item_free',
+      vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2), freeQty }
+    });
   } else {
-    addMessage(`Bought ${quantity} x ${item.name} for $${totalCost.toFixed(2)}.`, { speaker: 'merchant' });
+    addMessage({
+      id: 'commerce.bought_item',
+      vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2) }
+    });
   }
   renderAll();
   pulseHud(false);
@@ -100,11 +98,7 @@ export function sellItemAction(deps) {
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);
   if (!invEntry || !shopEntry) return;
   if (invEntry.quantity < quantity) {
-    addMessage('You do not have enough to sell.', {
-      speaker: 'player',
-      category: 'progress',
-      priority: 'normal'
-    });
+    addMessage({ id: 'warning.not_enough_to_sell' });
     return;
   }
   const saleValue = shopEntry.price * quantity;
@@ -122,7 +116,10 @@ export function sellItemAction(deps) {
   updateNetWorth();
   evaluateGoals();
   saveState();
-  addMessage(`Sold ${quantity} x ${item ? item.name : 'item'} for $${saleValue.toFixed(2)}`, { speaker: 'player', emotion: 'money' });
+  addMessage({
+    id: 'commerce.sold_item',
+    vars: { quantity, itemName: item ? item.name : 'item', saleValue: saleValue.toFixed(2) }
+  });
   renderAll();
   pulseHud(true);
   const hudCenters = getHudCenters();

@@ -54,7 +54,7 @@ export function applyGridActionForIndexAction(deps) {
   if (state.activeTool === TOOL_WATERING) {
     if (!unlockedNow) {
       if (mode !== 'drag') {
-        addMessage('This tile is locked. Mine it first.');
+        addMessage({ id: 'progress.tile_locked_mine_first' });
       }
       return false;
     }
@@ -65,7 +65,7 @@ export function applyGridActionForIndexAction(deps) {
 
   if (!unlockedNow) {
     if (mode !== 'drag') {
-      addMessage('Use the pickaxe to mine this tile.');
+      addMessage({ id: 'progress.use_pickaxe_to_mine' });
     }
     return false;
   }
@@ -90,7 +90,7 @@ export function applyGridActionForIndexAction(deps) {
   }
 
   if (mode !== 'drag') {
-    addMessage('Select an item from the market first.');
+    addMessage({ id: 'progress.select_item_first' });
   }
   return false;
 }
@@ -253,7 +253,7 @@ export function selectShopItemAction(deps) {
   } = deps;
 
   if (!isShopItemUnlocked(itemId)) {
-    addMessage('This item is not available yet.');
+    addMessage({ id: 'progress.item_not_available' });
     return;
   }
   if (getSelectedShopItemId() === itemId) {
@@ -272,11 +272,19 @@ export function selectShopItemAction(deps) {
   const freeCount = getFreePurchaseCount(itemId);
   if (freeCount > 0) {
     const item = state.items.find((it) => it.id === itemId);
-    addMessage(`You have ${freeCount} free purchase${freeCount === 1 ? '' : 's'} left for ${item ? item.name : 'this item'}.`, {
-      speaker: 'merchant',
-      category: 'tips',
-      priority: 'low',
-      replaceKey: 'tip:free-purchase'
+    addMessage({
+      id: 'tips.free_purchases_left',
+      vars: {
+        freeCount,
+        suffix: freeCount === 1 ? '' : 's',
+        itemName: item ? item.name : 'this item'
+      },
+      meta: {
+        speaker: 'merchant',
+        category: 'tips',
+        priority: 'low',
+        replaceKey: 'tip:free-purchase'
+      }
     });
   }
   updateCursorForTool();

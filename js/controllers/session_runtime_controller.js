@@ -160,6 +160,7 @@ export function createSessionRuntimeController(deps) {
 
   return {
     startPlaytimeTracking,
+    getActivePlaytimeMs,
     buildFeedbackString,
     setFeedbackModalOpen,
     copyFeedbackText,

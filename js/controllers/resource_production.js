@@ -46,13 +46,20 @@ export function addResourceToInventoryAction(deps) {
   const { state, itemId, quantity, addMessage } = deps;
   let remaining = quantity;
   const availableSpace = state.player.capacity - state.player.capacityUsed;
+  const itemName = state.items.find((it) => it.id === itemId)?.name || 'items';
   if (availableSpace <= 0) {
-    addMessage(`Could not add produced ${quantity} x ${state.items.find((it) => it.id === itemId)?.name || 'items'} because storage is full.`);
+    addMessage({
+      id: 'warning.storage_full',
+      vars: { quantity, itemName }
+    });
     return;
   }
   const canAdd = Math.min(remaining, availableSpace);
   if (canAdd < quantity) {
-    addMessage(`Storage space limited: only ${canAdd} x ${state.items.find((it) => it.id === itemId)?.name || 'items'} were stored; ${quantity - canAdd} dropped.`);
+    addMessage({
+      id: 'warning.storage_limited',
+      vars: { canAdd, itemName, dropped: quantity - canAdd }
+    });
   }
   remaining = canAdd;
   let entry = state.inventory.find((e) => e.itemId === itemId);
@@ -64,7 +71,10 @@ export function addResourceToInventoryAction(deps) {
   entry.quantity += remaining;
   entry.avgCost = entry.quantity > 0 ? (existingCost) / entry.quantity : 0;
   state.player.capacityUsed += remaining;
-  addMessage(`Extractors produced ${remaining} x ${state.items.find((it) => it.id === itemId)?.name || 'items'}.`);
+  addMessage({
+    id: 'progress.extractor_produced',
+    vars: { quantity: remaining, itemName }
+  });
 }
 
 export function generateNewsEventsAction(deps) {

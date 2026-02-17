@@ -43,7 +43,7 @@ export async function runAppBootstrap(deps) {
   installSidePanelScrollHandlers();
 
   if (!state.player.welcomeShown) {
-    addMessage('Welcome to the market!');
+    addMessage({ id: 'intro.welcome_new_game' });
     state.player.welcomeShown = true;
     saveState();
   }

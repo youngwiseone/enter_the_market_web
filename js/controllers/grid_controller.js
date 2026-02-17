@@ -29,24 +29,27 @@ export function purchaseAndPlaceSelectedAction(deps) {
 
   if (!selectedShopItemId) return;
   if (!isShopItemUnlocked(selectedShopItemId)) {
-    addMessage('This item is not available yet.');
+    addMessage({ id: 'progress.item_not_available' });
     return;
   }
   const shopEntry = state.shop.find((entry) => entry.itemId === selectedShopItemId);
   const item = state.items.find((it) => it.id === selectedShopItemId);
   if (!shopEntry || !item) return;
   if (shopEntry.quantity <= 0) {
-    addMessage('Out of stock.');
+    addMessage({ id: 'progress.out_of_stock' });
     return;
   }
   const freeQty = Math.min(getFreePurchaseCount(selectedShopItemId), 1);
   const totalCost = shopEntry.price * (1 - freeQty);
   if (state.player.cash < totalCost) {
-    addMessage('Insufficient funds.', {
-      speaker: 'player',
-      emotion: 'wrong',
-      category: 'progress',
-      priority: 'high'
+    addMessage({
+      id: 'progress.insufficient_funds',
+      meta: {
+        speaker: 'player',
+        emotion: 'wrong',
+        category: 'progress',
+        priority: 'high'
+      }
     });
     return;
   }
@@ -72,9 +75,17 @@ export function purchaseAndPlaceSelectedAction(deps) {
   evaluateGoals();
   saveState();
   if (freeQty > 0) {
-    addMessage(`Purchased ${item.name} for $0.00 (free) and placed it on the grid.`, { speaker: 'farmer' });
+    addMessage({
+      id: 'commerce.purchased_and_placed_free',
+      vars: { itemName: item.name },
+      meta: { speaker: 'farmer' }
+    });
   } else {
-    addMessage(`Purchased ${item.name} for $${shopEntry.price.toFixed(2)} and placed it on the grid.`, { speaker: 'farmer' });
+    addMessage({
+      id: 'commerce.purchased_and_placed',
+      vars: { itemName: item.name, price: shopEntry.price.toFixed(2) },
+      meta: { speaker: 'farmer' }
+    });
   }
   renderAll();
   const center = getTileCenter(cellIndex);

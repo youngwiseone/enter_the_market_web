@@ -37,23 +37,37 @@ export function createDayEconomyController(deps) {
       state.player.energy = max;
     }
     if (state.player.energy + 0.0001 < cost) {
-      const message = reason ? `Not enough energy to ${reason}.` : 'Not enough energy.';
-      addMessage(message, { speaker: 'player', emotion: 'tired', category: 'system', priority: 'normal' });
+      if (reason) {
+        addMessage({
+          id: 'system.not_enough_energy_reason',
+          vars: { reason },
+          meta: { speaker: 'player', emotion: 'tired', category: 'system', priority: 'normal' }
+        });
+      } else {
+        addMessage({
+          id: 'system.not_enough_energy',
+          meta: { speaker: 'player', emotion: 'tired', category: 'system', priority: 'normal' }
+        });
+      }
       return false;
     }
     state.player.energy = Math.max(0, roundEnergyValue(state.player.energy - cost));
     if (state.player.energy <= 2 && lowEnergyNoticeDay !== state.player.day) {
       lowEnergyNoticeDay = state.player.day;
-      addMessage(
-        `Low energy: ${formatEnergyValue(state.player.energy)}/${formatEnergyValue(state.player.energyMax)}. Consider ending the day.`,
-        {
+      addMessage({
+        id: 'tip.low_energy_consider_day_end',
+        vars: {
+          energy: formatEnergyValue(state.player.energy),
+          energyMax: formatEnergyValue(state.player.energyMax)
+        },
+        meta: {
           speaker: 'player',
           emotion: 'tired',
           category: 'tips',
           priority: 'low',
           replaceKey: 'tip:low-energy'
         }
-      );
+      });
     }
     return true;
   }
@@ -86,10 +100,14 @@ export function createDayEconomyController(deps) {
       return `${move.itemName} ${sign}${(move.pctChange * 100).toFixed(0)}%`;
     });
     const extra = significant.length > 3 ? ` (+${significant.length - 3} more)` : '';
-    addMessage(`Economy alert: ${top.join(', ')}${extra}.`, {
-      speaker: 'farmer',
-      category: 'economy',
-      priority: 'normal'
+    addMessage({
+      id: 'economy.alert',
+      vars: { topList: top.join(', '), extra },
+      meta: {
+        speaker: 'farmer',
+        category: 'economy',
+        priority: 'normal'
+      }
     });
   }
 
@@ -124,7 +142,10 @@ export function createDayEconomyController(deps) {
       }
     });
     if (bestBuy && bestBuyDiff > 0.05) {
-      optionalTips.push(`Tip: Consider buying ${bestBuy.name} - price is below its average.`);
+      optionalTips.push({
+        id: 'tip.daily_buy_below_avg',
+        vars: { itemName: bestBuy.name }
+      });
     }
 
     let bestSell = null;
@@ -146,13 +167,27 @@ export function createDayEconomyController(deps) {
       }
     });
     if (bestSell && bestSellDiff > 0.05) {
-      optionalTips.push(`Tip: Consider selling ${bestSell.name} - price is above your average cost.`);
+      optionalTips.push({
+        id: 'tip.daily_sell_above_cost',
+        vars: { itemName: bestSell.name }
+      });
     }
 
-    optionalTips.push(`Current cash: $${state.player.cash.toFixed(2)}`);
-    const tipOptions = optionalTips.length > 0 ? optionalTips : [`Current cash: $${state.player.cash.toFixed(2)}`];
+    optionalTips.push({
+      id: 'tip.daily_current_cash',
+      vars: { cash: state.player.cash.toFixed(2) }
+    });
+    const tipOptions = optionalTips.length > 0 ? optionalTips : [{
+      id: 'tip.daily_current_cash',
+      vars: { cash: state.player.cash.toFixed(2) }
+    }];
     const idx = Math.floor(Math.random() * tipOptions.length);
-    addMessage(tipOptions[idx], { category: 'tips', priority: 'low' });
+    const selectedTip = tipOptions[idx];
+    addMessage({
+      id: selectedTip.id,
+      vars: selectedTip.vars,
+      meta: { category: 'tips', priority: 'low' }
+    });
   }
 
   return {

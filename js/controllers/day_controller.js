@@ -46,20 +46,29 @@ export function nextDayAction(deps) {
   const fatigue = getFatigueFromEnergy();
   state.lastRollFatiguePercent = fatigue.fatiguePercent;
   state.lastRollImpactMultiplier = fatigue.impactMultiplier;
-  addMessage(
-    `Market roll strength: ${fatigue.fatiguePercent}% from energy used (${formatEnergyValue(fatigue.energySpent)}/${formatEnergyValue(fatigue.energyMax)}).`,
-    { speaker: 'farmer', category: 'economy', priority: 'normal' }
-  );
+  addMessage({
+    id: 'economy.roll_strength',
+    vars: {
+      fatiguePercent: fatigue.fatiguePercent,
+      energySpent: formatEnergyValue(fatigue.energySpent),
+      energyMax: formatEnergyValue(fatigue.energyMax)
+    },
+    meta: { speaker: 'farmer', category: 'economy', priority: 'normal' }
+  });
 
   updateMarketPressureForNextDay();
   const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier, fatigue.impactPercent);
   const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
   if (dailyRoll.picks.length > 0) {
     showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent);
-    addMessage(`Market roll: ${rollSummary}`, {
-      speaker: 'farmer',
-      category: 'economy',
-      priority: 'high'
+    addMessage({
+      id: 'economy.market_roll',
+      vars: { rollSummary },
+      meta: {
+        speaker: 'farmer',
+        category: 'economy',
+        priority: 'high'
+      }
     });
   }
 

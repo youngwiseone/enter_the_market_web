@@ -32,17 +32,24 @@ export function mineGridTileAction(deps) {
   if (didClear) {
     state.gridUnlocked[index] = true;
     if (Array.isArray(state.gridMiningHits)) state.gridMiningHits[index] = 0;
-    addMessage('Cleared a tile.', { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' });
+    addMessage({
+      id: 'progress.tile_cleared',
+      meta: { speaker: 'player', emotion: 'excited', category: 'progress', priority: 'high' }
+    });
     didMessage = true;
   } else if (Array.isArray(state.gridMiningHits)) {
     state.gridMiningHits[index] = nextHits;
     const hitsLeft = Math.max(0, 10 - nextHits);
-    addMessage(`Mining progress: ${nextHits}/10 hits (${hitsLeft} left).`, {
-      speaker: 'player',
-      emotion: 'mining',
-      category: 'progress',
-      priority: 'normal',
-      replaceKey: 'progress:mine'
+    addMessage({
+      id: 'progress.mining_progress',
+      vars: { nextHits, hitsLeft },
+      meta: {
+        speaker: 'player',
+        emotion: 'mining',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:mine'
+      }
     });
     didMessage = true;
   }
@@ -114,12 +121,15 @@ export function waterGridTileAction(deps) {
 
   const growth = getPlantGrowthState(item, index);
   if (growth.isGrown) {
-    addMessage('This plant is already grown. Harvest it instead.', {
-      speaker: 'player',
-      emotion: 'watering',
-      category: 'progress',
-      priority: 'normal',
-      replaceKey: 'progress:water'
+    addMessage({
+      id: 'progress.plant_already_grown_harvest',
+      meta: {
+        speaker: 'player',
+        emotion: 'watering',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:water'
+      }
     });
     const fxTargets = getGridActionFxTargets(index);
     const cell = fxTargets ? fxTargets.cell : null;
@@ -132,16 +142,17 @@ export function waterGridTileAction(deps) {
     const growDays = Math.max(0, Number(item.growDays) || 0);
     const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
     const daysLeft = Math.max(0, growDays - wateredDays);
-    addMessage(
-      `Already watered today. ${item.name} progress: ${wateredDays}/${growDays} days (${daysLeft} left).`,
-      {
+    addMessage({
+      id: 'progress.already_watered_today',
+      vars: { itemName: item.name, wateredDays, growDays, daysLeft },
+      meta: {
         speaker: 'player',
         emotion: 'watering',
         category: 'progress',
         priority: 'normal',
         replaceKey: 'progress:water'
       }
-    );
+    });
     const fxTargets = getGridActionFxTargets(index);
     const cell = fxTargets ? fxTargets.cell : null;
     if (cell) triggerFxClass(cell, 'fx-wobble');
@@ -160,12 +171,16 @@ export function waterGridTileAction(deps) {
   const growDays = Math.max(0, Number(item.growDays) || 0);
   const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
   const daysLeft = Math.max(0, growDays - wateredDays);
-  addMessage(`Watering progress: ${item.name} ${wateredDays}/${growDays} days (${daysLeft} left).`, {
-    speaker: 'player',
-    emotion: 'watering',
-    category: 'progress',
-    priority: 'normal',
-    replaceKey: 'progress:water'
+  addMessage({
+    id: 'progress.watering_progress',
+    vars: { itemName: item.name, wateredDays, growDays, daysLeft },
+    meta: {
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:water'
+    }
   });
 
   saveState();

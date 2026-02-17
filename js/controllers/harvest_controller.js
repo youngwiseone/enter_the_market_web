@@ -15,7 +15,7 @@ export function sellSelectedGridItemAction(deps) {
   const insight = getSelectedGridItemInsightData();
   if (!insight) return;
   if (!insight.canSell) {
-    addMessage('This plant is still growing.');
+    addMessage({ id: 'progress.plant_still_growing' });
     return;
   }
   harvestPlant(insight.cellIndex);
@@ -87,10 +87,18 @@ export function sellBulkSelectedGridItemsAction(deps) {
   evaluateGoals();
   saveState();
   const summaryText = Array.from(summaryByItem.entries()).map(([name, qty]) => `${name} x${qty}`).join(', ');
-  addMessage(
-    `Sold ${harvestedCount} selected crop${harvestedCount === 1 ? '' : 's'} for $${totalSaleValue.toFixed(2)} (profit ${totalProfitValue >= 0 ? '+' : ''}$${totalProfitValue.toFixed(2)}). ${summaryText}`,
-    { speaker: 'player', emotion: 'money' }
-  );
+  addMessage({
+    id: 'progress.sold_selected_crops',
+    vars: {
+      harvestedCount,
+      suffix: harvestedCount === 1 ? '' : 's',
+      totalSaleValue: totalSaleValue.toFixed(2),
+      profitSign: totalProfitValue >= 0 ? '+' : '',
+      totalProfitValue: totalProfitValue.toFixed(2),
+      summaryText
+    },
+    meta: { speaker: 'player', emotion: 'money' }
+  });
   renderAll();
 }
 
@@ -132,7 +140,7 @@ export function harvestPlantAction(deps) {
   const item = state.items.find((it) => it.id === itemId);
   if (!item) return;
   if (!getPlantGrowthState(item, cellIndex).isGrown) {
-    addMessage('This plant is still growing.');
+    addMessage({ id: 'progress.plant_still_growing' });
     return;
   }
   if (!consumeEnergy(1, 'harvest this plant')) {
@@ -174,10 +182,16 @@ export function harvestPlantAction(deps) {
   updateNetWorth();
   evaluateGoals();
   saveState();
-  addMessage(
-    `Harvested ${item.name} for $${saleValue.toFixed(2)} (profit ${realizedProfit >= 0 ? '+' : ''}$${realizedProfit.toFixed(2)}).`,
-    { speaker: 'player', emotion: 'money' }
-  );
+  addMessage({
+    id: 'progress.harvested_item_profit',
+    vars: {
+      itemName: item.name,
+      saleValue: saleValue.toFixed(2),
+      profitSign: realizedProfit >= 0 ? '+' : '',
+      profitValue: realizedProfit.toFixed(2)
+    },
+    meta: { speaker: 'player', emotion: 'money' }
+  });
   if (getSelectedGridCellIndex() === cellIndex) {
     setSelectedGridCellIndex(null);
   }

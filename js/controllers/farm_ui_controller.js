@@ -90,11 +90,15 @@ export function handleFarmToggleButtonClickAction(deps) {
 
   if (!isFarmOneFullyUnlocked()) {
     const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
-    addMessage(`Unlock all Farm 1 tiles first (${unlockedOnFarmOne}/${GRID_CELL_COUNT}).`, {
-      speaker: 'player',
-      emotion: 'neutral',
-      category: 'progress',
-      priority: 'normal'
+    addMessage({
+      id: 'progress.unlock_farm1_first',
+      vars: { unlockedOnFarmOne, gridCellCount: GRID_CELL_COUNT },
+      meta: {
+        speaker: 'player',
+        emotion: 'neutral',
+        category: 'progress',
+        priority: 'normal'
+      }
     });
     return;
   }
@@ -102,22 +106,29 @@ export function handleFarmToggleButtonClickAction(deps) {
     const confirmed = confirmDialog(`Buy Farm 2 for $${FARM_TWO_PURCHASE_COST.toFixed(2)}?`);
     if (!confirmed) return;
     if ((Number(state.player?.cash) || 0) < FARM_TWO_PURCHASE_COST) {
-      addMessage(`Not enough cash for Farm 2. Need $${FARM_TWO_PURCHASE_COST.toFixed(2)}.`, {
-        speaker: 'player',
-        emotion: 'wrong',
-        category: 'progress',
-        priority: 'high'
+      addMessage({
+        id: 'warning.not_enough_cash_farm2',
+        vars: { cost: FARM_TWO_PURCHASE_COST.toFixed(2) },
+        meta: {
+          speaker: 'player',
+          emotion: 'wrong',
+          category: 'progress',
+          priority: 'high'
+        }
       });
       return;
     }
     state.player.cash -= FARM_TWO_PURCHASE_COST;
     state.secondFarmPurchased = true;
     state.farms[FARM_SECONDARY_ID] = normalizeFarmState(state.farms[FARM_SECONDARY_ID]);
-    addMessage('Farm 2 purchased. Crops there sell for 2x, but mining costs 5 energy per hit.', {
-      speaker: 'farmer',
-      emotion: 'excited',
-      category: 'progress',
-      priority: 'high'
+    addMessage({
+      id: 'progress.farm2_purchased',
+      meta: {
+        speaker: 'farmer',
+        emotion: 'excited',
+        category: 'progress',
+        priority: 'high'
+      }
     });
     setActiveFarm(FARM_SECONDARY_ID);
     pulseHud(false);
@@ -226,7 +237,7 @@ export function setActiveToolAction(deps) {
 
   if (!TOOL_LIST.includes(tool)) return;
   if (!isToolUnlocked(tool)) {
-    addMessage('This tool is locked. Complete goals to unlock it.');
+    addMessage({ id: 'progress.tool_locked_complete_goals' });
     return;
   }
   state.activeTool = tool;

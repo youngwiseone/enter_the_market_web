@@ -139,11 +139,15 @@ export function evaluateGoalsAction(deps) {
       const key = `goalMilestone:${goal.id}:${percent}`;
       if (progress.percent >= percent && !state.goalFlags[key]) {
         state.goalFlags[key] = true;
-        addMessage(`${goal.name || goal.id} progress: ${percent}% complete.`, {
-          speaker: 'player',
-          emotion: 'neutral',
-          category: 'goal',
-          priority: 'normal'
+        addMessage({
+          id: 'goal.milestone_progress',
+          vars: { goalName: goal.name || goal.id, percent },
+          meta: {
+            speaker: 'player',
+            emotion: 'neutral',
+            category: 'goal',
+            priority: 'normal'
+          }
         });
       }
     });
@@ -153,8 +157,19 @@ export function evaluateGoalsAction(deps) {
     awardPlayerXp(XP_REWARDS.goal);
     state.goalsClaimed[goal.id] = true;
     completedCount += 1;
-    const message = goal.message || `Goal complete: ${goal.name || goal.id}.`;
-    addMessage(message, { speaker: 'player', emotion: 'goal_unlocked', category: 'goal', priority: 'high' });
+    if (goal.message) {
+      addMessage({
+        id: 'goal.complete_data_message',
+        vars: { message: goal.message },
+        meta: { speaker: 'player', emotion: 'goal_unlocked', category: 'goal', priority: 'high' }
+      });
+    } else {
+      addMessage({
+        id: 'goal.complete_default',
+        vars: { goalName: goal.name || goal.id },
+        meta: { speaker: 'player', emotion: 'goal_unlocked', category: 'goal', priority: 'high' }
+      });
+    }
     enqueueGoalCelebration(goal);
   });
   if (completedCount > 0) {

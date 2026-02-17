@@ -59,42 +59,22 @@ export function syncGuidedUnlocksAction(deps) {
   }
   if (!state.goalFlags[GUIDED_FLAGS.storeAnnounced] && isStoreTabUnlocked()) {
     state.goalFlags[GUIDED_FLAGS.storeAnnounced] = true;
-    addMessage('Store unlocked: new options are now available.', {
-      speaker: 'merchant',
-      emotion: 'excited',
-      category: 'progress',
-      priority: 'high'
-    });
+    addMessage({ id: 'progress.store_unlocked' });
   }
   if (!state.goalFlags[GUIDED_FLAGS.goalsAnnounced] && isGoalsTabUnlocked()) {
     state.goalFlags[GUIDED_FLAGS.goalsAnnounced] = true;
-    addMessage('Goals unlocked: track milestones and rewards.', {
-      speaker: 'farmer',
-      emotion: 'excited',
-      category: 'progress',
-      priority: 'high'
-    });
+    addMessage({ id: 'progress.goals_unlocked', meta: { emotion: 'excited' } });
   }
 }
 
 export function requestLockedTabAction(deps) {
   const { tabName, isStoreTabUnlocked, isGoalsTabUnlocked, addMessage } = deps;
   if (tabName === 'store' && !isStoreTabUnlocked()) {
-    addMessage('Store unlocks after your first harvest.', {
-      speaker: 'merchant',
-      category: 'tips',
-      priority: 'low',
-      replaceKey: 'tip:unlock-store'
-    });
+    addMessage({ id: 'tip.unlock_store' });
     return false;
   }
   if (tabName === 'goals' && !isGoalsTabUnlocked()) {
-    addMessage('Goals unlock after your first harvest and rest.', {
-      speaker: 'farmer',
-      category: 'tips',
-      priority: 'low',
-      replaceKey: 'tip:unlock-goals'
-    });
+    addMessage({ id: 'tip.unlock_goals' });
     return false;
   }
   return true;

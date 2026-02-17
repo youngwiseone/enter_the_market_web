@@ -51,6 +51,7 @@ import {
 import { createFarmPointerRuntimeController } from './js/controllers/farm_pointer_runtime_controller.js';
 import { createFarmUiRuntimeController } from './js/controllers/farm_ui_runtime_controller.js';
 import { createGameplayRuntimeController } from './js/controllers/gameplay_runtime_controller.js';
+import { createMessageRuntimeController } from './js/controllers/message_runtime_controller.js';
 import { createSessionRuntimeController } from './js/controllers/session_runtime_controller.js';
 import {
   handleFarmToggleButtonClickAction,
@@ -318,6 +319,9 @@ const VERSION_CONTROL = 'eyJkaXNwbGF5TmFtZSI6IkJsaWdoIEhlZGdlcyIsImF1dGhvcklkcyI
  */
 async function loadJSONData() {
   await loadJSONDataIntoDefaults(DEFAULT_DATA);
+  if (messagesController && typeof messagesController.setMessageDefinitions === 'function') {
+    messagesController.setMessageDefinitions(DEFAULT_DATA.messages);
+  }
 }
 
 // Internal state used at runtime. Loaded from localStorage or seeded
@@ -1302,6 +1306,7 @@ function getMessageDayIndex() {
 
 const messagesController = createMessagesController({
   getMessageDayIndex,
+  messageDefinitions: DEFAULT_DATA.messages,
   setChatProfile,
   showProfileMessageBubble,
   hideProfileMessageBubbleImmediately,
@@ -1316,9 +1321,22 @@ function initialiseMessageUI() {
   messagesController.initialiseMessageUI();
 }
 
-function addMessage(text, meta) {
-  messagesController.addMessage(text, meta);
+function addMessage(payload) {
+  return messagesController.addMessage(payload);
 }
+
+function addMessageById(messageId, vars, meta) {
+  return messagesController.addMessageById(messageId, vars, meta);
+}
+
+const messageRuntimeController = createMessageRuntimeController({
+  state,
+  addMessageById,
+  countReadyToHarvestTiles,
+  countPlantedTiles: () => countPlantedTilesAction(state),
+  getActivePlaytimeMs: sessionRuntimeController.getActivePlaytimeMs,
+  GUIDED_FLAGS
+});
 
 const dayEconomyController = createDayEconomyController({
   state,
@@ -1432,6 +1450,7 @@ function emitEconomyAlert(priceMoves) {
 
 function registerDayAction() {
   dayEconomyController.registerDayAction();
+  messageRuntimeController.notePlayerActivity();
 }
 
 function clampMarketBias(value, min, max) {
@@ -1535,6 +1554,7 @@ function getBestRollOpportunityText(rollResult) {
 }
 
 function nextDay() {
+  messageRuntimeController.notePlayerActivity();
   dayMarketRuntimeController.nextDay();
 }
 
@@ -1984,6 +2004,12 @@ async function main() {
     setReduceMotion,
     initFxLayer
   });
+  messageRuntimeController.start();
+  const markActivity = () => {
+    messageRuntimeController.notePlayerActivity();
+  };
+  document.addEventListener('pointerdown', markActivity);
+  document.addEventListener('keydown', markActivity);
 }
 
 // Run main once DOM is ready. If the async function rejects, log the error.

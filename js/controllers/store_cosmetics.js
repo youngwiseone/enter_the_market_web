@@ -10,17 +10,16 @@ export function purchaseCosmeticAction(deps) {
   const item = state.store.cosmetics.find((c) => c.id === itemId);
   if (!item || item.unlocked) return;
   if (state.player.cash < item.price) {
-    addMessage('Insufficient funds to buy this cosmetic.', {
-      speaker: 'merchant',
-      category: 'progress',
-      priority: 'normal'
-    });
+    addMessage({ id: 'warning.insufficient_cosmetic_funds' });
     return;
   }
   state.player.cash -= item.price;
   item.unlocked = true;
   saveState();
-  addMessage(`Purchased ${item.name} theme for $${item.price.toFixed(2)}`, { speaker: 'merchant' });
+  addMessage({
+    id: 'commerce.theme_purchased',
+    vars: { itemName: item.name, price: item.price.toFixed(2) }
+  });
   renderAll();
 }
 
@@ -41,7 +40,10 @@ export function selectCosmeticAction(deps) {
     applyTheme(item.id);
   }
   saveState();
-  addMessage(`Selected ${item.name} theme.`, { speaker: 'merchant' });
+  addMessage({
+    id: 'commerce.theme_selected',
+    vars: { itemName: item.name }
+  });
   renderAll();
 }
 
@@ -60,11 +62,7 @@ export function craftItemAction(deps) {
   for (const input of recipe.input) {
     const invEntry = state.inventory.find((e) => e.itemId === input.id);
     if (!invEntry || invEntry.quantity < input.qty * quantity) {
-      addMessage('Not enough materials to craft.', {
-        speaker: 'merchant',
-        category: 'progress',
-        priority: 'normal'
-      });
+      addMessage({ id: 'warning.not_enough_materials' });
       return;
     }
   }
@@ -72,11 +70,7 @@ export function craftItemAction(deps) {
   const costPerOutput = outputShopEntry ? outputShopEntry.price * recipe.costMultiplier : 0;
   const totalCost = costPerOutput * recipe.output.qty * quantity;
   if (state.player.cash < totalCost) {
-    addMessage('Insufficient funds to craft.', {
-      speaker: 'merchant',
-      category: 'progress',
-      priority: 'normal'
-    });
+    addMessage({ id: 'warning.insufficient_craft_funds' });
     return;
   }
   for (const input of recipe.input) {
@@ -96,6 +90,13 @@ export function craftItemAction(deps) {
   state.player.cash -= totalCost;
   saveState();
   const outputItem = state.items.find((it) => it.id === recipe.output.id);
-  addMessage(`Crafted ${recipe.output.qty * quantity} x ${outputItem ? outputItem.name : 'item'} for $${totalCost.toFixed(2)}`, { speaker: 'merchant' });
+  addMessage({
+    id: 'commerce.crafted_item',
+    vars: {
+      quantity: recipe.output.qty * quantity,
+      itemName: outputItem ? outputItem.name : 'item',
+      totalCost: totalCost.toFixed(2)
+    }
+  });
   renderAll();
 }

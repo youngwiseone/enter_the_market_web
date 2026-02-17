@@ -21,11 +21,15 @@ export function purchaseGridSlotAction(deps) {
   if (state.gridUnlocked[index]) return;
   const cost = getGridUnlockCost();
   if (state.player.cash < cost) {
-    addMessage(`Insufficient funds to purchase this slot. Requires $${cost.toFixed(2)}.`, {
-      speaker: 'player',
-      emotion: 'wrong',
-      category: 'progress',
-      priority: 'high'
+    addMessage({
+      id: 'warning.insufficient_funds_slot',
+      vars: { cost: cost.toFixed(2) },
+      meta: {
+        speaker: 'player',
+        emotion: 'wrong',
+        category: 'progress',
+        priority: 'high'
+      }
     });
     return;
   }
@@ -35,7 +39,7 @@ export function purchaseGridSlotAction(deps) {
   state.gridUnlocked[index] = true;
   evaluateGoals();
   saveState();
-  addMessage(`Purchased a grid slot for $${cost.toFixed(2)}.`);
+  addMessage({ id: 'progress.purchased_grid_slot', vars: { cost: cost.toFixed(2) } });
   renderAll();
 }
 
@@ -84,7 +88,7 @@ export function placeItemOnGridAction(deps) {
 
   awardPlayerXp(xpRewards.plant);
   saveState();
-  addMessage(`Placed ${item.name} on the grid.`);
+  addMessage({ id: 'progress.placed_item_on_grid', vars: { itemName: item.name } });
   renderAll();
 
   const center = getTileCenter(cellIndex);
@@ -133,7 +137,7 @@ export function removeItemFromGridAction(deps) {
     state.gridWateredCount[cellIndex] = 0;
   }
   saveState();
-  addMessage(`Removed ${item.name} from the grid.`);
+  addMessage({ id: 'progress.removed_item_from_grid', vars: { itemName: item.name } });
   if (getSelectedGridCellIndex() === cellIndex) {
     setSelectedGridCellIndex(null);
   }
