@@ -26,8 +26,7 @@ export function nextDayAction(deps) {
     generateDailyTip,
     evaluateGoals,
     saveState,
-    renderAll,
-    showDaySummaryModal
+    renderAll
   } = deps;
 
   updateNetWorth();
@@ -60,7 +59,6 @@ export function nextDayAction(deps) {
   const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier, fatigue.impactPercent);
   const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
   if (dailyRoll.picks.length > 0) {
-    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent);
     addMessage({
       id: 'economy.market_roll',
       vars: { rollSummary },
@@ -146,6 +144,7 @@ export function nextDayAction(deps) {
   state.daySummaryHistory.push(daySummary);
   if (state.daySummaryHistory.length > 7) state.daySummaryHistory = state.daySummaryHistory.slice(-7);
   state.pendingDaySummary = daySummary;
+  showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, daySummary);
 
   generateDailyTip(dowIndex);
   state.daySalesCount = 0;
@@ -156,8 +155,5 @@ export function nextDayAction(deps) {
   state.dayStartSnapshot = getCurrentDaySnapshot();
   saveState();
   renderAll();
-  if (dailyRoll.picks.length === 0 && state.pendingDaySummary) {
-    showDaySummaryModal(state.pendingDaySummary);
-    state.pendingDaySummary = null;
-  }
+  state.pendingDaySummary = null;
 }

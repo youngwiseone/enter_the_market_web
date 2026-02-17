@@ -1537,8 +1537,8 @@ function getFatigueFromEnergy() {
   return dayMarketRuntimeController.getFatigueFromEnergy();
 }
 
-function generateDailyMarketRoll(impactMultiplier = 1) {
-  return dayMarketRuntimeController.generateDailyMarketRoll(impactMultiplier);
+function generateDailyMarketRoll(impactMultiplier = 1, impactPercent = null) {
+  return dayMarketRuntimeController.generateDailyMarketRoll(impactMultiplier, impactPercent);
 }
 
 function applyDailyMarketRollToShop(rollResult) {
@@ -1954,6 +1954,8 @@ function attachEventHandlers() {
     setMessageJustEmitted: messagesController.setMessageJustEmitted,
     toggleLicenseAndCreator,
     isDailyRollOpen: sessionRuntimeController.isDailyRollOpen,
+    canContinueDailyRoll: sessionRuntimeController.canContinueDailyRoll,
+    requestDailyRollSkip: sessionRuntimeController.requestDailyRollSkip,
     isGoalCelebrationOpen: sessionRuntimeController.isGoalCelebrationOpen,
     TOOL_GLOVE,
     TOOL_PICKAXE,

@@ -30,6 +30,8 @@ export function createSessionRuntimeController(deps) {
   } = deps;
 
   let dailyRollAnimationToken = 0;
+  let dailyRollCanContinue = false;
+  let dailyRollSkipRequested = false;
 
   function startPlaytimeTracking() {
     startPlaytimeTrackingAction(playtestStats);
@@ -113,19 +115,35 @@ export function createSessionRuntimeController(deps) {
   }
 
   function continueDailyRollModal() {
-    const pendingDaySummary = state.pendingDaySummary;
-    const didOpenSummary = continueDailyRollModalAction({
-      pendingDaySummary,
+    if (!dailyRollCanContinue) {
+      dailyRollSkipRequested = true;
+      return false;
+    }
+    continueDailyRollModalAction({
       setDailyRollOpen,
-      showDaySummaryModal,
       incrementDailyRollAnimationToken: () => {
         dailyRollAnimationToken += 1;
         return dailyRollAnimationToken;
       }
     });
-    if (didOpenSummary) {
-      state.pendingDaySummary = null;
-    }
+    dailyRollCanContinue = false;
+    return true;
+  }
+
+  function requestDailyRollSkip() {
+    if (!isDailyRollOpen() || dailyRollCanContinue) return false;
+    dailyRollSkipRequested = true;
+    return true;
+  }
+
+  function consumeDailyRollSkipRequested() {
+    const value = dailyRollSkipRequested;
+    dailyRollSkipRequested = false;
+    return value;
+  }
+
+  function canContinueDailyRoll() {
+    return dailyRollCanContinue;
   }
 
   function setDaySummaryOpen(isOpen) {
@@ -140,17 +158,24 @@ export function createSessionRuntimeController(deps) {
     continueDaySummaryModalAction(setDaySummaryOpen);
   }
 
-  async function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0) {
+  async function showDailyMarketRollModal(rollResult, summaryText, fatiguePercent = 0, daySummary = null) {
+    dailyRollCanContinue = false;
+    dailyRollSkipRequested = false;
     await showDailyMarketRollModalAction({
       rollResult,
       summaryText,
       fatiguePercent,
+      daySummary,
       getUnlockedRollItems,
       getHarvestImagePath,
       getCurrentDailyRollAnimationToken: () => dailyRollAnimationToken,
       incrementDailyRollAnimationToken: () => {
         dailyRollAnimationToken += 1;
         return dailyRollAnimationToken;
+      },
+      consumeDailyRollSkipRequested,
+      setDailyRollCanContinue: (value) => {
+        dailyRollCanContinue = !!value;
       },
       isDailyRollOpen,
       setDailyRollOpen,
@@ -171,6 +196,8 @@ export function createSessionRuntimeController(deps) {
     showNextGoalCelebration,
     continueGoalCelebration,
     isDailyRollOpen,
+    canContinueDailyRoll,
+    requestDailyRollSkip,
     continueDailyRollModal,
     continueDaySummaryModal,
     showDaySummaryModal,

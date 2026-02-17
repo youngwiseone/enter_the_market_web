@@ -8,6 +8,12 @@ export function getFatigueFromEnergyState(state) {
   return { fatiguePercent, impactMultiplier, impactPercent, energySpent, energy, energyMax };
 }
 
+function getDailyRollCountForLevel(levelRaw) {
+  const level = Math.max(1, Math.floor(Number(levelRaw) || 1));
+  if (level <= 4) return 1;
+  return Math.min(20, Math.floor((level - 5) / 5) + 2);
+}
+
 function getUnlockedRollItems(state, isShopItemUnlocked) {
   if (!Array.isArray(state.items)) return [];
   return state.items.filter((item) => item && isShopItemUnlocked(item.id));
@@ -63,12 +69,17 @@ export function generateDailyMarketRollState(deps) {
     return { picks: [], byItem: new Map() };
   }
   const picks = [];
-  for (let i = 0; i < 3; i += 1) {
+  const directionByItemId = new Map();
+  const rollCount = getDailyRollCountForLevel(state.player?.playerLevel);
+  for (let i = 0; i < rollCount; i += 1) {
     const target = pickRollItemByWeight(unlockedItems, getDailyRollItemWeight)
       || unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
-    const bias = getMarketDirectionalBias(target.id);
-    const upChance = clampMarketBias(0.5 + (bias.upward * 0.35) - (bias.downward * 0.4), 0.1, 0.9);
-    const sign = Math.random() < upChance ? 1 : -1;
+    if (!directionByItemId.has(target.id)) {
+      const bias = getMarketDirectionalBias(target.id);
+      const upChance = clampMarketBias(0.5 + (bias.upward * 0.35) - (bias.downward * 0.4), 0.1, 0.9);
+      directionByItemId.set(target.id, Math.random() < upChance ? 1 : -1);
+    }
+    const sign = directionByItemId.get(target.id) || 1;
     const fixedImpact = Number(impactPercent);
     const baseMagnitude = Number.isFinite(fixedImpact)
       ? Math.max(0, fixedImpact)

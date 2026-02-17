@@ -480,7 +480,7 @@
       "emotion": "level_up",
       "category": "progress",
       "priority": "high",
-      "template": "Level up! Reached Level {level}.{unlockedText} {changeText}"
+      "template": "Level up! Reached Level {level}.{unlockedText}{rollUnlockText} {changeText}"
     },
     {
       "id": "warning.insufficient_funds_slot",

@@ -23,6 +23,8 @@ export function attachCoreEventHandlers(deps) {
     setMessageJustEmitted,
     toggleLicenseAndCreator,
     isDailyRollOpen,
+    canContinueDailyRoll,
+    requestDailyRollSkip,
     isGoalCelebrationOpen,
     TOOL_GLOVE,
     TOOL_PICKAXE,
@@ -178,10 +180,15 @@ export function attachCoreEventHandlers(deps) {
       if (isDailyRollOpen()) {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          continueDailyRollModal();
+          if (canContinueDailyRoll()) {
+            continueDailyRollModal();
+          } else {
+            requestDailyRollSkip();
+          }
           return;
         }
         if (event.key === 'Tab') return;
+        requestDailyRollSkip();
         event.preventDefault();
         event.stopPropagation();
         return;

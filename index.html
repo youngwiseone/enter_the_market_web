@@ -1308,6 +1308,42 @@
             font-size: var(--font-ui);
             text-align: center;
         }
+        .daily-roll-day-summary {
+            margin: 0 0 10px;
+            padding: 6px 8px;
+            border: 1px solid rgba(127, 127, 127, 0.45);
+            background: rgba(255, 255, 255, 0.65);
+        }
+        .daily-roll-day-summary-subtitle {
+            margin: 0 0 6px;
+            font-size: var(--font-ui);
+            color: #303030;
+        }
+        .daily-roll-day-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+            gap: 6px;
+        }
+        .daily-roll-day-summary-card {
+            border: 1px solid rgba(127, 127, 127, 0.5);
+            background: rgba(255, 255, 255, 0.68);
+            border-radius: 4px;
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .daily-roll-day-summary-label {
+            font-size: var(--font-ui);
+            color: #444;
+        }
+        .daily-roll-day-summary-value {
+            font-weight: bold;
+            font-size: calc(var(--font-ui) + 1px);
+        }
+        .daily-roll-day-summary-value.sales {
+            color: #1f7a1f;
+        }
         .daily-roll-reels {
             display: grid;
             grid-template-columns: minmax(0, 1fr);
@@ -1398,12 +1434,32 @@
             max-width: 100%;
             overflow: hidden;
         }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-2 {
+            gap: 7px;
+            padding: 3px 8px;
+            min-height: 30px;
+        }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-3plus {
+            gap: 8px;
+            padding: 4px 9px;
+            min-height: 34px;
+        }
         .daily-roll-result-icon {
             width: 20px;
             height: 20px;
             flex: 0 0 20px;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+        }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-2 .daily-roll-result-icon {
+            width: 22px;
+            height: 22px;
+            flex-basis: 22px;
+        }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-3plus .daily-roll-result-icon {
+            width: 24px;
+            height: 24px;
+            flex-basis: 24px;
         }
         .daily-roll-result-name {
             flex: 1 1 auto;
@@ -1420,6 +1476,14 @@
             font-size: var(--font-ui);
             line-height: 1.2;
         }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-2 .daily-roll-impact-chip {
+            font-size: calc(var(--font-ui) + 1px);
+            padding: 1px 6px;
+        }
+        .daily-roll-result-chip.daily-roll-result-chip-stack-3plus .daily-roll-impact-chip {
+            font-size: calc(var(--font-ui) + 2px);
+            padding: 2px 7px;
+        }
         .daily-roll-impact-chip.positive {
             color: #145214;
             border-color: #2c7a2c;
@@ -1431,9 +1495,15 @@
             background: rgba(255, 179, 179, 0.5);
         }
         .daily-roll-reel-stack {
-            color: #ffe680;
+            color: #2c7a2c;
             font-weight: bold;
             margin-left: 2px;
+        }
+        .daily-roll-reel-stack.positive {
+            color: #2c7a2c;
+        }
+        .daily-roll-reel-stack.negative {
+            color: #9c2b2b;
         }
         .daily-roll-fatigue {
             margin: 0 0 4px;
@@ -1456,8 +1526,41 @@
             text-shadow: 0 0 4px rgba(126, 255, 157, 0.45);
             animation: daily-roll-spark-burst 520ms ease-out forwards;
         }
+        .daily-roll-emit-item {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            margin-left: -18px;
+            margin-top: -18px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            pointer-events: none;
+            z-index: 4;
+            animation: daily-roll-item-pop 960ms ease-in forwards;
+        }
+        .daily-roll-emit-text {
+            position: absolute;
+            margin-left: -14px;
+            margin-top: -8px;
+            font-size: var(--font-ui);
+            font-weight: bold;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+            z-index: 5;
+            animation: daily-roll-text-pop 820ms ease-in forwards;
+        }
+        .daily-roll-emit-text.positive {
+            color: #2c7a2c;
+        }
+        .daily-roll-emit-text.negative {
+            color: #9c2b2b;
+        }
         .daily-roll-continue {
             width: 100%;
+        }
+        .daily-roll-continue[disabled] {
+            opacity: 0.8;
+            cursor: not-allowed;
         }
         .day-summary-modal {
             position: fixed;
@@ -1543,6 +1646,42 @@
             0% { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.4) rotate(0deg); }
             15% { opacity: 1; }
             100% { opacity: 0; transform: translate3d(var(--spark-dx, 0px), var(--spark-dy, -22px), 0) scale(1) rotate(var(--spark-rot, 100deg)); }
+        }
+        @keyframes daily-roll-item-pop {
+            0% {
+                opacity: 0;
+                transform: translate3d(0, -4px, 0) rotate(var(--emit-rot-start, 0deg)) scale(0.85);
+            }
+            15% {
+                opacity: 1;
+                transform: translate3d(calc(var(--emit-drift-x, 0px) * 0.4), -12px, 0) rotate(calc(var(--emit-rot-start, 0deg) + 80deg)) scale(1);
+            }
+            55% {
+                opacity: 0.95;
+                transform: translate3d(var(--emit-drift-x, 0px), calc(var(--emit-drop-y, 52px) * 0.45), 0) rotate(calc(var(--emit-rot-end, 360deg) * 0.55)) scale(0.98);
+            }
+            100% {
+                opacity: 0;
+                transform: translate3d(calc(var(--emit-drift-x, 0px) * 1.05), var(--emit-drop-y, 52px), 0) rotate(var(--emit-rot-end, 360deg)) scale(0.9);
+            }
+        }
+        @keyframes daily-roll-text-pop {
+            0% {
+                opacity: 0;
+                transform: translate3d(0, -3px, 0) rotate(var(--emit-text-rot-start, 0deg));
+            }
+            18% {
+                opacity: 1;
+                transform: translate3d(calc(var(--emit-text-drift-x, 0px) * 0.4), -9px, 0) rotate(calc(var(--emit-text-rot-start, 0deg) + 25deg));
+            }
+            55% {
+                opacity: 0.95;
+                transform: translate3d(var(--emit-text-drift-x, 0px), calc(var(--emit-text-drop-y, 40px) * 0.45), 0) rotate(calc(var(--emit-text-rot-end, 120deg) * 0.6));
+            }
+            100% {
+                opacity: 0;
+                transform: translate3d(calc(var(--emit-text-drift-x, 0px) * 1.05), var(--emit-text-drop-y, 40px), 0) rotate(var(--emit-text-rot-end, 120deg));
+            }
         }
         @keyframes goal-backdrop-fade-in {
             from { opacity: 0; }
@@ -2352,6 +2491,19 @@
     <div id="daily-roll-modal" class="daily-roll-modal" aria-hidden="true">
         <div class="panel daily-roll-panel" role="dialog" aria-labelledby="daily-roll-title" aria-modal="true">
             <h2 id="daily-roll-title" class="daily-roll-title">Market Roll</h2>
+            <div id="daily-roll-day-summary" class="daily-roll-day-summary">
+                <p id="daily-roll-day-summary-subtitle" class="daily-roll-day-summary-subtitle">Day 1 wrap-up</p>
+                <div class="daily-roll-day-summary-grid">
+                    <div class="daily-roll-day-summary-card">
+                        <span class="daily-roll-day-summary-label">Items Sold</span>
+                        <span id="daily-roll-day-summary-sold" class="daily-roll-day-summary-value">0</span>
+                    </div>
+                    <div class="daily-roll-day-summary-card">
+                        <span class="daily-roll-day-summary-label">Sales Total</span>
+                        <span id="daily-roll-day-summary-sales" class="daily-roll-day-summary-value sales">$0.00</span>
+                    </div>
+                </div>
+            </div>
             <p id="daily-roll-fatigue" class="daily-roll-fatigue"></p>
             <p id="daily-roll-fatigue-note" class="daily-roll-fatigue-note">Higher energy used = stronger market roll moves.</p>
             <div class="daily-roll-reels">

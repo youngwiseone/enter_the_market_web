@@ -42,34 +42,73 @@ function renderDailyRollResultChip(summaryEl, pick, itemEffect) {
   const sign = impactPct >= 0 ? '+' : '';
   const stackCount = Math.max(1, Number(itemEffect?.hits) || 1);
   const trendClass = impactPct >= 0 ? 'positive' : 'negative';
-  const chip = document.createElement('div');
-  chip.className = 'daily-roll-result-chip';
+  const itemKey = String(pick.itemId ?? pick.itemName ?? '');
+  let chip = null;
+  Array.from(summaryEl.querySelectorAll('.daily-roll-result-chip')).some((node) => {
+    if (String(node.dataset.itemId || '') === itemKey) {
+      chip = node;
+      return true;
+    }
+    return false;
+  });
 
-  const icon = document.createElement('img');
-  icon.className = 'daily-roll-result-icon';
-  icon.src = pick.harvestImage || '';
-  icon.alt = pick.itemName || 'Item';
-  icon.loading = 'eager';
+  if (!chip) {
+    chip = document.createElement('div');
+    chip.className = 'daily-roll-result-chip';
+    chip.dataset.itemId = itemKey;
 
-  const name = document.createElement('span');
-  name.className = 'daily-roll-result-name';
-  name.textContent = pick.itemName || 'Unknown';
+    const icon = document.createElement('img');
+    icon.className = 'daily-roll-result-icon';
+    icon.loading = 'eager';
 
-  const impact = document.createElement('span');
-  impact.className = `daily-roll-impact-chip ${trendClass}`;
-  impact.textContent = `${sign}${impactPct.toFixed(0)}%`;
+    const name = document.createElement('span');
+    name.className = 'daily-roll-result-name';
 
-  chip.appendChild(icon);
-  chip.appendChild(name);
-  chip.appendChild(impact);
+    const impact = document.createElement('span');
+    impact.className = 'daily-roll-impact-chip';
 
-  if (stackCount > 1) {
-    const stack = document.createElement('span');
-    stack.className = 'daily-roll-reel-stack';
-    stack.textContent = `x${stackCount}`;
-    chip.appendChild(stack);
+    chip.appendChild(icon);
+    chip.appendChild(name);
+    chip.appendChild(impact);
+    summaryEl.appendChild(chip);
   }
-  summaryEl.appendChild(chip);
+
+  chip.classList.remove('daily-roll-result-chip-stack-2', 'daily-roll-result-chip-stack-3plus');
+  if (stackCount >= 3) {
+    chip.classList.add('daily-roll-result-chip-stack-3plus');
+  } else if (stackCount === 2) {
+    chip.classList.add('daily-roll-result-chip-stack-2');
+  }
+
+  const icon = chip.querySelector('.daily-roll-result-icon');
+  if (icon) {
+    icon.src = pick.harvestImage || '';
+    icon.alt = pick.itemName || 'Item';
+    icon.title = pick.itemName || 'Unknown';
+  }
+  const name = chip.querySelector('.daily-roll-result-name');
+  if (name) {
+    name.textContent = pick.itemName || 'Unknown';
+  }
+  const impact = chip.querySelector('.daily-roll-impact-chip');
+  if (impact) {
+    impact.className = `daily-roll-impact-chip ${trendClass}`;
+    impact.textContent = `${sign}${impactPct.toFixed(0)}%`;
+  }
+
+  let stack = chip.querySelector('.daily-roll-reel-stack');
+  if (stackCount > 1) {
+    if (!stack) {
+      stack = document.createElement('span');
+      stack.className = 'daily-roll-reel-stack';
+      chip.appendChild(stack);
+    }
+    stack.classList.remove('positive', 'negative');
+    stack.classList.add(trendClass);
+    stack.textContent = `x${stackCount}`;
+  } else if (stack) {
+    stack.remove();
+  }
 }
 
 function waitForDailyRoll(ms) {
@@ -110,18 +149,12 @@ export function setDailyRollOpenDom(isOpen, moveFocusOutsideModal) {
 
 export function continueDailyRollModalAction(deps) {
   const {
-    pendingDaySummary,
     setDailyRollOpen,
-    showDaySummaryModal,
     incrementDailyRollAnimationToken
   } = deps;
   incrementDailyRollAnimationToken();
   setDailyRollOpen(false);
-  if (pendingDaySummary) {
-    showDaySummaryModal(pendingDaySummary);
-    return true;
-  }
-  return false;
+  return true;
 }
 
 export function setDaySummaryOpenDom(isOpen, moveFocusOutsideModal) {
@@ -180,10 +213,13 @@ export async function showDailyMarketRollModalAction(deps) {
     rollResult,
     summaryText,
     fatiguePercent = 0,
+    daySummary = null,
     getUnlockedRollItems,
     getHarvestImagePath,
     getCurrentDailyRollAnimationToken,
     incrementDailyRollAnimationToken,
+    consumeDailyRollSkipRequested,
+    setDailyRollCanContinue,
     isDailyRollOpen,
     setDailyRollOpen,
     isReduceMotion
@@ -193,7 +229,11 @@ export async function showDailyMarketRollModalAction(deps) {
   const summaryEl = document.getElementById('daily-roll-results');
   const fatigueEl = document.getElementById('daily-roll-fatigue');
   const fatigueNoteEl = document.getElementById('daily-roll-fatigue-note');
-  if (!modal || !Array.isArray(rollResult?.picks) || rollResult.picks.length === 0) return;
+  const daySummarySubtitleEl = document.getElementById('daily-roll-day-summary-subtitle');
+  const daySummarySoldEl = document.getElementById('daily-roll-day-summary-sold');
+  const daySummarySalesEl = document.getElementById('daily-roll-day-summary-sales');
+  const continueBtn = document.getElementById('daily-roll-continue');
+  if (!modal || !Array.isArray(rollResult?.picks)) return;
 
   const unlockedItems = getUnlockedRollItems().map((item) => ({
     itemId: item.id,
@@ -205,7 +245,24 @@ export async function showDailyMarketRollModalAction(deps) {
   if (!reelEl || !trackEl || unlockedItems.length === 0) return;
 
   const animationToken = incrementDailyRollAnimationToken();
+  setDailyRollCanContinue(false);
   const isCurrentAnimation = () => animationToken === getCurrentDailyRollAnimationToken() && isDailyRollOpen();
+  const shouldSkip = () => typeof consumeDailyRollSkipRequested === 'function' && consumeDailyRollSkipRequested();
+
+  if (continueBtn) {
+    continueBtn.disabled = true;
+    continueBtn.setAttribute('aria-disabled', 'true');
+  }
+
+  if (daySummarySubtitleEl) {
+    daySummarySubtitleEl.textContent = `Day ${Math.max(1, Number(daySummary?.day) || 1)} wrap-up`;
+  }
+  if (daySummarySoldEl) {
+    daySummarySoldEl.textContent = String(Math.max(0, Number(daySummary?.itemsSold) || 0));
+  }
+  if (daySummarySalesEl) {
+    daySummarySalesEl.textContent = `$${(Math.max(0, Number(daySummary?.salesTotal) || 0)).toFixed(2)}`;
+  }
 
   const fatigueClamped = Math.max(0, Math.round(fatiguePercent));
   const fatigueDetail = `Energy used sets today's roll strength. ${fatigueClamped}% roll strength applied this day.`;
@@ -227,33 +284,137 @@ export async function showDailyMarketRollModalAction(deps) {
   renderDailyRollStage(trackEl, unlockedItems, unlockedItems[Math.floor(Math.random() * unlockedItems.length)]);
   setDailyRollOpen(true);
 
-  for (let index = 0; index < 3; index += 1) {
-    if (!isCurrentAnimation()) return;
-    const finalPick = rollResult.picks[index] || rollResult.picks[rollResult.picks.length - 1];
-    if (!finalPick) continue;
-    const itemEffect = rollResult.byItem.get(finalPick.itemId);
-
-    const spinIntervalMs = isReduceMotion() ? 80 : 54;
-    const spinTarget = isReduceMotion() ? 4 : 11;
-    for (let spins = 0; spins < spinTarget; spins += 1) {
-      if (!isCurrentAnimation()) return;
-      const midItem = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
-      renderDailyRollStage(trackEl, unlockedItems, midItem);
-      await waitForDailyRoll(spinIntervalMs);
+  const picks = Array.isArray(rollResult?.picks) ? rollResult.picks : [];
+  if (picks.length === 0) {
+    setDailyRollCanContinue(true);
+    if (continueBtn) {
+      continueBtn.disabled = false;
+      continueBtn.setAttribute('aria-disabled', 'false');
     }
+    return;
+  }
 
-    if (!isCurrentAnimation()) return;
-    renderDailyRollStage(trackEl, unlockedItems, finalPick);
-    reelEl.classList.remove('final');
-    void reelEl.offsetWidth;
-    reelEl.classList.add('final');
-    triggerDailyRollLandingEffects(reelEl, isReduceMotion(), Math.max(1, Number(itemEffect?.hits) || 1));
+  const totalDurationMs = isReduceMotion() ? 1800 : 3000;
+  const emitIntervalMs = Math.max(60, Math.floor(totalDurationMs / Math.max(1, picks.length)));
+  const spinSlowdownStartMs = isReduceMotion() ? 1700 : 2500;
+  const fastSpinIntervalMs = isReduceMotion() ? 55 : 24;
+  const finalSpinIntervalMs = isReduceMotion() ? 95 : 92;
+  const finalPick = picks[picks.length - 1];
+  const startedAt = Date.now();
+  let emittedCount = 0;
+  const emittedByItem = new Map();
+  let wasSkipped = false;
+
+  const emitPickEffects = (pick) => {
+    const pickImpact = Number(pick?.impactPct) || 0;
+    const current = emittedByItem.get(pick.itemId) || {
+      itemId: pick.itemId,
+      itemName: pick.itemName,
+      hits: 0,
+      adjustedImpactPct: 0
+    };
+    current.hits += 1;
+    current.adjustedImpactPct += pickImpact;
+    emittedByItem.set(pick.itemId, current);
+    triggerDailyRollLandingEffects(reelEl, isReduceMotion(), Math.max(1, Number(current.hits) || 1));
     if (summaryEl) {
-      renderDailyRollResultChip(summaryEl, finalPick, itemEffect);
+      renderDailyRollResultChip(summaryEl, pick, current);
     }
-    await waitForDailyRoll(isReduceMotion() ? 70 : 150);
+    const trendClass = pickImpact >= 0 ? 'positive' : 'negative';
+    const sign = pickImpact >= 0 ? '+' : '';
+    const fxItem = document.createElement('img');
+    fxItem.className = 'daily-roll-emit-item';
+    fxItem.src = pick.harvestImage || '';
+    fxItem.alt = '';
+    fxItem.style.setProperty('--emit-rot-start', `${Math.round(-40 + Math.random() * 80)}deg`);
+    fxItem.style.setProperty('--emit-rot-end', `${Math.round(-460 + Math.random() * 920)}deg`);
+    fxItem.style.setProperty('--emit-drift-x', `${Math.round(-28 + Math.random() * 56)}px`);
+    fxItem.style.setProperty('--emit-drop-y', `${Math.round(42 + Math.random() * 34)}px`);
+    fxItem.style.left = `${20 + Math.random() * 60}%`;
+    fxItem.style.top = `${25 + Math.random() * 35}%`;
+    reelEl.appendChild(fxItem);
+    fxItem.addEventListener('animationend', () => fxItem.remove(), { once: true });
+
+    const launchDelayMs = isReduceMotion() ? 26 : 44;
+    window.setTimeout(() => {
+      if (!isCurrentAnimation()) return;
+      const fxText = document.createElement('span');
+      fxText.className = `daily-roll-emit-text ${trendClass}`;
+      fxText.textContent = `${sign}${pickImpact.toFixed(0)}%`;
+      fxText.style.setProperty('--emit-text-rot-start', `${Math.round(-18 + Math.random() * 36)}deg`);
+      fxText.style.setProperty('--emit-text-rot-end', `${Math.round(-130 + Math.random() * 260)}deg`);
+      fxText.style.setProperty('--emit-text-drift-x', `${Math.round(-24 + Math.random() * 48)}px`);
+      fxText.style.setProperty('--emit-text-drop-y', `${Math.round(28 + Math.random() * 26)}px`);
+      fxText.style.left = `${18 + Math.random() * 64}%`;
+      fxText.style.top = `${20 + Math.random() * 40}%`;
+      reelEl.appendChild(fxText);
+      fxText.addEventListener('animationend', () => fxText.remove(), { once: true });
+    }, launchDelayMs);
+  };
+
+  while (isCurrentAnimation()) {
+    if (shouldSkip()) {
+      wasSkipped = true;
+      emittedCount = picks.length;
+      if (summaryEl) summaryEl.innerHTML = '';
+      const seen = new Set();
+      picks.forEach((pick) => {
+        if (seen.has(pick.itemId)) return;
+        seen.add(pick.itemId);
+        renderDailyRollResultChip(summaryEl, pick, rollResult.byItem.get(pick.itemId));
+      });
+      break;
+    }
+
+    const now = Date.now();
+    const elapsed = now - startedAt;
+
+    const randomMid = unlockedItems[Math.floor(Math.random() * unlockedItems.length)];
+    renderDailyRollStage(trackEl, unlockedItems, randomMid);
+
+    const dueCount = Math.min(
+      picks.length,
+      Math.floor((now - startedAt) / emitIntervalMs)
+    );
+    while (emittedCount < dueCount) {
+      const pick = picks[emittedCount];
+      if (pick) emitPickEffects(pick);
+      emittedCount += 1;
+    }
+    if (elapsed >= totalDurationMs) break;
+    let spinIntervalMs = fastSpinIntervalMs;
+    if (elapsed > spinSlowdownStartMs) {
+      const tailProgress = Math.max(0, Math.min(1, (elapsed - spinSlowdownStartMs) / Math.max(1, totalDurationMs - spinSlowdownStartMs)));
+      spinIntervalMs = Math.round(
+        fastSpinIntervalMs + ((finalSpinIntervalMs - fastSpinIntervalMs) * tailProgress)
+      );
+    }
+    await waitForDailyRoll(spinIntervalMs);
   }
 
   if (!isCurrentAnimation()) return;
-  await waitForDailyRoll(isReduceMotion() ? 40 : 90);
+  if (emittedCount < picks.length) {
+    if (summaryEl) summaryEl.innerHTML = '';
+    const seen = new Set();
+    picks.forEach((pick) => {
+      if (seen.has(pick.itemId)) return;
+      seen.add(pick.itemId);
+      renderDailyRollResultChip(summaryEl, pick, rollResult.byItem.get(pick.itemId));
+    });
+  }
+  renderDailyRollStage(trackEl, unlockedItems, finalPick);
+  reelEl.classList.remove('final');
+  void reelEl.offsetWidth;
+  reelEl.classList.add('final');
+  triggerDailyRollLandingEffects(reelEl, isReduceMotion(), Math.max(1, Number(rollResult.byItem.get(finalPick.itemId)?.hits) || 1));
+  await waitForDailyRoll(Math.max(40, isReduceMotion() ? 60 : 120));
+  if (wasSkipped) {
+    await waitForDailyRoll(isReduceMotion() ? 220 : 320);
+  }
+  if (!isCurrentAnimation()) return;
+  setDailyRollCanContinue(true);
+  if (continueBtn) {
+    continueBtn.disabled = false;
+    continueBtn.setAttribute('aria-disabled', 'false');
+  }
 }

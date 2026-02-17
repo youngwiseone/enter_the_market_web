@@ -86,6 +86,12 @@ export function getEnergyMaxForLevelAction(levelRaw, clampPlayerLevel) {
   return 5 + Math.max(0, level - 1);
 }
 
+function getMarketRollCountForLevel(levelRaw) {
+  const level = Math.max(1, Math.floor(Number(levelRaw) || 1));
+  if (level <= 4) return 1;
+  return Math.min(20, Math.floor((level - 5) / 5) + 2);
+}
+
 export function ensurePlayerProgressStateAction(
   state,
   clampPlayerLevel,
@@ -113,7 +119,8 @@ export function enqueueLevelUpCelebrationAction(
   level,
   changeText,
   showNextGoalCelebration,
-  unlockedItem
+  unlockedItem,
+  rollCelebrationText = ''
 ) {
   if (!Array.isArray(state.goalCelebrationQueue)) {
     state.goalCelebrationQueue = [];
@@ -124,7 +131,7 @@ export function enqueueLevelUpCelebrationAction(
   state.goalCelebrationQueue.push({
     id: `level-up-${level}-${Date.now()}`,
     title: 'Level Up',
-    rewardText: `Level ${level} reached${unlockedText} | ${changeText}`,
+    rewardText: `Level ${level} reached${unlockedText}${rollCelebrationText} | ${changeText}`,
     imageSrc: unlockedItem?.imageSrc || 'resources/profiles/player_level_up.png',
     imageAlt: unlockedItem?.imageAlt || 'Level up'
   });
@@ -155,9 +162,13 @@ export function awardPlayerXpAction(amount, options, deps) {
     const xpToNext = getXpToNextLevel(state.player.playerLevel);
     if (state.player.playerXp < xpToNext) break;
     state.player.playerXp -= xpToNext;
+    const previousLevel = state.player.playerLevel;
     const previousEnergyMax = getEnergyMaxForLevel(state.player.playerLevel);
     state.player.playerLevel += 1;
     levelsGained += 1;
+    const rollCountIncreased = getMarketRollCountForLevel(state.player.playerLevel) > getMarketRollCountForLevel(previousLevel);
+    const rollUnlockText = rollCountIncreased ? ' +1 Market roll unlocked.' : '';
+    const rollCelebrationText = rollCountIncreased ? ' | +1 Market roll unlocked' : '';
     const currentEnergyMax = getEnergyMaxForLevel(state.player.playerLevel);
     state.player.energyMax = currentEnergyMax;
     state.player.energy = currentEnergyMax;
@@ -170,6 +181,7 @@ export function awardPlayerXpAction(amount, options, deps) {
       vars: {
         level: state.player.playerLevel,
         unlockedText: unlockedItem && unlockedItem.name ? ` Unlocked item: ${unlockedItem.name}.` : '',
+        rollUnlockText,
         changeText
       },
       meta: {
@@ -179,7 +191,7 @@ export function awardPlayerXpAction(amount, options, deps) {
         priority: 'high'
       }
     });
-    enqueueLevelUpCelebration(state.player.playerLevel, changeText, unlockedItem);
+    enqueueLevelUpCelebration(state.player.playerLevel, changeText, unlockedItem, rollCelebrationText);
   }
 
   if (state.player.playerLevel >= playerLevelCap) {

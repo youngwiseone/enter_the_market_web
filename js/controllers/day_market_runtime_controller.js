@@ -147,8 +147,7 @@ export function createDayMarketRuntimeController(deps) {
         generateDailyTip,
         evaluateGoals,
         saveState,
-        renderAll,
-        showDaySummaryModal
+        renderAll
       });
     } finally {
       trackActionDuration('nextDay', performance.now() - perfStart);
