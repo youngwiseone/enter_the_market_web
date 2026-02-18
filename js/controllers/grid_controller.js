@@ -35,10 +35,6 @@ export function purchaseAndPlaceSelectedAction(deps) {
   const shopEntry = state.shop.find((entry) => entry.itemId === selectedShopItemId);
   const item = state.items.find((it) => it.id === selectedShopItemId);
   if (!shopEntry || !item) return;
-  if (shopEntry.quantity <= 0) {
-    addMessage({ id: 'progress.out_of_stock' });
-    return;
-  }
   const freeQty = Math.min(getFreePurchaseCount(selectedShopItemId), 1);
   const totalCost = shopEntry.price * (1 - freeQty);
   if (state.player.cash < totalCost) {
@@ -60,7 +56,6 @@ export function purchaseAndPlaceSelectedAction(deps) {
   }
   if (freeQty > 0) consumeFreePurchases(selectedShopItemId, 1);
   state.player.cash -= totalCost;
-  shopEntry.quantity -= 1;
   state.gridItems[cellIndex] = selectedShopItemId;
   setSelectedGridCellIndex(cellIndex);
   if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cellIndex] = totalCost;

@@ -229,16 +229,6 @@
       "template": "This item is not available yet."
     },
     {
-      "id": "progress.out_of_stock",
-      "type": "progress",
-      "icon": "warning",
-      "speaker": "merchant",
-      "emotion": "neutral",
-      "category": "progress",
-      "priority": "normal",
-      "template": "Out of stock."
-    },
-    {
       "id": "progress.insufficient_funds",
       "type": "warning",
       "icon": "warning",
@@ -321,16 +311,6 @@
       "category": "progress",
       "priority": "normal",
       "template": "Game has been reset to default values."
-    },
-    {
-      "id": "warning.not_enough_stock",
-      "type": "warning",
-      "icon": "warning",
-      "speaker": "merchant",
-      "emotion": "neutral",
-      "category": "progress",
-      "priority": "normal",
-      "template": "Not enough stock available."
     },
     {
       "id": "warning.not_enough_to_sell",

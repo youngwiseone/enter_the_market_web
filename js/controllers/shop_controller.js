@@ -24,10 +24,6 @@ export function buyItemAction(deps) {
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);
   const item = state.items.find((it) => it.id === itemId);
   if (!shopEntry || !item) return;
-  if (shopEntry.quantity < quantity) {
-    addMessage({ id: 'warning.not_enough_stock' });
-    return;
-  }
   const freeQty = Math.min(getFreePurchaseCount(itemId), quantity);
   const paidQty = quantity - freeQty;
   const totalCost = shopEntry.price * paidQty;
@@ -40,7 +36,6 @@ export function buyItemAction(deps) {
   }
   registerDayAction();
   state.player.cash -= totalCost;
-  shopEntry.quantity -= quantity;
   let invEntry = state.inventory.find((entry) => entry.itemId === itemId);
   if (!invEntry) {
     invEntry = { itemId, quantity: 0, avgCost: 0 };
@@ -107,7 +102,6 @@ export function sellItemAction(deps) {
   registerSaleEvent(item ? item.name : 'Item', saleValue, quantity);
   registerItemSalePressure(itemId, quantity);
   state.player.cash += saleValue;
-  shopEntry.quantity += quantity;
   invEntry.quantity -= quantity;
   if (invEntry.quantity === 0) {
     const index = state.inventory.indexOf(invEntry);

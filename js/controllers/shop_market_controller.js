@@ -14,6 +14,13 @@ export function resetShopEntryToBasePriceAction(state, itemId) {
 export function ensureShopEntryMarketFieldsAction(entry) {
   if (!entry || typeof entry !== 'object') return false;
   let changed = false;
+  // Legacy compatibility: quantity remains in saved shop entries but is not
+  // used for purchase gating. Shop supply is effectively infinite.
+  const legacyQuantity = Math.max(0, Math.floor(Number(entry.quantity) || 0));
+  if (entry.quantity !== legacyQuantity) {
+    entry.quantity = legacyQuantity;
+    changed = true;
+  }
   const price = Math.max(0.01, Number(entry.price) || 0.01);
   if (entry.price !== price) {
     entry.price = price;
