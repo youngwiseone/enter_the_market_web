@@ -15,3 +15,4 @@ These are tasks I am still planning, do not work on unless instructed.
 - Drag and drop items onto each other to produce cooked food, or into a pot/saucepan to cook items to sell for higher prices (avg the rarity of items used to get cooked food rarity). Store the crafted items back on grid.
 - drag and drop items to sell or reoganise on grid (not just click to sell)
 - add fishing which gives items you can't sell but that affect the market e.g. x2 effect on a plant you are farming. But the physical items take space on grid.
+- out of energy needs to be a bigger population center of tired player
