@@ -1,3 +1,8 @@
+import {
+  consumeSeedBuyStreakMessageId,
+  shouldSuppressSeedStandardBuyMessage
+} from './seed_buy_streak_controller.js';
+
 export function purchaseAndPlaceSelectedAction(deps) {
   const {
     state,
@@ -69,19 +74,34 @@ export function purchaseAndPlaceSelectedAction(deps) {
   updateNetWorth();
   evaluateGoals();
   saveState();
-  if (freeQty > 0) {
-    addMessage({
-      id: 'commerce.purchased_and_placed_free',
-      vars: { itemName: item.name },
-      meta: { speaker: 'farmer' }
-    });
-  } else {
-    addMessage({
-      id: 'commerce.purchased_and_placed',
-      vars: { itemName: item.name, price: shopEntry.price.toFixed(2) },
-      meta: { speaker: 'farmer' }
-    });
+  const streakMessageId = consumeSeedBuyStreakMessageId(state.player.day, selectedShopItemId, 1, item);
+  const suppressStandardBuyMessage = shouldSuppressSeedStandardBuyMessage(selectedShopItemId, item);
+
+  if (!suppressStandardBuyMessage) {
+    if (freeQty > 0) {
+      addMessage({
+        id: 'commerce.purchased_and_placed_free',
+        vars: { itemName: item.name },
+        meta: { speaker: 'farmer' }
+      });
+    } else {
+      addMessage({
+        id: 'commerce.purchased_and_placed',
+        vars: { itemName: item.name, price: shopEntry.price.toFixed(2) },
+        meta: { speaker: 'farmer' }
+      });
+    }
   }
+
+  if (streakMessageId === 'commerce.buy_streak_seed') {
+    addMessage({
+      id: 'commerce.buy_streak_seed',
+      vars: { itemName: item.name }
+    });
+  } else if (streakMessageId === 'commerce.buy_streak_seed_mixed') {
+    addMessage({ id: 'commerce.buy_streak_seed_mixed' });
+  }
+
   renderAll();
   const center = getTileCenter(cellIndex);
   if (center) {

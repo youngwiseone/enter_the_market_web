@@ -1,3 +1,8 @@
+import {
+  consumeSeedBuyStreakMessageId,
+  shouldSuppressSeedStandardBuyMessage
+} from './seed_buy_streak_controller.js';
+
 export function buyItemAction(deps) {
   const {
     state,
@@ -47,17 +52,32 @@ export function buyItemAction(deps) {
   updateNetWorth();
   evaluateGoals();
   saveState();
-  if (freeQty > 0) {
-    addMessage({
-      id: 'commerce.bought_item_free',
-      vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2), freeQty }
-    });
-  } else {
-    addMessage({
-      id: 'commerce.bought_item',
-      vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2) }
-    });
+  const streakMessageId = consumeSeedBuyStreakMessageId(state.player.day, itemId, quantity, item);
+  const suppressStandardBuyMessage = shouldSuppressSeedStandardBuyMessage(itemId, item);
+
+  if (!suppressStandardBuyMessage) {
+    if (freeQty > 0) {
+      addMessage({
+        id: 'commerce.bought_item_free',
+        vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2), freeQty }
+      });
+    } else {
+      addMessage({
+        id: 'commerce.bought_item',
+        vars: { quantity, itemName: item.name, totalCost: totalCost.toFixed(2) }
+      });
+    }
   }
+
+  if (streakMessageId === 'commerce.buy_streak_seed') {
+    addMessage({
+      id: 'commerce.buy_streak_seed',
+      vars: { itemName: item.name }
+    });
+  } else if (streakMessageId === 'commerce.buy_streak_seed_mixed') {
+    addMessage({ id: 'commerce.buy_streak_seed_mixed' });
+  }
+
   renderAll();
   pulseHud(false);
   const hudCenters = getHudCenters();

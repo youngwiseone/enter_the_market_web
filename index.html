@@ -802,6 +802,9 @@
             border: 1px solid #808080;
             background: #0b0b0b;
         }
+        .hud-profile-avatar.profile-avatar-shake {
+            animation: profile-avatar-shake 280ms ease-in-out;
+        }
         .profile-message-bubble {
             position: absolute;
             left: calc(100% + 8px);
@@ -820,6 +823,27 @@
             opacity: 1;
             transition: opacity 120ms ease-out;
             pointer-events: none;
+        }
+        .profile-message-bubble.is-tired-popup {
+            min-width: 240px;
+            max-width: min(420px, calc(100vw - 24px));
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: #030303;
+            border-color: #6d8b00;
+            box-shadow: inset 0 0 0 1px #2f4400, 0 0 0 1px rgba(197, 226, 78, 0.35);
+        }
+        .profile-message-bubble-tired-image {
+            width: min(220px, 100%);
+            align-self: center;
+            image-rendering: auto;
+            border: 1px solid #7d7d7d;
+            background: #000;
+        }
+        .profile-message-bubble-tired-text {
+            color: #dfff8a;
         }
         .profile-message-bubble.is-hidden {
             opacity: 0;
@@ -1152,7 +1176,9 @@
             text-shadow: 0 0 3px rgba(52, 255, 106, 0.25);
             line-height: 1.2;
         }
-        .chat-entry.typing::after {
+        .chat-entry.typing::after,
+        .mobile-chat-entry.typing::after,
+        .desktop-chat-entry.typing::after {
             content: '_';
             display: inline-block;
             margin-left: 1px;
@@ -1636,6 +1662,14 @@
             25% { transform: translateX(-3px); }
             50% { transform: translateX(3px); }
             75% { transform: translateX(-2px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes profile-avatar-shake {
+            0% { transform: translateX(0); }
+            18% { transform: translateX(-4px) rotate(-0.8deg); }
+            36% { transform: translateX(5px) rotate(0.8deg); }
+            54% { transform: translateX(-4px) rotate(-0.6deg); }
+            72% { transform: translateX(3px) rotate(0.6deg); }
             100% { transform: translateX(0); }
         }
         @keyframes daily-roll-final-pop {
@@ -2323,6 +2357,9 @@
             .fx-pop, .fx-shake, .fx-wobble, .fx-pulse-up, .fx-pulse-down, .fx-fade-up, .fx-camera-nudge, .fx-day-wipe, .fx-panel-tint { 
                 animation: none !important; 
             } 
+            .profile-avatar-shake {
+                animation: none !important;
+            }
             .goal-celebration-modal.is-open,
             .goal-celebration-panel,
             .goal-celebration-image,

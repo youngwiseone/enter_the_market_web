@@ -403,6 +403,26 @@
       "template": "Bought {quantity} x {itemName} for ${totalCost}."
     },
     {
+      "id": "commerce.buy_streak_seed",
+      "type": "market",
+      "icon": "chat",
+      "speaker": "farmer",
+      "emotion": "produce",
+      "category": "progress",
+      "priority": "normal",
+      "template": "Wow, buying lots of {itemName} I see!"
+    },
+    {
+      "id": "commerce.buy_streak_seed_mixed",
+      "type": "market",
+      "icon": "chat",
+      "speaker": "farmer",
+      "emotion": "produce",
+      "category": "progress",
+      "priority": "normal",
+      "template": "Mixing it up I see!"
+    },
+    {
       "id": "commerce.sold_item",
       "type": "market",
       "icon": "coin",

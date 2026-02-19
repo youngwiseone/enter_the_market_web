@@ -592,6 +592,26 @@ export const DEFAULT_DATA = {
       priority: 'low',
       cooldownMs: 60000,
       template: 'I love seeing all the {itemNamePlural} growing!'
+    },
+    {
+      id: 'commerce.buy_streak_seed',
+      type: 'market',
+      icon: 'chat',
+      speaker: 'farmer',
+      emotion: 'produce',
+      category: 'progress',
+      priority: 'normal',
+      template: 'Wow, buying lots of {itemName} I see!'
+    },
+    {
+      id: 'commerce.buy_streak_seed_mixed',
+      type: 'market',
+      icon: 'chat',
+      speaker: 'farmer',
+      emotion: 'produce',
+      category: 'progress',
+      priority: 'normal',
+      template: 'Mixing it up I see!'
     }
   ],
   // History of news events by week. This structure records which

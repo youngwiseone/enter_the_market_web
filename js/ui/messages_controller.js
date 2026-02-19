@@ -91,29 +91,28 @@ export function createMessagesController(deps) {
     if (latestText) {
       latestMobileMessageText = String(latestText);
     }
-    const updateSingleLineLog = (container, rowClassName, fallbackClassName) => {
+    const updateSingleLineLog = (container, rowClassName) => {
       if (!container) return;
+      Array.from(container.children).forEach((child) => {
+        if (child && child.nodeType === 1) {
+          stopTypingAnimationForEntry(child);
+        }
+      });
       container.innerHTML = '';
-      if (latestMobileMessageText) {
-        const row = document.createElement('div');
-        row.className = rowClassName;
-        row.textContent = latestMobileMessageText;
-        container.appendChild(row);
-        return;
-      }
       const entries = Array.from(chatLog.querySelectorAll('.chat-entry'));
       const mostRecentEntry = entries.length ? entries[entries.length - 1] : null;
-      if (!mostRecentEntry) {
+      const singleLineText = latestMobileMessageText || (mostRecentEntry ? (mostRecentEntry.textContent || '') : '');
+      if (!singleLineText) {
         container.textContent = '';
         return;
       }
       const row = document.createElement('div');
-      row.className = fallbackClassName;
-      row.textContent = mostRecentEntry.textContent || '';
+      row.className = rowClassName;
       container.appendChild(row);
+      startTypingAnimationForElement(row, singleLineText);
     };
-    updateSingleLineLog(mobileLog, 'mobile-chat-entry', 'mobile-chat-entry');
-    updateSingleLineLog(desktopLog, 'desktop-chat-entry', 'desktop-chat-entry');
+    updateSingleLineLog(mobileLog, 'mobile-chat-entry');
+    updateSingleLineLog(desktopLog, 'desktop-chat-entry');
   }
 
   function getMessageDayPrefix(dayIndex) {
@@ -166,16 +165,24 @@ export function createMessagesController(deps) {
 
   function startTypingAnimationForEntry(entry, fullText, shouldFollowScroll) {
     if (!entry) return;
-    stopTypingAnimationForEntry(entry);
-    const targetText = String(fullText ?? '');
     const chatLog = document.getElementById('chat-log');
-    if (isReduceMotion() || targetText.length <= 1) {
-      entry.textContent = targetText;
+    startTypingAnimationForElement(entry, fullText, () => {
       if (shouldFollowScroll && chatLog) {
         chatLog.scrollTop = chatLog.scrollHeight;
       }
+    });
+  }
+
+  function startTypingAnimationForElement(entry, fullText, onUpdate) {
+    if (!entry) return;
+    stopTypingAnimationForEntry(entry);
+    const targetText = String(fullText ?? '');
+    if (isReduceMotion() || targetText.length <= 1) {
+      entry.textContent = targetText;
+      if (typeof onUpdate === 'function') onUpdate();
       return;
     }
+
     const duration = Math.max(
       TYPEWRITER_MIN_DURATION_MS,
       Math.min(TYPEWRITER_MAX_DURATION_MS, targetText.length * 16)
@@ -192,16 +199,12 @@ export function createMessagesController(deps) {
       currentIndex += 1;
       if (currentIndex >= targetText.length) {
         entry.textContent = targetText;
-        if (shouldFollowScroll && chatLog) {
-          chatLog.scrollTop = chatLog.scrollHeight;
-        }
+        if (typeof onUpdate === 'function') onUpdate();
         stopTypingAnimationForEntry(entry);
         return;
       }
       entry.textContent = targetText.slice(0, currentIndex);
-      if (shouldFollowScroll && chatLog) {
-        chatLog.scrollTop = chatLog.scrollHeight;
-      }
+      if (typeof onUpdate === 'function') onUpdate();
     }, stepMs);
     typingTimersByEntry.set(entry, timerId);
   }
