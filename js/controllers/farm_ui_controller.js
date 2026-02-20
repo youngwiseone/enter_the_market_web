@@ -196,7 +196,7 @@ export function updateCursorForToolAction(deps) {
     isToolUnlocked,
     TOOL_GLOVE,
     selectedShopItemId,
-    getSeedImagePath,
+    getCursorSeedVisualPath,
     setBodyCursor
   } = deps;
 
@@ -214,9 +214,12 @@ export function updateCursorForToolAction(deps) {
   if (selectedShopItemId) {
     const item = state.items.find((it) => it.id === selectedShopItemId);
     if (item) {
-      const imgPath = getSeedImagePath(item);
-      if (!imgPath) return;
-      setBodyCursor(`url('${imgPath}') 12 12, pointer`);
+      const imgPath = getCursorSeedVisualPath(item);
+      if (!imgPath) {
+        setBodyCursor('');
+        return;
+      }
+      setBodyCursor(`url('${imgPath}') 20 20, pointer`);
       return;
     }
   }

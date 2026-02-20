@@ -21,13 +21,13 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
       nextItem[key] = Array.isArray(defaultValue) ? [...defaultValue] : defaultValue;
       changed = true;
     };
-    assignIfMissing('seedImage');
+    assignIfMissing('seedIconImage');
     assignIfMissing('plantStageImages');
     assignIfMissing('harvestImage');
     assignIfMissing('rarity');
-    if (nextItem.seedImage && nextItem.image !== nextItem.seedImage) {
+    if (!nextItem.seedIconImage && nextItem.harvestImage) {
       if (nextItem === item) nextItem = { ...item };
-      nextItem.image = nextItem.seedImage;
+      nextItem.seedIconImage = nextItem.harvestImage;
       changed = true;
     }
     return nextItem;

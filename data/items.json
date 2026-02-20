@@ -6,8 +6,6 @@
       "description": "Pumpkin seeds.",
       "price": 18,
       "rarity": "common",
-      "image": "seeds/pumpkin_seeds.png",
-      "seedImage": "seeds/pumpkin_seeds.png",
       "plantStageImages": [
         "plants/pumpkin_plant1.png",
         "plants/pumpkin_plant2.png",
@@ -19,7 +17,8 @@
       "harvestImage": "items/pumpkin.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/pumpkin.png"
     },
     {
       "id": 2,
@@ -27,11 +26,10 @@
       "description": "Tomato seeds.",
       "price": 2,
       "rarity": "common",
-      "image": "seeds/tomato_seeds.png",
-      "seedImage": "seeds/tomato_seeds.png",
       "harvestImage": "items/tomato.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/tomato.png"
     },
     {
       "id": 3,
@@ -39,12 +37,11 @@
       "description": "Corn seeds.",
       "price": 8,
       "rarity": "common",
-      "image": "seeds/corn_seeds.png",
-      "seedImage": "seeds/corn_seeds.png",
       "harvestImage": "items/corn.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/corn.png"
     },
     {
       "id": 4,
@@ -52,11 +49,10 @@
       "description": "Carrot seeds.",
       "price": 1,
       "rarity": "common",
-      "image": "seeds/carrot_seeds.png",
-      "seedImage": "seeds/carrot_seeds.png",
       "harvestImage": "items/carrot.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/carrot.png"
     },
     {
       "id": 5,
@@ -64,11 +60,10 @@
       "description": "Potato seeds.",
       "price": 3,
       "rarity": "common",
-      "image": "seeds/potato_seeds.png",
-      "seedImage": "seeds/potato_seeds.png",
       "harvestImage": "items/potato.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/potato.png"
     },
     {
       "id": 6,
@@ -76,11 +71,10 @@
       "description": "Onion seeds.",
       "price": 2,
       "rarity": "common",
-      "image": "seeds/onion_seeds.png",
-      "seedImage": "seeds/onion_seeds.png",
       "harvestImage": "items/onion.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/onion.png"
     },
     {
       "id": 7,
@@ -88,12 +82,11 @@
       "description": "Cabbage seeds.",
       "price": 9,
       "rarity": "common",
-      "image": "seeds/cabbage_seeds.png",
-      "seedImage": "seeds/cabbage_seeds.png",
       "harvestImage": "items/cabbage.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/cabbage.png"
     },
     {
       "id": 8,
@@ -101,12 +94,11 @@
       "description": "Broccoli seeds.",
       "price": 34,
       "rarity": "common",
-      "image": "seeds/broccoli_seeds.png",
-      "seedImage": "seeds/broccoli_seeds.png",
       "harvestImage": "items/broccoli.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/broccoli.png"
     },
     {
       "id": 9,
@@ -114,12 +106,11 @@
       "description": "Cucumber seeds.",
       "price": 10,
       "rarity": "common",
-      "image": "seeds/cucumber_seeds.png",
-      "seedImage": "seeds/cucumber_seeds.png",
       "harvestImage": "items/cucumber.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/cucumber.png"
     },
     {
       "id": 10,
@@ -127,12 +118,11 @@
       "description": "Zucchini seeds.",
       "price": 11,
       "rarity": "common",
-      "image": "seeds/zucchini_seeds.png",
-      "seedImage": "seeds/zucchini_seeds.png",
       "harvestImage": "items/zucchini.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/zucchini.png"
     },
     {
       "id": 11,
@@ -140,12 +130,11 @@
       "description": "Eggplant seeds.",
       "price": 20,
       "rarity": "common",
-      "image": "seeds/eggplant_seeds.png",
-      "seedImage": "seeds/eggplant_seeds.png",
       "harvestImage": "items/eggplant.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/eggplant.png"
     },
     {
       "id": 12,
@@ -153,11 +142,10 @@
       "description": "Garlic seeds.",
       "price": 4,
       "rarity": "common",
-      "image": "seeds/garlic_seeds.png",
-      "seedImage": "seeds/garlic_seeds.png",
       "harvestImage": "items/garlic.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/garlic.png"
     },
     {
       "id": 13,
@@ -165,12 +153,11 @@
       "description": "Lettuce seeds.",
       "price": 22,
       "rarity": "common",
-      "image": "seeds/lettuce_seeds.png",
-      "seedImage": "seeds/lettuce_seeds.png",
       "harvestImage": "items/lettuce.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/lettuce.png"
     },
     {
       "id": 14,
@@ -178,11 +165,10 @@
       "description": "Spinach seeds.",
       "price": 5,
       "rarity": "common",
-      "image": "seeds/spinach_seeds.png",
-      "seedImage": "seeds/spinach_seeds.png",
       "harvestImage": "items/spinach.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/spinach.png"
     },
     {
       "id": 15,
@@ -190,11 +176,10 @@
       "description": "Radish seeds.",
       "price": 3,
       "rarity": "common",
-      "image": "seeds/radish_seeds.png",
-      "seedImage": "seeds/radish_seeds.png",
       "harvestImage": "items/radish.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "seedIconImage": "items/radish.png"
     },
     {
       "id": 16,
@@ -202,12 +187,11 @@
       "description": "Green pepper seeds.",
       "price": 24,
       "rarity": "common",
-      "image": "seeds/green_pepper_seeds.png",
-      "seedImage": "seeds/green_pepper_seeds.png",
       "harvestImage": "items/green_pepper.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/green_pepper.png"
     },
     {
       "id": 17,
@@ -215,12 +199,11 @@
       "description": "Beetroot seeds.",
       "price": 12,
       "rarity": "common",
-      "image": "seeds/beetroot_seeds.png",
-      "seedImage": "seeds/beetroot_seeds.png",
       "harvestImage": "items/beetroot.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "seedIconImage": "items/beetroot.png"
     }
   ]
 }

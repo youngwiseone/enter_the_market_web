@@ -4,6 +4,14 @@ const GOAL_CELEBRATION_SPARKLE_IMAGES = [
   'resources/effects/prism_sparkle_01.png',
   'resources/effects/prism_sparkle_02.png'
 ];
+const GOAL_CELEBRATION_ICON_BURST_IMAGES = [
+  'resources/effects/sparkle_gold_01.png',
+  'resources/effects/sparkle_gold_02.png',
+  'resources/effects/prism_sparkle_01.png',
+  'resources/effects/prism_sparkle_02.png',
+  'resources/effects/dust_puff_01.png',
+  'resources/effects/dust_puff_02.png'
+];
 
 export function createGoalCelebrationController(deps) {
   const {
@@ -37,6 +45,22 @@ export function createGoalCelebrationController(deps) {
     if (sparkleLayer) {
       sparkleLayer.innerHTML = '';
     }
+    const iconBurstLayer = document.getElementById('goal-celebration-icon-burst-layer');
+    if (iconBurstLayer) {
+      iconBurstLayer.innerHTML = '';
+    }
+  }
+
+  function getGoalCelebrationIconBurstLayer() {
+    const panel = document.getElementById('goal-celebration-panel');
+    if (!panel) return null;
+    let layer = document.getElementById('goal-celebration-icon-burst-layer');
+    if (layer) return layer;
+    layer = document.createElement('div');
+    layer.id = 'goal-celebration-icon-burst-layer';
+    layer.className = 'goal-celebration-icon-burst-layer';
+    panel.appendChild(layer);
+    return layer;
   }
 
   function setGoalCelebrationOpen(isOpen) {
@@ -82,13 +106,16 @@ export function createGoalCelebrationController(deps) {
   }
 
   function spawnGoalCelebrationSparkle(options) {
-    const layer = document.getElementById('goal-celebration-sparkles');
+    const layer = options.layerEl || document.getElementById('goal-celebration-sparkles');
     if (!layer) return;
     const rect = layer.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const img = document.createElement('img');
-    img.className = `goal-celebration-sparkle${options.isAmbient ? ' is-ambient' : ''}`;
-    const src = GOAL_CELEBRATION_SPARKLE_IMAGES[Math.floor(Math.random() * GOAL_CELEBRATION_SPARKLE_IMAGES.length)];
+    img.className = `goal-celebration-sparkle${options.isAmbient ? ' is-ambient' : ''}${options.isIconBurst ? ' is-icon-burst' : ''}`;
+    const imagePool = Array.isArray(options.imagePool) && options.imagePool.length > 0
+      ? options.imagePool
+      : GOAL_CELEBRATION_SPARKLE_IMAGES;
+    const src = imagePool[Math.floor(Math.random() * imagePool.length)];
     img.src = src;
     img.alt = '';
     const size = options.size || (16 + Math.random() * 24);
@@ -164,6 +191,41 @@ export function createGoalCelebrationController(deps) {
     }, 2400);
   }
 
+  function spawnSeedUnlockIconBurst() {
+    if (isReduceMotion()) return;
+    const layer = getGoalCelebrationIconBurstLayer();
+    const icon = document.getElementById('goal-celebration-seed-icon');
+    if (!layer || !icon || icon.hidden) return;
+    const layerRect = layer.getBoundingClientRect();
+    const iconRect = icon.getBoundingClientRect();
+    if (!iconRect.width || !iconRect.height) return;
+    const centerX = iconRect.left - layerRect.left + (iconRect.width / 2);
+    const centerY = iconRect.top - layerRect.top + (iconRect.height / 2);
+
+    for (let i = 0; i < 18; i++) {
+      const angle = (Math.PI * 2 * i) / 18;
+      const radius = 8 + (Math.random() * 14);
+      const isDust = Math.random() < 0.35;
+      spawnGoalCelebrationSparkle({
+        layerEl: layer,
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius,
+        size: isDust ? (18 + Math.random() * 16) : (12 + Math.random() * 12),
+        lifeMs: isDust ? (700 + Math.random() * 260) : (520 + Math.random() * 220),
+        dx: Math.cos(angle) * (24 + Math.random() * 56),
+        dy: isDust
+          ? (-8 + (Math.random() * 22))
+          : (-26 - (Math.random() * 56)),
+        rot: (Math.random() - 0.5) * 260,
+        imagePool: isDust
+          ? ['resources/effects/dust_puff_01.png', 'resources/effects/dust_puff_02.png']
+          : GOAL_CELEBRATION_ICON_BURST_IMAGES,
+        isIconBurst: true,
+        isAmbient: false
+      });
+    }
+  }
+
   function showNextGoalCelebration() {
     if (getActiveGoalCelebration()) return;
     const queue = getGoalCelebrationQueue();
@@ -175,16 +237,47 @@ export function createGoalCelebrationController(deps) {
 
     const titleEl = document.getElementById('goal-celebration-title');
     const unlockEl = document.getElementById('goal-celebration-unlock');
+    const panelEl = document.getElementById('goal-celebration-panel');
     const imageEl = document.getElementById('goal-celebration-image');
+    const seedCompositeEl = document.getElementById('goal-celebration-seed-composite');
+    const seedPacketImageEl = document.getElementById('goal-celebration-seed-packet');
+    const seedOverlayIconImageEl = document.getElementById('goal-celebration-seed-icon');
+    const hasSeedUnlockImages = !!(next.seedPacketImageSrc && next.seedOverlayIconImageSrc);
     if (titleEl) titleEl.textContent = next.title;
     if (unlockEl) unlockEl.textContent = next.rewardText;
-    if (imageEl) {
+    if (panelEl) {
+      panelEl.classList.toggle('goal-celebration-has-seed-unlock', hasSeedUnlockImages);
+    }
+    if (imageEl && !hasSeedUnlockImages) {
+      imageEl.hidden = false;
       imageEl.src = next.imageSrc || 'resources/profiles/player_goal_unlocked.png';
       imageEl.alt = next.imageAlt || 'Goal unlocked';
+    } else if (imageEl) {
+      imageEl.hidden = true;
+    }
+    if (seedCompositeEl) {
+      seedCompositeEl.hidden = !hasSeedUnlockImages;
+      seedCompositeEl.setAttribute('aria-hidden', hasSeedUnlockImages ? 'false' : 'true');
+    }
+    if (seedPacketImageEl && hasSeedUnlockImages) {
+      seedPacketImageEl.src = next.seedPacketImageSrc;
+      seedPacketImageEl.alt = next.imageAlt || 'Unlocked seed packet';
+    }
+    if (seedOverlayIconImageEl && hasSeedUnlockImages) {
+      seedOverlayIconImageEl.src = next.seedOverlayIconImageSrc;
+      seedOverlayIconImageEl.alt = `${next.imageAlt || 'Unlocked item'} icon`;
     }
 
     setGoalCelebrationOpen(true);
     startGoalCelebrationSparkles();
+    if (hasSeedUnlockImages) {
+      window.requestAnimationFrame(() => {
+        spawnSeedUnlockIconBurst();
+      });
+      window.setTimeout(() => {
+        spawnSeedUnlockIconBurst();
+      }, 180);
+    }
     window.setTimeout(() => {
       const continueBtn = document.getElementById('goal-celebration-continue');
       if (continueBtn) continueBtn.focus();

@@ -16,15 +16,27 @@ export function resolveResourcePath(assetPath) {
 
 export function getCropBaseName(item) {
   if (!item) return '';
-  const sourcePath = item.seedImage || item.image || '';
+  const sourcePath = item.seedIconImage || item.harvestImage || item.seedImage || item.image || '';
   const fileName = sourcePath.split('/').pop() || '';
   const baseName = fileName.replace(/\.png$/i, '').replace(/_seeds$/i, '');
   return baseName;
 }
 
 export function getSeedImagePath(item) {
+  return getSeedPacketBaseImagePath();
+}
+
+export function getSeedPacketBaseImagePath() {
+  return resolveResourcePath('seeds/seeds.png');
+}
+
+export function getSeedOverlayIconPath(item) {
   if (!item) return '';
-  return resolveResourcePath(item.seedImage || item.image || '');
+  if (item.seedIconImage) return resolveResourcePath(item.seedIconImage);
+  if (item.harvestImage) return resolveResourcePath(item.harvestImage);
+  const baseName = getCropBaseName(item);
+  if (!baseName) return '';
+  return resolveResourcePath(`items/${baseName}.png`);
 }
 
 export function getPlantStageImagePath(item, stageIndex) {

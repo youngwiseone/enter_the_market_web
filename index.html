@@ -1245,6 +1245,13 @@
             pointer-events: none;
             overflow: hidden;
         }
+        .goal-celebration-icon-burst-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 4;
+        }
         .goal-celebration-panel {
             position: relative;
             width: min(660px, calc(100vw - 26px));
@@ -1271,6 +1278,34 @@
             image-rendering: crisp-edges;
             filter: drop-shadow(0 7px 10px rgba(0, 0, 0, 0.38));
             animation: goal-image-pop 500ms cubic-bezier(0.15, 0.95, 0.35, 1.08);
+        }
+        .goal-celebration-seed-composite {
+            position: relative;
+            width: clamp(180px, 34vw, 280px);
+            aspect-ratio: 1 / 1;
+            filter: drop-shadow(0 7px 10px rgba(0, 0, 0, 0.38));
+            animation: goal-image-pop 500ms cubic-bezier(0.15, 0.95, 0.35, 1.08);
+        }
+        .goal-celebration-seed-packet-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .goal-celebration-seed-icon-image {
+            position: absolute;
+            left: 50%;
+            top: 53%;
+            width: 58%;
+            height: 58%;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .goal-celebration-has-seed-unlock .goal-celebration-seed-icon-image {
+            animation: goal-seed-icon-bounce 820ms cubic-bezier(0.18, 0.88, 0.32, 1.26);
         }
         .goal-celebration-title {
             margin: 4px 0 0;
@@ -1306,6 +1341,9 @@
         .goal-celebration-sparkle.is-ambient {
             animation-name: goal-sparkle-ambient;
             animation-timing-function: linear;
+        }
+        .goal-celebration-sparkle.is-icon-burst {
+            z-index: 5;
         }
         .daily-roll-modal {
             position: fixed;
@@ -1730,6 +1768,12 @@
         @keyframes goal-image-pop {
             0% { transform: scale(0.7); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes goal-seed-icon-bounce {
+            0% { transform: translate(-50%, -50%) scale(0.58); }
+            38% { transform: translate(-50%, -68%) scale(1.02); }
+            64% { transform: translate(-50%, -42%) scale(0.94); }
+            100% { transform: translate(-50%, -50%) scale(1); }
         }
         @keyframes goal-sparkle-burst {
             0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.3) rotate(0deg); }
@@ -2363,6 +2407,8 @@
             .goal-celebration-modal.is-open,
             .goal-celebration-panel,
             .goal-celebration-image,
+            .goal-celebration-seed-composite,
+            .goal-celebration-seed-icon-image,
             .goal-celebration-sparkle {
                 animation: none !important;
             }
@@ -2546,6 +2592,10 @@
         <div id="goal-celebration-sparkles" class="goal-celebration-sparkles" aria-hidden="true"></div>
         <div id="goal-celebration-panel" class="panel goal-celebration-panel" role="dialog" aria-labelledby="goal-celebration-title" aria-modal="true">
             <img id="goal-celebration-image" class="goal-celebration-image" src="resources/profiles/player_goal_unlocked.png" alt="Goal unlocked">
+            <div id="goal-celebration-seed-composite" class="goal-celebration-seed-composite" hidden aria-hidden="true">
+                <img id="goal-celebration-seed-packet" class="goal-celebration-seed-packet-image" src="resources/seeds/seeds.png" alt="Unlocked seed packet">
+                <img id="goal-celebration-seed-icon" class="goal-celebration-seed-icon-image" src="" alt="Unlocked item icon">
+            </div>
             <h2 id="goal-celebration-title" class="goal-celebration-title">Goal Unlocked</h2>
             <p id="goal-celebration-unlock" class="goal-celebration-unlock">New reward unlocked.</p>
             <button id="goal-celebration-continue" class="button goal-celebration-continue" type="button">Continue</button>

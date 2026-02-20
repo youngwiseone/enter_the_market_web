@@ -13,7 +13,7 @@ export function renderMarketAction(deps) {
     updateFarmToggleButton,
     isShopItemUnlocked,
     getGridCellSellSnapshot,
-    getSeedImagePath,
+    getShopSeedVisualPath,
     getFreePurchaseCount,
     selectShopItem,
     getPlantGrowthState,
@@ -94,7 +94,7 @@ export function renderMarketAction(deps) {
 
     const imgCell = document.createElement('td');
     const img = document.createElement('img');
-    const seedImagePath = getSeedImagePath(item);
+    const seedImagePath = getShopSeedVisualPath(item);
     if (seedImagePath) {
       img.src = seedImagePath;
     } else {

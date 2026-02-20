@@ -133,7 +133,9 @@ export function enqueueLevelUpCelebrationAction(
     title: 'Level Up',
     rewardText: `Level ${level} reached${unlockedText}${rollCelebrationText} | ${changeText}`,
     imageSrc: unlockedItem?.imageSrc || 'resources/profiles/player_level_up.png',
-    imageAlt: unlockedItem?.imageAlt || 'Level up'
+    imageAlt: unlockedItem?.imageAlt || 'Level up',
+    seedPacketImageSrc: unlockedItem?.seedPacketImageSrc || '',
+    seedOverlayIconImageSrc: unlockedItem?.seedOverlayIconImageSrc || ''
   });
   showNextGoalCelebration();
 }

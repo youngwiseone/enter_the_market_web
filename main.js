@@ -141,7 +141,6 @@ import {
 import {
   getHarvestImagePath,
   getPlantStageImagePath,
-  getSeedImagePath,
   resolveResourcePath
 } from './js/content/resource_paths.js';
 
@@ -243,6 +242,7 @@ import {
   showDaySummaryModalDom
 } from './js/ui/daily_roll_modal.js';
 import { createGoalCelebrationController } from './js/ui/goal_celebration_controller.js';
+import { createSeedPacketImageFactory } from './js/ui/seed_packet_image_factory.js';
 import {
   getSelectedGridItemInsightDataAction,
   getSelectedShopItemInsightDataAction
@@ -364,6 +364,25 @@ const playtestStats = {
   activeMs: 0,
   lastActiveAt: null
 };
+
+const seedPacketImageFactory = createSeedPacketImageFactory({
+  onComposedImageReady: () => {
+    renderMarket();
+    updateCursorForTool();
+  }
+});
+
+function getShopSeedVisualPath(item) {
+  return seedPacketImageFactory.getSeedVisualPath(item);
+}
+
+function getCursorSeedVisualPath(item) {
+  return seedPacketImageFactory.getCursorSeedVisualPath(item);
+}
+
+function getLevelUpUnlockSeedImagePayload(item) {
+  return seedPacketImageFactory.getSeedPacketUnlockImages(item);
+}
 
 function moveFocusOutsideModal(modalEl) {
   const active = document.activeElement;
@@ -533,8 +552,9 @@ function unlockShopItemForLevel(level) {
   return {
     id: item.id,
     name: item.name || `Item ${item.id}`,
-    imageSrc: getSeedImagePath(item) || 'resources/profiles/player_level_up.png',
-    imageAlt: item.name || `Item ${item.id}`
+    imageSrc: getShopSeedVisualPath(item) || 'resources/profiles/player_level_up.png',
+    imageAlt: item.name || `Item ${item.id}`,
+    ...getLevelUpUnlockSeedImagePayload(item)
   };
 }
 
@@ -949,7 +969,7 @@ function renderMarket() {
     updateFarmToggleButton,
     isShopItemUnlocked,
     getGridCellSellSnapshot,
-    getSeedImagePath,
+    getShopSeedVisualPath,
     getFreePurchaseCount,
     selectShopItem,
     getPlantGrowthState,
@@ -1845,7 +1865,7 @@ const farmUiRuntimeController = createFarmUiRuntimeController(buildFarmUiRuntime
   updateCursorForTool: () => updateCursorForTool(),
   saveToStorage,
   selectedShopItemId: () => selectedShopItemId,
-  getSeedImagePath,
+  getCursorSeedVisualPath,
   getFarmToggleButton: getFarmToggleButtonDom,
   confirmDialog: confirmDialogDom,
   getDesktopShortcutsEnabled: getDesktopShortcutsEnabledDom,

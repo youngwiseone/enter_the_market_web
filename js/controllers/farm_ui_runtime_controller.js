@@ -38,7 +38,7 @@ export function createFarmUiRuntimeController(deps) {
     updateCursorForTool,
     saveToStorage,
     selectedShopItemId,
-    getSeedImagePath,
+    getCursorSeedVisualPath,
     getFarmToggleButton,
     confirmDialog,
     getDesktopShortcutsEnabled,
@@ -125,7 +125,7 @@ export function createFarmUiRuntimeController(deps) {
       isToolUnlocked,
       TOOL_GLOVE,
       selectedShopItemId: selectedShopItemId(),
-      getSeedImagePath,
+      getCursorSeedVisualPath,
       setBodyCursor
     });
   }
