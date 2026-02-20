@@ -2,6 +2,7 @@ export function mineGridTileAction(deps) {
   const {
     state,
     index,
+    farmSecondaryId,
     getActiveFarmMiningEnergyCost,
     consumeEnergy,
     registerDayAction,
@@ -24,7 +25,8 @@ export function mineGridTileAction(deps) {
   const miningEnergyCost = getActiveFarmMiningEnergyCost();
   if (!consumeEnergy(miningEnergyCost, 'mine this tile')) return true;
   registerDayAction();
-  awardPlayerXp(xpRewards.mine);
+  const mineXpReward = state.activeFarmId === farmSecondaryId ? 40 : xpRewards.mine;
+  awardPlayerXp(mineXpReward);
   const currentHits = Array.isArray(state.gridMiningHits) ? (state.gridMiningHits[index] || 0) : 0;
   const nextHits = currentHits + 1;
   const didClear = nextHits >= 10;
@@ -89,7 +91,7 @@ export function mineGridTileAction(deps) {
       const toolButton = fxTargets ? fxTargets.pickaxeToolButton : null;
       if (toolButton) triggerFxClass(toolButton, 'fx-pop');
     }
-    showXpGainFeedback(xpRewards.mine, center);
+    showXpGainFeedback(mineXpReward, center);
   }
   return didMessage;
 }

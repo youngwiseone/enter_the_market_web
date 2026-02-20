@@ -31,6 +31,7 @@ export function createGameplayRuntimeController(deps) {
     registerSaleEvent,
     registerItemSalePressure,
     consumeEnergy,
+    farmSecondaryId,
     getActiveFarmMiningEnergyCost,
     getPlantGrowthState,
     awardPlayerXp,
@@ -139,6 +140,7 @@ export function createGameplayRuntimeController(deps) {
     return mineGridTileAction({
       state,
       index,
+      farmSecondaryId,
       getActiveFarmMiningEnergyCost,
       consumeEnergy,
       registerDayAction,

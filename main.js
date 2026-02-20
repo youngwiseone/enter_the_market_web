@@ -1410,6 +1410,7 @@ const gameplayRuntimeController = createGameplayRuntimeController({
   registerSaleEvent,
   registerItemSalePressure,
   consumeEnergy,
+  farmSecondaryId: FARM_SECONDARY_ID,
   getActiveFarmMiningEnergyCost,
   getPlantGrowthState,
   awardPlayerXp,
