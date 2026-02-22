@@ -13,12 +13,9 @@ This guide describes item authoring in `data/items.json`.
 ```json
 {
   "id": 3,
-  "name": "Corn Seeds",
-  "description": "Corn seeds.",
+  "name": "Corn",
   "price": 8,
   "rarity": "common",
-  "image": "seeds/corn_seeds.png",
-  "seedImage": "seeds/corn_seeds.png",
   "harvestImage": "items/corn.png",
   "growDays": 6,
   "plantStages": 6
@@ -28,14 +25,14 @@ This guide describes item authoring in `data/items.json`.
 ## Core fields (expected)
 - `id` (number, unique)
 - `name`
-- `description`
 - `price`
-- `image` / `seedImage`
 - `harvestImage`
 - `growDays`
 - `plantStages`
 
 ## Optional fields
+- `description`: optional label override where it should differ from `name`.
+- `seedIconImage` / `seedImage` / `image`: optional if seed packet/overlay art should differ from harvest art.
 - `plantStageImages`: explicit per-stage plant art.
 - `goalLocked`: legacy field from older progression. Current runtime unlocks items by level and does not require this flag.
 

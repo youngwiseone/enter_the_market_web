@@ -98,10 +98,9 @@ export function initialiseStateAction(deps) {
   const itemsMatch = Array.isArray(state.items)
     && state.items.length === DEFAULT_DATA.items.length
     && savedItem
-    && savedItem.id === defaultItem.id
-    && savedItem.name === defaultItem.name;
+    && savedItem.id === defaultItem.id;
   if (!itemsMatch) {
-    state.items = clone(DEFAULT_DATA.items);
+    state.items = mergeItemAssetsWithDefaults(clone(DEFAULT_DATA.items), DEFAULT_DATA.items).items;
     state.shop = clone(DEFAULT_DATA.shop);
     state.inventory = clone(DEFAULT_DATA.inventory);
     saveState();

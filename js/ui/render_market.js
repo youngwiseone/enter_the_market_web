@@ -1,21 +1,48 @@
 const MARKET_SORT_KEYS = Object.freeze({
   NAME: 'name',
-  PRICE: 'price'
+  PRICE: 'price',
+  PERCENT: 'percent'
 });
 
 let activeMarketSortKey = MARKET_SORT_KEYS.PRICE;
 let activeMarketSortDirection = 'asc';
+
+function getAveragePrice(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  const currentPrice = Math.max(0, Number(entry.price) || 0);
+  if (!entry.daysCount || !entry.priceSum) return currentPrice;
+  return Number(entry.priceSum) / Number(entry.daysCount);
+}
+
+function getAverageDelta(entry) {
+  const currentPrice = Math.max(0, Number(entry?.price) || 0);
+  const averagePrice = getAveragePrice(entry);
+  if (averagePrice <= 0) return 0;
+  return (currentPrice - averagePrice) / averagePrice;
+}
+
+function getPriceBandLabel(avgDelta) {
+  if (avgDelta <= -0.05) return 'Discounted';
+  if (avgDelta >= 0.05) return 'Premium';
+  return 'Fair Price';
+}
 
 function compareMarketRows(left, right, sortKey, sortDirection) {
   const leftName = String(left?.item?.name || '').toLowerCase();
   const rightName = String(right?.item?.name || '').toLowerCase();
   const leftPrice = Math.max(0, Number(left?.entry?.price) || 0);
   const rightPrice = Math.max(0, Number(right?.entry?.price) || 0);
+  const leftDelta = getAverageDelta(left?.entry);
+  const rightDelta = getAverageDelta(right?.entry);
 
   let primary = 0;
   if (sortKey === MARKET_SORT_KEYS.NAME) {
     primary = leftName.localeCompare(rightName);
     if (primary === 0) primary = leftPrice - rightPrice;
+  } else if (sortKey === MARKET_SORT_KEYS.PERCENT) {
+    primary = leftDelta - rightDelta;
+    if (primary === 0) primary = leftPrice - rightPrice;
+    if (primary === 0) primary = leftName.localeCompare(rightName);
   } else {
     primary = leftPrice - rightPrice;
     if (primary === 0) primary = leftName.localeCompare(rightName);
@@ -112,7 +139,8 @@ export function renderMarketAction(deps) {
   [
     { label: 'Img', sortKey: null },
     { label: 'Item', sortKey: MARKET_SORT_KEYS.NAME },
-    { label: 'Price', sortKey: MARKET_SORT_KEYS.PRICE }
+    { label: 'Price', sortKey: MARKET_SORT_KEYS.PRICE },
+    { label: '%', sortKey: MARKET_SORT_KEYS.PERCENT }
   ].forEach(({ label, sortKey }) => {
     const th = document.createElement('th');
     if (!sortKey) {
@@ -168,11 +196,15 @@ export function renderMarketAction(deps) {
     imgCell.appendChild(img);
     row.appendChild(imgCell);
 
-    const descCell = document.createElement('td');
-    descCell.textContent = item.description || item.name;
-    row.appendChild(descCell);
+    const nameCell = document.createElement('td');
+    nameCell.textContent = item.name || '';
+    row.appendChild(nameCell);
 
-    const avgPrice = (entry.daysCount && entry.priceSum) ? (entry.priceSum / entry.daysCount) : entry.price;
+    const avgDelta = getAverageDelta(entry);
+    const avgDeltaPct = Math.abs(avgDelta * 100).toFixed(0);
+    const avgDeltaSigned = `${avgDelta >= 0 ? '+' : '-'}${avgDeltaPct}%`;
+    const priceBandLabel = getPriceBandLabel(avgDelta);
+
     const priceCell = document.createElement('td');
     const freeCount = getFreePurchaseCount(item.id);
     const priceText = document.createElement('span');
@@ -181,24 +213,23 @@ export function renderMarketAction(deps) {
       ? `$${entry.price.toFixed(2)} (${freeCount} free)`
       : `$${entry.price.toFixed(2)}`;
     priceCell.appendChild(priceText);
+    row.appendChild(priceCell);
 
-    const avgDelta = avgPrice > 0 ? ((entry.price - avgPrice) / avgPrice) : 0;
-    const avgDeltaPct = Math.abs(avgDelta * 100).toFixed(0);
-    const avgDeltaSigned = `${avgDelta >= 0 ? '+' : '-'}${avgDeltaPct}%`;
+    const percentCell = document.createElement('td');
     const trendChip = document.createElement('span');
     trendChip.className = `insight-chip market-price-trend ${avgDelta <= -0.05 ? 'good' : (avgDelta >= 0.05 ? 'bad' : '')}`.trim();
     if (avgDelta <= -0.05) {
-      trendChip.textContent = `Great Deal (${avgDeltaSigned})`;
+      trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
       trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% below average market price`;
     } else if (avgDelta >= 0.05) {
-      trendChip.textContent = `Overpriced (${avgDeltaSigned})`;
+      trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
       trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% above average market price`;
     } else {
-      trendChip.textContent = `Fair Price (${avgDeltaSigned})`;
+      trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
       trendChip.title = 'Near average market price';
     }
-    priceCell.appendChild(trendChip);
-    row.appendChild(priceCell);
+    percentCell.appendChild(trendChip);
+    row.appendChild(percentCell);
 
     row.classList.add('market-row');
     row.dataset.itemId = String(item.id);

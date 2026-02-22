@@ -1,5 +1,21 @@
 import { clone } from '../core/storage.js';
 
+function cleanSpacing(text) {
+  return String(text || '')
+    .replace(/\s+([.,!?:;])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function removeSeedWord(text) {
+  if (typeof text !== 'string') return text;
+  return cleanSpacing(text.replace(/\bSeeds?\b/gi, ''));
+}
+
+function removeTrailingPeriod(text) {
+  return String(text || '').trim().replace(/\.+$/, '');
+}
+
 export function mergeItemAssetsWithDefaults(items, defaultItems) {
   if (!Array.isArray(items) || !Array.isArray(defaultItems)) {
     return { items, changed: false };
@@ -21,15 +37,47 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
       nextItem[key] = Array.isArray(defaultValue) ? [...defaultValue] : defaultValue;
       changed = true;
     };
-    assignIfMissing('seedIconImage');
     assignIfMissing('plantStageImages');
     assignIfMissing('harvestImage');
     assignIfMissing('rarity');
-    if (!nextItem.seedIconImage && nextItem.harvestImage) {
+    assignIfMissing('name');
+
+    // Backward compatibility: if old saves only have seedIconImage, promote it.
+    if (!nextItem.harvestImage && nextItem.seedIconImage) {
       if (nextItem === item) nextItem = { ...item };
-      nextItem.seedIconImage = nextItem.harvestImage;
+      nextItem.harvestImage = nextItem.seedIconImage;
       changed = true;
     }
+
+    const sanitizedName = removeSeedWord(nextItem.name);
+    if (typeof sanitizedName === 'string' && sanitizedName && sanitizedName !== nextItem.name) {
+      if (nextItem === item) nextItem = { ...item };
+      nextItem.name = sanitizedName;
+      changed = true;
+    }
+
+    // Drop redundant description when it is just the item name.
+    if (typeof nextItem.description === 'string') {
+      const normalizedName = removeTrailingPeriod(nextItem.name).toLowerCase();
+      const normalizedDescription = removeTrailingPeriod(nextItem.description).toLowerCase();
+      if (normalizedName && normalizedDescription && normalizedName === normalizedDescription) {
+        if (nextItem === item) nextItem = { ...item };
+        delete nextItem.description;
+        changed = true;
+      }
+    }
+
+    // Drop redundant seedIconImage when it mirrors harvestImage.
+    if (
+      typeof nextItem.seedIconImage === 'string'
+      && typeof nextItem.harvestImage === 'string'
+      && nextItem.seedIconImage.trim() === nextItem.harvestImage.trim()
+    ) {
+      if (nextItem === item) nextItem = { ...item };
+      delete nextItem.seedIconImage;
+      changed = true;
+    }
+
     return nextItem;
   });
   return { items: mergedItems, changed };

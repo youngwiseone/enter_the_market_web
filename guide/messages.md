@@ -50,7 +50,7 @@ This guide describes message authoring in `data/messages.json`.
 ```js
 addMessage({
   id: 'commerce.bought_item',
-  vars: { quantity: 2, itemName: 'Tomato Seeds', totalCost: '4.00' }
+  vars: { quantity: 2, itemName: 'Tomato', totalCost: '4.00' }
 });
 ```
 

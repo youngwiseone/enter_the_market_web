@@ -16,7 +16,7 @@
       "type": "economy",
       "goal": { "metric": "itemsHarvested.2", "operator": ">=", "value": 1 },
       "reward": { "freePurchases": { "itemId": 2, "count": 2 } },
-      "message": "Goal complete: Next 2 Tomato Seeds bought are free."
+      "message": "Goal complete: Next 2 Tomato purchases are free."
     },
     {
       "id": "diversified-grower",
@@ -35,7 +35,7 @@
         "cashBonus": 40,
         "freePurchases": { "itemId": 2, "count": 2 }
       },
-      "message": "Goal complete: Diversification bonus awarded ($40 + 2 free Tomato Seeds)."
+      "message": "Goal complete: Diversification bonus awarded ($40 + 2 free Tomato purchases)."
     },
     {
       "id": "steady-expander",

@@ -11,7 +11,11 @@ const buyStreakState = {
 };
 
 function isSeedItem(item) {
-  return !!(item && typeof item.name === 'string' && item.name.toLowerCase().includes('seed'));
+  if (!item || typeof item !== 'object') return false;
+  if ((Number(item.growDays) || 0) > 0) return true;
+  if ((Number(item.plantStages) || 0) > 0) return true;
+  if (Array.isArray(item.plantStageImages) && item.plantStageImages.length > 0) return true;
+  return typeof item.harvestImage === 'string' && item.harvestImage.trim().length > 0;
 }
 
 function getPurchaseUnits(quantity) {
