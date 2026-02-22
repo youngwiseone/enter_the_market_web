@@ -84,7 +84,15 @@ export function attachCoreEventHandlers(deps) {
   const dailyRollModal = document.getElementById('daily-roll-modal');
   if (dailyRollModal) {
     dailyRollModal.addEventListener('click', (event) => {
-      if (event.target === dailyRollModal) event.preventDefault();
+      if (!isDailyRollOpen()) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('#daily-roll-continue')) return;
+      event.preventDefault();
+      if (canContinueDailyRoll()) {
+        continueDailyRollModal();
+      } else {
+        requestDailyRollSkip();
+      }
     });
   }
   const daySummaryContinueButton = document.getElementById('day-summary-continue');
