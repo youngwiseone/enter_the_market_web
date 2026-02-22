@@ -75,6 +75,7 @@ export function nextDayAction(deps) {
   ensurePlayerProgressState();
   state.player.energy = state.player.energyMax;
   state.dayActionCount = 0;
+  state.dayEnergySpent = 0;
   const dowIndex = (state.player.day - 1) % 7;
   if (dowIndex === 0 && state.player.day !== 1) state.player.week += 1;
 

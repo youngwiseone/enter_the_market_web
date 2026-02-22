@@ -19,6 +19,7 @@ export function persistResetState(saveFn, state) {
   saveFn('goalFlags', state.goalFlags);
   saveFn('goalStats', state.goalStats);
   saveFn('dayActionCount', state.dayActionCount);
+  saveFn('dayEnergySpent', state.dayEnergySpent);
   saveFn('dailyMarketRollHistory', state.dailyMarketRollHistory);
   saveFn('lastRollFatiguePercent', state.lastRollFatiguePercent);
   saveFn('lastRollImpactMultiplier', state.lastRollImpactMultiplier);

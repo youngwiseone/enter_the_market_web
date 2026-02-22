@@ -341,6 +341,7 @@ let state = {
   goalFlags: null,
   goalStats: null,
   dayActionCount: 0,
+  dayEnergySpent: 0,
   dailyMarketRollHistory: null,
   lastRollFatiguePercent: 0,
   lastRollImpactMultiplier: 1,

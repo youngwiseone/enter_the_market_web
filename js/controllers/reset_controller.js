@@ -51,6 +51,7 @@ export async function resetGameAction(deps) {
   state.goalFlags = {};
   state.goalStats = { harvestCount: 0, itemsHarvested: {} };
   state.dayActionCount = 0;
+  state.dayEnergySpent = 0;
   state.dailyMarketRollHistory = [];
   state.lastRollFatiguePercent = 0;
   state.lastRollImpactMultiplier = 1;

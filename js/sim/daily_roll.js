@@ -1,7 +1,11 @@
 export function getFatigueFromEnergyState(state) {
   const energyMax = Math.max(1, Number(state.player?.energyMax) || 1);
   const energy = Math.max(0, Math.min(energyMax, Number(state.player?.energy) || 0));
-  const energySpent = Math.max(0, energyMax - energy);
+  const fallbackSpent = Math.max(0, energyMax - energy);
+  const trackedSpent = Number(state.dayEnergySpent);
+  const energySpent = Number.isFinite(trackedSpent)
+    ? Math.max(0, trackedSpent)
+    : fallbackSpent;
   const impactPercent = energySpent;
   const impactMultiplier = Math.max(0, impactPercent / 100);
   const fatiguePercent = Math.round(impactPercent);

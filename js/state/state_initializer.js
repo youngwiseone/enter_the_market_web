@@ -52,6 +52,7 @@ export function initialiseStateAction(deps) {
   state.goalFlags = loadFromStorage('goalFlags', null) ?? {};
   state.goalStats = loadFromStorage('goalStats', null) ?? { harvestCount: 0, itemsHarvested: {} };
   state.dayActionCount = Math.max(0, Number(loadFromStorage('dayActionCount', null) ?? 0) || 0);
+  state.dayEnergySpent = Math.max(0, Number(loadFromStorage('dayEnergySpent', null) ?? 0) || 0);
   state.dailyMarketRollHistory = loadFromStorage('dailyMarketRollHistory', null) ?? [];
   state.lastRollFatiguePercent = Math.max(0, Number(loadFromStorage('lastRollFatiguePercent', null) ?? 0) || 0);
   state.lastRollImpactMultiplier = Math.max(0, Number(loadFromStorage('lastRollImpactMultiplier', null) ?? 1) || 1);

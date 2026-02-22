@@ -52,6 +52,7 @@ export function createDayEconomyController(deps) {
       return false;
     }
     state.player.energy = Math.max(0, roundEnergyValue(state.player.energy - cost));
+    state.dayEnergySpent = Math.max(0, Number(state.dayEnergySpent) || 0) + cost;
     if (state.player.energy <= 2 && lowEnergyNoticeDay !== state.player.day) {
       lowEnergyNoticeDay = state.player.day;
       addMessage({
