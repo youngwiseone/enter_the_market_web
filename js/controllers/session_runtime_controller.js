@@ -26,7 +26,8 @@ export function createSessionRuntimeController(deps) {
     getUnlockedRollItems,
     getHarvestImagePath,
     moveFocusOutsideModal,
-    isReduceMotion
+    isReduceMotion,
+    onDailyRollClosed
   } = deps;
 
   let dailyRollAnimationToken = 0;
@@ -127,6 +128,9 @@ export function createSessionRuntimeController(deps) {
       }
     });
     dailyRollCanContinue = false;
+    if (typeof onDailyRollClosed === 'function') {
+      onDailyRollClosed();
+    }
     return true;
   }
 

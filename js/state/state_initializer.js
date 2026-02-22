@@ -56,6 +56,10 @@ export function initialiseStateAction(deps) {
   state.dailyMarketRollHistory = loadFromStorage('dailyMarketRollHistory', null) ?? [];
   state.lastRollFatiguePercent = Math.max(0, Number(loadFromStorage('lastRollFatiguePercent', null) ?? 0) || 0);
   state.lastRollImpactMultiplier = Math.max(0, Number(loadFromStorage('lastRollImpactMultiplier', null) ?? 1) || 1);
+  const loadedLastPriceMovesByItem = loadFromStorage('lastPriceMovesByItem', null);
+  state.lastPriceMovesByItem = (loadedLastPriceMovesByItem && typeof loadedLastPriceMovesByItem === 'object')
+    ? loadedLastPriceMovesByItem
+    : {};
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
   hydrateDaySalesState(state, loadFromStorage);
   state.newsHistory = loadFromStorage('newsHistory', null) ?? clone(DEFAULT_DATA.newsHistory);
@@ -192,6 +196,9 @@ export function initialiseStateAction(deps) {
   }
   if (!state.freePurchasesByItem || typeof state.freePurchasesByItem !== 'object') {
     state.freePurchasesByItem = {};
+  }
+  if (!state.lastPriceMovesByItem || typeof state.lastPriceMovesByItem !== 'object' || Array.isArray(state.lastPriceMovesByItem)) {
+    state.lastPriceMovesByItem = {};
   }
   if (Array.isArray(state.shop)) {
     let shopChanged = false;

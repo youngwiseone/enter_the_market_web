@@ -121,6 +121,12 @@ export function nextDayAction(deps) {
       pctChange
     });
   });
+  state.lastPriceMovesByItem = priceMoves.reduce((acc, move) => {
+    const itemIdKey = String(move?.itemId ?? '');
+    if (!itemIdKey) return acc;
+    acc[itemIdKey] = Number(move?.pctChange) || 0;
+    return acc;
+  }, {});
   emitEconomyAlert(priceMoves);
   if (dailyRoll.picks.length > 0) {
     state.dailyMarketRollHistory.push({

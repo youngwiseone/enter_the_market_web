@@ -235,16 +235,21 @@ export function setActiveToolAction(deps) {
     addMessage,
     updateToolButtons,
     updateCursorForTool,
-    saveToStorage
+    saveToStorage,
+    onToolSelected
   } = deps;
 
-  if (!TOOL_LIST.includes(tool)) return;
+  if (!TOOL_LIST.includes(tool)) return false;
   if (!isToolUnlocked(tool)) {
     addMessage({ id: 'progress.tool_locked_complete_goals' });
-    return;
+    return false;
   }
   state.activeTool = tool;
   updateToolButtons();
   updateCursorForTool();
   saveToStorage('activeTool', state.activeTool);
+  if (typeof onToolSelected === 'function') {
+    onToolSelected(tool);
+  }
+  return true;
 }

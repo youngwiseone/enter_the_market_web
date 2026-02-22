@@ -345,6 +345,7 @@ let state = {
   dailyMarketRollHistory: null,
   lastRollFatiguePercent: 0,
   lastRollImpactMultiplier: 1,
+  lastPriceMovesByItem: {},
   dayStartSnapshot: null,
   goalCelebrationQueue: [],
   activeGoalCelebration: null,
@@ -485,7 +486,8 @@ const sessionRuntimeController = createSessionRuntimeController(buildSessionRunt
   getUnlockedRollItems,
   getHarvestImagePath,
   moveFocusOutsideModal,
-  isReduceMotion: () => fxController.isReduceMotion()
+  isReduceMotion: () => fxController.isReduceMotion(),
+  onDailyRollClosed: () => notifyDailyRollClosed()
 }));
 
 function getPlantGrowthState(item, index) {
@@ -999,6 +1001,11 @@ function renderMarket() {
     addMessage,
     getRarityMultiplier,
     getActiveFarmSellMultiplier,
+    getGridPriceBadgeDisplayState: () => (
+      farmUiRuntimeController && typeof farmUiRuntimeController.getGridPriceBadgeDisplayState === 'function'
+        ? farmUiRuntimeController.getGridPriceBadgeDisplayState()
+        : { visible: false, fading: false }
+    ),
     farmPointerState: farmPointerRuntimeController.getFarmPointerState(),
     applyGridActionForIndex,
     renderSelectedItemInsight,
@@ -1877,6 +1884,7 @@ const farmUiRuntimeController = createFarmUiRuntimeController(buildFarmUiRuntime
   setSelectedGridCellIndex: (index) => {
     selectedGridCellIndex = index;
   },
+  getSelectedGridCellIndex: () => selectedGridCellIndex,
   selectedGridCellIndices,
   setSelectedShopItemId: (itemId) => {
     selectedShopItemId = itemId;
@@ -1910,7 +1918,9 @@ const farmUiRuntimeController = createFarmUiRuntimeController(buildFarmUiRuntime
   getToolButtons: getToolButtonsDom,
   getRestButton: getRestButtonDom,
   createToolKeyLabelElement: createToolKeyLabelElementDom,
-  setBodyCursor: setBodyCursorDom
+  setBodyCursor: setBodyCursorDom,
+  renderMarket: () => renderMarket(),
+  isReduceMotion: () => fxController.isReduceMotion()
 }));
 
 function updateFarmToggleButton() {
@@ -1935,6 +1945,13 @@ function updateCursorForTool() {
 
 function setActiveTool(tool) {
   farmUiRuntimeController.setActiveTool(tool);
+}
+
+function notifyDailyRollClosed() {
+  if (!farmUiRuntimeController || typeof farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool !== 'function') {
+    return;
+  }
+  farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool({ shouldRender: true });
 }
 
 function purchaseAndPlaceSelected(cellIndex) {
@@ -2049,6 +2066,11 @@ async function main() {
     initialiseMessageUI,
     markStoreUnlocksSeen,
     updateToolButtons,
+    refreshTimedGridPriceBadgeVisibilityForCurrentTool: () => {
+      if (farmUiRuntimeController && typeof farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool === 'function') {
+        farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool({ shouldRender: false });
+      }
+    },
     updateCursorForTool,
     installSidePanelScrollHandlers,
     state,

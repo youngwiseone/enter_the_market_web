@@ -9,6 +9,7 @@ export async function runAppBootstrap(deps) {
     initialiseMessageUI,
     markStoreUnlocksSeen,
     updateToolButtons,
+    refreshTimedGridPriceBadgeVisibilityForCurrentTool,
     updateCursorForTool,
     installSidePanelScrollHandlers,
     state,
@@ -39,6 +40,9 @@ export async function runAppBootstrap(deps) {
     });
   }
   updateToolButtons();
+  if (typeof refreshTimedGridPriceBadgeVisibilityForCurrentTool === 'function') {
+    refreshTimedGridPriceBadgeVisibilityForCurrentTool({ shouldRender: false });
+  }
   updateCursorForTool();
   installSidePanelScrollHandlers();
 

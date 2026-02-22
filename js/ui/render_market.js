@@ -6,6 +6,10 @@ const MARKET_SORT_KEYS = Object.freeze({
 
 let activeMarketSortKey = MARKET_SORT_KEYS.PRICE;
 let activeMarketSortDirection = 'asc';
+const GRID_PRICE_BADGE_HIDE_FADE_MS = 240;
+let lastGridPriceBadgeVisible = false;
+let lastDesiredGridPriceBadgeVisible = false;
+let gridPriceBadgeHideFadeUntilMs = 0;
 
 function getAveragePrice(entry) {
   if (!entry || typeof entry !== 'object') return 0;
@@ -57,6 +61,18 @@ function compareMarketRows(left, right, sortKey, sortDirection) {
   return sortDirection === 'desc' ? -primary : primary;
 }
 
+function createGridPriceDeltaBadge(percentDelta, isFading = false) {
+  if (typeof percentDelta !== 'number' || !Number.isFinite(percentDelta)) return null;
+  const trendClass = percentDelta < 0 ? 'bad' : (percentDelta > 0 ? 'good' : 'neutral');
+  const isPositive = percentDelta >= 0;
+  const badge = document.createElement('span');
+  badge.className = `grid-cell-price-delta ${trendClass}${isFading ? ' is-fading' : ''}`;
+  badge.textContent = `${isPositive ? '+' : '-'}${Math.abs(percentDelta * 100).toFixed(0)}%`;
+  badge.title = `Market ${isPositive ? 'above' : 'below'} average by ${(Math.abs(percentDelta) * 100).toFixed(0)}%`;
+  badge.setAttribute('aria-label', `Market ${isPositive ? 'up' : 'down'} ${Math.abs(percentDelta * 100).toFixed(0)} percent`);
+  return badge;
+}
+
 export function renderMarketAction(deps) {
   const {
     state,
@@ -85,6 +101,7 @@ export function renderMarketAction(deps) {
     addMessage,
     getRarityMultiplier,
     getActiveFarmSellMultiplier,
+    getGridPriceBadgeDisplayState,
     farmPointerState,
     applyGridActionForIndex,
     renderSelectedItemInsight,
@@ -255,6 +272,32 @@ export function renderMarketAction(deps) {
   if (getSelectionPulseId() !== null) {
     setSelectionPulseId(null);
   }
+  const desiredGridPriceBadgeDisplayState = typeof getGridPriceBadgeDisplayState === 'function'
+    ? getGridPriceBadgeDisplayState()
+    : { visible: false, fading: false };
+  const runtimeFlags = (state.runtimeFlags && typeof state.runtimeFlags === 'object')
+    ? state.runtimeFlags
+    : null;
+  const suppressHideFadeOnce = !!runtimeFlags?.suppressGridPriceBadgeHideFadeOnce;
+  if (runtimeFlags && suppressHideFadeOnce) {
+    runtimeFlags.suppressGridPriceBadgeHideFadeOnce = false;
+  }
+  const nowMs = Date.now();
+  if (!suppressHideFadeOnce && !desiredGridPriceBadgeDisplayState.visible && lastDesiredGridPriceBadgeVisible) {
+    gridPriceBadgeHideFadeUntilMs = nowMs + GRID_PRICE_BADGE_HIDE_FADE_MS;
+  }
+  if (desiredGridPriceBadgeDisplayState.visible) {
+    gridPriceBadgeHideFadeUntilMs = 0;
+  }
+  const gridPriceBadgeDisplayState = (
+    !desiredGridPriceBadgeDisplayState.visible
+    && nowMs < gridPriceBadgeHideFadeUntilMs
+  )
+    ? { visible: true, fading: true }
+    : desiredGridPriceBadgeDisplayState;
+  lastDesiredGridPriceBadgeVisible = !!desiredGridPriceBadgeDisplayState.visible;
+  lastGridPriceBadgeVisible = !!gridPriceBadgeDisplayState.visible;
+  let gridPriceBadgeCountRendered = 0;
 
   for (let i = 0; i < GRID_CELL_COUNT; i++) {
     const cell = document.createElement('div');
@@ -276,6 +319,8 @@ export function renderMarketAction(deps) {
       const itmId = state.gridItems[i];
       const it = state.items.find((itm) => itm.id === itmId);
       if (it) {
+        const shopEntry = state.shop.find((entry) => entry.itemId === itmId);
+        const gridMarketPercentDelta = shopEntry ? getAverageDelta(shopEntry) : Number.NaN;
         const growth = getPlantGrowthState(it, i);
         const growDays = typeof it.growDays === 'number' ? it.growDays : 0;
         const img = document.createElement('img');
@@ -320,12 +365,18 @@ export function renderMarketAction(deps) {
               cell.appendChild(holo);
             }
           }
-          const shopEntry = state.shop.find((entry) => entry.itemId === itmId);
           const multiplier = getRarityMultiplier(rarity);
           const sellPrice = shopEntry ? shopEntry.price * multiplier * getActiveFarmSellMultiplier() : 0;
           cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
         } else if (growDays > 0) {
           cell.title = `Grows in ${growth.daysLeft} day${growth.daysLeft === 1 ? '' : 's'}`;
+        }
+        if (gridPriceBadgeDisplayState.visible && growth.isGrown) {
+          const priceDeltaBadge = createGridPriceDeltaBadge(gridMarketPercentDelta, !!gridPriceBadgeDisplayState.fading);
+          if (priceDeltaBadge) {
+            cell.appendChild(priceDeltaBadge);
+            gridPriceBadgeCountRendered += 1;
+          }
         }
       }
     }
@@ -355,6 +406,10 @@ export function renderMarketAction(deps) {
       ev.preventDefault();
     });
     if (gridEl) gridEl.appendChild(cell);
+  }
+  if (runtimeFlags) {
+    runtimeFlags.gridPriceBadgesVisibleLastRender = lastGridPriceBadgeVisible;
+    runtimeFlags.gridPriceBadgesActuallyRenderedLastRender = gridPriceBadgeCountRendered > 0;
   }
 
   renderSelectedItemInsight();

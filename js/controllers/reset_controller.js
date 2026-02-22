@@ -55,6 +55,7 @@ export async function resetGameAction(deps) {
   state.dailyMarketRollHistory = [];
   state.lastRollFatiguePercent = 0;
   state.lastRollImpactMultiplier = 1;
+  state.lastPriceMovesByItem = {};
   state.daySalesCount = 0;
   state.daySalesTotal = 0;
   state.dayTopSale = null;
