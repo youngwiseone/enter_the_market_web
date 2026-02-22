@@ -127,6 +127,7 @@ export function attachCoreEventHandlers(deps) {
 
   installFarmPointerHandlers();
   document.addEventListener('click', (event) => {
+    if (state.runtimeFlags && state.runtimeFlags.isSellBatchInFlight) return;
     const selectedGridCellIndex = getSelectedGridCellIndex();
     const selectedGridCellIndices = getSelectedGridCellIndices();
     if (selectedGridCellIndex === null && selectedGridCellIndices.size === 0) return;

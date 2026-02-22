@@ -13,8 +13,13 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
 - Daily rest loop (`nextDay`) updates:
   - prices and market pressure
   - daily market roll
+  - roll strength based on cumulative energy spent that day (including spend before/after level-up refills)
   - day summary and tips
   - goal evaluation and rewards
+- Sell flow:
+  - single-tile and bulk selected sells
+  - bulk sells process per item in grid order (top-left to bottom-right)
+  - per-item sell FX (travel, particles, cash feedback) with in-flight guard to prevent duplicate triggers
 - Progression:
   - shop items unlock by player level (1 item per level, ordered by item id)
   - tool unlocks and free purchase rewards
@@ -41,6 +46,9 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
   - `data/goals.json`
   - `data/news.json`
 - Save system: browser `localStorage` with migration logic in `js/state/state_initializer.js`.
+  - Rarity persistence hardening:
+    - rarity rolls are persisted to full farm snapshots immediately
+    - one-time backfill can restore Farm 1 rarity from legacy `gridRarity` when needed
 
 ## Local Run
 
@@ -83,6 +91,7 @@ Authoring guides:
   - State init/save: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
   - Day progression: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
   - Farm actions: `js/controllers/farm_actions.js`, `js/controllers/grid_controller.js`, `js/controllers/harvest_controller.js`
+  - Sell runtime sequence + FX composition: `js/controllers/sell_sequence_controller.js`, `js/controllers/sell_fx_controller.js`
   - Shop/store: `js/controllers/shop_controller.js`, `js/controllers/store_cosmetics.js`
   - Root render orchestration: `js/ui/render_root.js`
   - DOM adapters (controller boundary): `js/ui/farm_ui_dom.js`, `js/ui/grid_fx_targets.js`, `js/ui/pointer_dom.js`, `js/ui/theme_dom.js`, `js/ui/render_guidance.js`

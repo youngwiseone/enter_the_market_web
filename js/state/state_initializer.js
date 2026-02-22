@@ -129,6 +129,30 @@ export function initialiseStateAction(deps) {
     [FARM_PRIMARY_ID]: hasSavedPrimaryFarm ? normalizedSavedPrimary : legacyFarmOne,
     [FARM_SECONDARY_ID]: normalizedSavedSecondary
   };
+  if (hasSavedPrimaryFarm) {
+    const primaryFarm = state.farms[FARM_PRIMARY_ID];
+    let rarityBackfillChanged = false;
+    if (
+      primaryFarm
+      && Array.isArray(primaryFarm.gridRarity)
+      && Array.isArray(primaryFarm.gridItems)
+      && Array.isArray(legacyFarmOne.gridRarity)
+    ) {
+      for (let i = 0; i < primaryFarm.gridRarity.length; i += 1) {
+        if (!primaryFarm.gridItems[i]) continue;
+        const current = normalizeRarity(primaryFarm.gridRarity[i]);
+        const legacy = normalizeRarity(legacyFarmOne.gridRarity[i]);
+        if (!current && legacy) {
+          primaryFarm.gridRarity[i] = legacy;
+          rarityBackfillChanged = true;
+        }
+      }
+    }
+    if (rarityBackfillChanged) {
+      saveToStorage('farms', state.farms);
+      saveToStorage('gridRarity', primaryFarm.gridRarity);
+    }
+  }
   state.secondFarmPurchased = !!loadFromStorage('secondFarmPurchased', null);
   if (!state.secondFarmPurchased) {
     const secondaryUnlocks = getUnlockedTileCountForFarm(FARM_SECONDARY_ID);

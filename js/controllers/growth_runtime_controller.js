@@ -6,7 +6,8 @@ export function createGrowthRuntimeController(deps) {
     getItemCurrentPrice,
     addMessage,
     rollRarity,
-    saveToStorage
+    saveToStorage,
+    saveState
   } = deps;
 
   function getEffectiveWateredCount(index) {
@@ -47,7 +48,12 @@ export function createGrowthRuntimeController(deps) {
     if (existing) return existing;
     const rolled = rollRarity();
     state.gridRarity[index] = rolled;
-    saveToStorage('gridRarity', state.gridRarity);
+    if (typeof saveState === 'function') {
+      // Persist full farm state so rarity cannot be rerolled via page refresh.
+      saveState();
+    } else {
+      saveToStorage('gridRarity', state.gridRarity);
+    }
     return rolled;
   }
 

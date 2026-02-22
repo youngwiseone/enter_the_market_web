@@ -361,6 +361,21 @@ let state = {
   secondFarmPurchased: false
 };
 
+function getRuntimeFlags() {
+  if (!state.runtimeFlags || typeof state.runtimeFlags !== 'object') {
+    state.runtimeFlags = {};
+  }
+  return state.runtimeFlags;
+}
+
+function getIsSellBatchInFlight() {
+  return !!getRuntimeFlags().isSellBatchInFlight;
+}
+
+function setIsSellBatchInFlight(inFlight) {
+  getRuntimeFlags().isSellBatchInFlight = !!inFlight;
+}
+
 const playtestStats = {
   activeMs: 0,
   lastActiveAt: null
@@ -432,7 +447,8 @@ const growthRuntimeController = createGrowthRuntimeController({
   getItemCurrentPrice,
   addMessage,
   rollRarity,
-  saveToStorage
+  saveToStorage,
+  saveState
 });
 
 const goalCelebrationController = createGoalCelebrationController(buildGoalCelebrationControllerDeps({
@@ -1286,6 +1302,7 @@ async function sellSelectedGridItem(sellButtonElement = null) {
 }
 
 async function sellBulkSelectedGridItems(sellButtonElement = null) {
+  if (getIsSellBatchInFlight()) return;
   await sellBulkSelectedGridItemsAction({
     state,
     getBulkSelectedGridInsightData,
@@ -1304,6 +1321,7 @@ async function sellBulkSelectedGridItems(sellButtonElement = null) {
     saveState,
     addMessage,
     renderAll,
+    refreshSellStep: renderMarket,
     playSellItemsToButton,
     spawnBurst,
     spawnRing,
@@ -1313,6 +1331,8 @@ async function sellBulkSelectedGridItems(sellButtonElement = null) {
     getHudCenters,
     spawnCoinsForSaleValue,
     pulseHud,
+    getIsSellBatchInFlight,
+    setIsSellBatchInFlight,
     sellButtonElement
   });
 }
@@ -1922,7 +1942,13 @@ function purchaseAndPlaceSelected(cellIndex) {
 }
 
 async function harvestPlant(cellIndex, sellButtonElement = null) {
+  if (getIsSellBatchInFlight()) return;
+  setIsSellBatchInFlight(true);
+  try {
   await gameplayRuntimeController.harvestPlant(cellIndex, sellButtonElement);
+  } finally {
+    setIsSellBatchInFlight(false);
+  }
 }
 
 /**

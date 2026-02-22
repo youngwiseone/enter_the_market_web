@@ -54,6 +54,7 @@ If short on time, start with `README.md` first.
 - Economy loop:
   - daily market roll and random drift
   - market pressure from behavior
+  - roll strength is based on cumulative energy spent during the day (`dayEnergySpent`), including spend before/after level-up energy refills
   - crash/recovery logic
 - Progression:
   - goals with single and multi-condition checks
@@ -70,6 +71,7 @@ If short on time, start with `README.md` first.
 - Startup and wiring: `main.js`, `js/app/bootstrap.js`, `js/app/bootstrap/session.js`, `js/app/bootstrap/farm.js`, `js/app/bootstrap/market.js`
 - Save and migration: `js/state/state_initializer.js`, `js/state/state_runtime_controller.js`
 - Game-day simulation: `js/controllers/day_controller.js`, `js/controllers/day_market_runtime_controller.js`
+- Sell sequence/runtime FX: `js/controllers/harvest_controller.js`, `js/controllers/sell_sequence_controller.js`, `js/controllers/sell_fx_controller.js`, `js/fx/fx_controller.js`
 - Messaging runtime: `js/controllers/message_runtime_controller.js`, `js/ui/messages_controller.js`, `js/ui/profile_chat_controller.js`
 - Grid actions: `js/controllers/grid_controller.js`, `js/controllers/farm_actions.js`, `js/controllers/harvest_controller.js`, `js/controllers/grid_interaction_controller.js`
 - Player progression/rewards: `js/controllers/player_progress_controller.js`, `js/controllers/goals_controller.js`
@@ -97,6 +99,7 @@ If short on time, start with `README.md` first.
   - `js/state/farm_state.js`: farm state shape + normalization.
   - `js/state/farm_runtime.js`: farm runtime access/apply/count utilities.
   - `js/state/day_sales_state.js`: day sales hydration/normalization.
+  - `js/state/state_initializer.js`: also includes one-time rarity backfill from legacy `gridRarity` to Farm 1 snapshot when needed.
   - `js/state/goal_state.js`: goal state shape normalization.
 - Simulation:
   - `js/sim/constants.js`: game/sim constants.
@@ -117,6 +120,8 @@ If short on time, start with `README.md` first.
   - `js/controllers/farm_pointer_runtime_controller.js`: pointer runtime wiring.
   - `js/controllers/growth_runtime_controller.js`: crop growth + rarity assignment.
   - `js/controllers/harvest_controller.js`: harvest + sell selected/bulk flows.
+  - `js/controllers/sell_sequence_controller.js`: per-cell bulk-sell sequencing, state mutation, and summary aggregation.
+  - `js/controllers/sell_fx_controller.js`: shared per-sale FX payload emitter used by single + bulk sell.
   - `js/controllers/shop_controller.js`: buy/sell shop flows.
   - `js/controllers/shop_market_controller.js`: market fields + price recovery + unlock sync.
   - `js/controllers/store_cosmetics.js`: cosmetic purchase/select/theme/crafting.
@@ -149,6 +154,13 @@ If short on time, start with `README.md` first.
 - FX/dev:
   - `js/fx/particle_pool.js`, `js/fx/fx_controller.js`: particle and FX runtime.
   - `js/dev/perf_metrics.js`: baseline instrumentation helpers.
+
+Recent gameplay/runtime behavior notes:
+
+- Bulk sell runs as an explicit per-item sequence (top-left to bottom-right by cell index).
+- Sell flow has an in-flight guard (`state.runtimeFlags.isSellBatchInFlight`) to prevent re-entry/race from rapid inputs.
+- Per-item sell steps use lighter interim refresh (`renderMarket`) and finish with full `renderAll()`.
+- Rarity assignment persists full state immediately to prevent refresh reroll exploits.
 
 ## Data Contracts
 
