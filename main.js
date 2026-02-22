@@ -1108,6 +1108,10 @@ function spawnCoinsForSaleValue(amount, from, to) {
   fxController.spawnCoinsForSaleValue(amount, from, to);
 }
 
+function playSellItemsToButton(cellEntries, preferredButtonElement = null, options = null) {
+  return fxController.playSellItemsToButton(cellEntries, preferredButtonElement, options);
+}
+
 function triggerFxClass(element, className) {
   fxController.triggerFxClass(element, className);
 }
@@ -1269,21 +1273,21 @@ function getSelectedGridItemInsightData() {
   });
 }
 
-function sellSelectedGridItem() {
-  sellSelectedGridItemAction({
+async function sellSelectedGridItem(sellButtonElement = null) {
+  await sellSelectedGridItemAction({
     getBulkSelectedGridInsightData,
     sellBulkSelectedGridItems,
     getSelectedGridItemInsightData,
     addMessage,
-    harvestPlant
+    harvestPlant,
+    sellButtonElement
   });
 }
 
-function sellBulkSelectedGridItems() {
-  sellBulkSelectedGridItemsAction({
+async function sellBulkSelectedGridItems(sellButtonElement = null) {
+  await sellBulkSelectedGridItemsAction({
     state,
     getBulkSelectedGridInsightData,
-    consumeEnergy,
     registerDayAction,
     registerSaleEvent,
     registerItemSalePressure,
@@ -1298,7 +1302,17 @@ function sellBulkSelectedGridItems() {
     evaluateGoals,
     saveState,
     addMessage,
-    renderAll
+    renderAll,
+    playSellItemsToButton,
+    spawnBurst,
+    spawnRing,
+    spawnFloatingText,
+    showXpGainFeedback,
+    getTileCenter,
+    getHudCenters,
+    spawnCoinsForSaleValue,
+    pulseHud,
+    sellButtonElement
   });
 }
 
@@ -1432,6 +1446,7 @@ const gameplayRuntimeController = createGameplayRuntimeController({
   getActiveFarmSellMultiplier,
   spawnCoinTravel,
   spawnCoinsForSaleValue,
+  playSellItemsToButton,
   guidedFlags: GUIDED_FLAGS,
   getBulkSelectedGridInsightData,
   sellBulkSelectedGridItems,
@@ -1905,8 +1920,8 @@ function purchaseAndPlaceSelected(cellIndex) {
   gameplayRuntimeController.purchaseAndPlaceSelected(cellIndex);
 }
 
-function harvestPlant(cellIndex) {
-  gameplayRuntimeController.harvestPlant(cellIndex);
+async function harvestPlant(cellIndex, sellButtonElement = null) {
+  await gameplayRuntimeController.harvestPlant(cellIndex, sellButtonElement);
 }
 
 /**

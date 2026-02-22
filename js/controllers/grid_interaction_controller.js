@@ -171,6 +171,7 @@ export function getBulkSelectedGridInsightDataAction(deps) {
     if (snapshot) cells.push(snapshot);
   });
   if (!cells.length) return null;
+  cells.sort((left, right) => left.cellIndex - right.cellIndex);
   const totalSale = cells.reduce((sum, cell) => sum + cell.sellNow, 0);
   const totalBuy = cells.reduce((sum, cell) => sum + cell.buyPrice, 0);
   const totalProfit = totalSale - totalBuy;

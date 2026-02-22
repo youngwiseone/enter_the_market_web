@@ -1,15 +1,16 @@
-export function sellSelectedGridItemAction(deps) {
+export async function sellSelectedGridItemAction(deps) {
   const {
     getBulkSelectedGridInsightData,
     sellBulkSelectedGridItems,
     getSelectedGridItemInsightData,
     addMessage,
-    harvestPlant
+    harvestPlant,
+    sellButtonElement = null
   } = deps;
 
   const bulkInsight = getBulkSelectedGridInsightData();
   if (bulkInsight && bulkInsight.count > 0) {
-    sellBulkSelectedGridItems();
+    await sellBulkSelectedGridItems(sellButtonElement);
     return;
   }
   const insight = getSelectedGridItemInsightData();
@@ -18,14 +19,13 @@ export function sellSelectedGridItemAction(deps) {
     addMessage({ id: 'progress.plant_still_growing' });
     return;
   }
-  harvestPlant(insight.cellIndex);
+  await harvestPlant(insight.cellIndex, sellButtonElement);
 }
 
-export function sellBulkSelectedGridItemsAction(deps) {
+export async function sellBulkSelectedGridItemsAction(deps) {
   const {
     state,
     getBulkSelectedGridInsightData,
-    consumeEnergy,
     registerDayAction,
     registerSaleEvent,
     registerItemSalePressure,
@@ -38,23 +38,46 @@ export function sellBulkSelectedGridItemsAction(deps) {
     evaluateGoals,
     saveState,
     addMessage,
-    renderAll
+    renderAll,
+    playSellItemsToButton,
+    spawnBurst,
+    spawnRing,
+    spawnFloatingText,
+    showXpGainFeedback,
+    getTileCenter,
+    getHudCenters,
+    spawnCoinsForSaleValue,
+    pulseHud,
+    sellButtonElement = null
   } = deps;
 
   const bulkInsight = getBulkSelectedGridInsightData();
   if (!bulkInsight || bulkInsight.count <= 0) return;
-  if (!consumeEnergy(bulkInsight.count, `harvest ${bulkInsight.count} selected plant${bulkInsight.count === 1 ? '' : 's'}`)) {
-    return;
-  }
   registerDayAction();
   let totalSaleValue = 0;
   let totalProfitValue = 0;
   let harvestedCount = 0;
   const summaryByItem = new Map();
-  bulkInsight.cells.forEach((cell) => {
-    const item = cell.item;
-    if (!item) return;
-    const itemId = cell.itemId;
+  for (let i = 0; i < bulkInsight.cells.length; i += 1) {
+    const cell = bulkInsight.cells[i];
+    const center = typeof getTileCenter === 'function' ? getTileCenter(cell.cellIndex) : null;
+    const travelPromise = typeof playSellItemsToButton === 'function'
+      ? playSellItemsToButton([cell], sellButtonElement, {
+        totalItems: bulkInsight.cells.length,
+        startIndex: i
+      })
+      : Promise.resolve();
+    const liveItemId = Array.isArray(state.gridItems) ? state.gridItems[cell.cellIndex] : null;
+    if (!liveItemId || liveItemId !== cell.itemId) {
+      await travelPromise;
+      continue;
+    }
+    const item = (Array.isArray(state.items) ? state.items.find((it) => it.id === liveItemId) : null) || cell.item;
+    if (!item) {
+      await travelPromise;
+      continue;
+    }
+    const itemId = liveItemId;
     const saleValue = Math.max(0, Number(cell.sellNow) || 0);
     const buyPrice = Math.max(0, Number(cell.buyPrice) || 0);
     const profit = saleValue - buyPrice;
@@ -76,11 +99,65 @@ export function sellBulkSelectedGridItemsAction(deps) {
     totalProfitValue += profit;
     harvestedCount += 1;
     summaryByItem.set(item.name, (summaryByItem.get(item.name) || 0) + 1);
-  });
+    const hudCenters = typeof getHudCenters === 'function' ? getHudCenters() : [];
+    if (center) {
+      const rarity = String(cell.rarity || 'common');
+      const isRare = rarity === 'rare';
+      const isMythic = rarity === 'mythic';
+      const sparkleList = isMythic
+        ? ['resources/effects/prism_sparkle_01.png', 'resources/effects/prism_sparkle_02.png']
+        : ['resources/effects/sparkle_gold_01.png', 'resources/effects/sparkle_gold_02.png'];
+      if (typeof spawnBurst === 'function') {
+        spawnBurst({
+          x: center.x,
+          y: center.y - 6,
+          count: isMythic ? 14 : (isRare ? 10 : 7),
+          imgList: sparkleList,
+          speedRange: [20, 62],
+          sizeRange: [8, 13],
+          gravity: 10,
+          lifeRange: [220, 420]
+        });
+      }
+      if ((isRare || isMythic) && typeof spawnRing === 'function') {
+        spawnRing({
+          x: center.x,
+          y: center.y,
+          radius: 9,
+          color: isMythic ? 'rgba(198,180,255,0.8)' : 'rgba(255,213,100,0.8)',
+          life: 180
+        });
+      }
+      if (typeof spawnFloatingText === 'function') {
+        spawnFloatingText({
+          x: center.x - 12,
+          y: center.y - 18,
+          text: `+$${saleValue.toFixed(2)}`,
+          color: isMythic ? '#c6b4ff' : '#ffe680'
+        });
+      }
+      if (typeof showXpGainFeedback === 'function') {
+        showXpGainFeedback(xpRewards.harvest, center, 120);
+      }
+    }
+    if (
+      center
+      && hudCenters.length > 0
+      && typeof spawnCoinsForSaleValue === 'function'
+    ) {
+      spawnCoinsForSaleValue(saleValue, center, hudCenters[0]);
+    }
+    // Show tiles clearing as each item sells instead of a single end-of-batch clear.
+    renderAll();
+    await travelPromise;
+  }
   if (!harvestedCount) {
     return;
   }
   awardPlayerXp(xpRewards.harvest * harvestedCount);
+  if (typeof pulseHud === 'function') {
+    pulseHud(true);
+  }
   selectedGridCellIndices.clear();
   setSelectedGridCellIndex(null);
   updateNetWorth();
@@ -102,13 +179,12 @@ export function sellBulkSelectedGridItemsAction(deps) {
   renderAll();
 }
 
-export function harvestPlantAction(deps) {
+export async function harvestPlantAction(deps) {
   const {
     state,
     cellIndex,
     getPlantGrowthState,
     addMessage,
-    consumeEnergy,
     registerDayAction,
     getGridRarity,
     assignGridRarity,
@@ -132,7 +208,9 @@ export function harvestPlantAction(deps) {
     showXpGainFeedback,
     pulseHud,
     getHudCenters,
-    spawnCoinsForSaleValue
+    spawnCoinsForSaleValue,
+    playSellItemsToButton,
+    sellButtonElement = null
   } = deps;
 
   const itemId = state.gridItems[cellIndex];
@@ -143,8 +221,8 @@ export function harvestPlantAction(deps) {
     addMessage({ id: 'progress.plant_still_growing' });
     return;
   }
-  if (!consumeEnergy(1, 'harvest this plant')) {
-    return;
+  if (typeof playSellItemsToButton === 'function') {
+    await playSellItemsToButton([{ cellIndex }], sellButtonElement);
   }
   registerDayAction();
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);

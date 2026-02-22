@@ -134,7 +134,12 @@ export function createFarmPointerRuntimeController(deps) {
       getGridIndexFromPointerEvent,
       farmPointerState,
       applyGridActionForIndex,
-      stopFarmPointerInteraction
+      stopFarmPointerInteraction,
+      shouldPromoteStartToBulk: (cellIndex) => (
+        state.activeTool === TOOL_GLOVE
+        && !getSelectedShopItemId()
+        && !!getGridCellSellSnapshot(cellIndex)
+      )
     });
     if (installed) {
       farmPointerHandlersInstalled = true;

@@ -51,6 +51,7 @@ export function createGameplayRuntimeController(deps) {
     getActiveFarmSellMultiplier,
     spawnCoinTravel,
     spawnCoinsForSaleValue,
+    playSellItemsToButton,
     guidedFlags,
     getBulkSelectedGridInsightData,
     sellBulkSelectedGridItems,
@@ -210,13 +211,12 @@ export function createGameplayRuntimeController(deps) {
     });
   }
 
-  function harvestPlant(cellIndex) {
-    harvestPlantAction({
+  async function harvestPlant(cellIndex, sellButtonElement = null) {
+    await harvestPlantAction({
       state,
       cellIndex,
       getPlantGrowthState,
       addMessage,
-      consumeEnergy,
       registerDayAction,
       getGridRarity,
       assignGridRarity,
@@ -240,7 +240,9 @@ export function createGameplayRuntimeController(deps) {
       showXpGainFeedback,
       pulseHud,
       getHudCenters,
-      spawnCoinsForSaleValue
+      spawnCoinsForSaleValue,
+      playSellItemsToButton,
+      sellButtonElement
     });
   }
 

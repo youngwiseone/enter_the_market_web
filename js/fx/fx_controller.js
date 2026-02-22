@@ -183,6 +183,150 @@ export function createFxController(deps) {
     }
   }
 
+  function isElementVisible(element) {
+    if (!(element instanceof Element)) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  }
+
+  function getSellActionButtonElement(preferredElement = null) {
+    if (isElementVisible(preferredElement)) return preferredElement;
+    const candidates = Array.from(document.querySelectorAll('[data-sell-action-button="true"]'));
+    return candidates.find((element) => isElementVisible(element) && !element.disabled) || null;
+  }
+
+  function getGridCellVisual(element) {
+    if (!(element instanceof Element)) return null;
+    return element.querySelector('img:not(.grid-overlay)');
+  }
+
+  function getGridElement() {
+    return document.getElementById('grid');
+  }
+
+  function getMarketTableElement() {
+    return document.getElementById('market-table');
+  }
+
+  function rectFromElementCenter(element) {
+    if (!(element instanceof Element)) return null;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return rect;
+  }
+
+  function applyImpactStrength(element, strength) {
+    if (!(element instanceof Element)) return;
+    const normalized = Math.max(0, Number(strength) || 0);
+    const px = (2 + normalized * 1.8).toFixed(2);
+    element.style.setProperty('--fx-impact-distance', `${px}px`);
+  }
+
+  function waitForMs(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  function animateSingleSellItem(cellIndex, targetRect) {
+    const cell = document.querySelector(`#grid .grid-cell[data-index="${cellIndex}"]`);
+    if (!cell) return Promise.resolve(false);
+    const cellRect = cell.getBoundingClientRect();
+    const image = getGridCellVisual(cell);
+    const sourcePath = image?.currentSrc || image?.src || '';
+    const sprite = document.createElement(sourcePath ? 'img' : 'div');
+    if (sourcePath) {
+      sprite.src = sourcePath;
+      sprite.alt = '';
+    } else {
+      sprite.style.background = 'rgba(255,255,255,0.8)';
+      sprite.style.border = '1px solid rgba(0,0,0,0.25)';
+      sprite.style.borderRadius = '4px';
+    }
+    const startX = cellRect.left + cellRect.width / 2;
+    const startY = cellRect.top + cellRect.height / 2;
+    const endX = targetRect.left + targetRect.width / 2;
+    const endY = targetRect.top + targetRect.height / 2;
+    const size = Math.max(32, Math.min(46, Math.round(Math.min(cellRect.width, cellRect.height) * 0.95)));
+    Object.assign(sprite.style, {
+      position: 'fixed',
+      left: `${startX}px`,
+      top: `${startY}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'translate(-50%, -50%) scale(1)',
+      transformOrigin: 'center',
+      opacity: '1',
+      pointerEvents: 'none',
+      zIndex: '9999',
+      transition: 'transform 220ms cubic-bezier(0.2, 0.82, 0.24, 1), opacity 220ms ease-out'
+    });
+    document.body.appendChild(sprite);
+    return new Promise((resolve) => {
+      const finish = () => {
+        sprite.remove();
+        resolve(true);
+      };
+      window.requestAnimationFrame(() => {
+        sprite.style.transform = `translate(-50%, -50%) translate(${Math.round(endX - startX)}px, ${Math.round(endY - startY)}px) scale(0.15)`;
+        sprite.style.opacity = '0.2';
+      });
+      window.setTimeout(finish, 230);
+    });
+  }
+
+  async function playSellItemsToButton(cellEntries, preferredButtonElement = null, options = null) {
+    if (fxState.reduceMotion) return;
+    if (!Array.isArray(cellEntries) || cellEntries.length === 0) return;
+    const indices = cellEntries
+      .map((entry) => Number(entry?.cellIndex))
+      .filter((index) => Number.isInteger(index) && index >= 0)
+      .sort((left, right) => left - right);
+    if (!indices.length) return;
+    const totalFromOptions = Number(options?.totalItems);
+    const startIndexFromOptions = Number(options?.startIndex);
+    const total = Number.isFinite(totalFromOptions) && totalFromOptions > 0
+      ? Math.max(indices.length, Math.floor(totalFromOptions))
+      : indices.length;
+    const startIndex = Number.isFinite(startIndexFromOptions) && startIndexFromOptions >= 0
+      ? Math.floor(startIndexFromOptions)
+      : 0;
+    const baseBatchStrength = Math.min(3.2, 0.8 + (total - 1) * 0.22);
+    const staggerMs = 35;
+    const grid = getGridElement();
+    const marketTable = getMarketTableElement();
+    for (let i = 0; i < indices.length; i += 1) {
+      const sequenceIndex = startIndex + i;
+      const progressiveStrength = Math.min(3.6, baseBatchStrength + sequenceIndex * 0.1);
+      applyImpactStrength(grid, progressiveStrength * 0.75);
+      applyImpactStrength(marketTable, progressiveStrength);
+      if (grid) {
+        triggerFxClass(grid, 'fx-grid-jiggle');
+      }
+      const button = getSellActionButtonElement(preferredButtonElement);
+      const targetRect = button
+        ? button.getBoundingClientRect()
+        : rectFromElementCenter(marketTable);
+      if (!targetRect) continue;
+      if (targetRect.width <= 0 || targetRect.height <= 0) continue;
+      // Sequential travel creates clear left-to-right harvest sell feedback.
+      const didAnimate = await animateSingleSellItem(indices[i], targetRect);
+      if (didAnimate) {
+        if (button) {
+          triggerFxClass(button, 'fx-pop');
+        }
+        if (marketTable) {
+          triggerFxClass(marketTable, 'fx-shake-impact');
+        }
+      }
+      if (i < indices.length - 1) {
+        await waitForMs(staggerMs);
+      }
+    }
+  }
+
   function fxTick(ts) {
     if (!fxState.running || !fxState.ctx) return;
     const dt = Math.min(64, ts - fxState.lastTs);
@@ -375,6 +519,7 @@ export function createFxController(deps) {
     spawnRing,
     spawnCoinTravel,
     spawnCoinsForSaleValue,
+    playSellItemsToButton,
     triggerFxClass,
     getTileCenter,
     getHudCenters,

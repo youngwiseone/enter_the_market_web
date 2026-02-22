@@ -132,6 +132,7 @@ export function attachCoreEventHandlers(deps) {
     if (selectedGridCellIndex === null && selectedGridCellIndices.size === 0) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (target.closest('[data-sell-action-button="true"]')) return;
     const gridCell = target.closest('.grid-cell');
     if (gridCell) {
       const indexText = gridCell.getAttribute('data-index');

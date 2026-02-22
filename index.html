@@ -2297,6 +2297,12 @@
         .fx-shake { 
             animation: fx-shake 120ms ease-in-out; 
         } 
+        .fx-shake-impact {
+            animation: fx-shake-impact 150ms ease-in-out;
+        }
+        .fx-grid-jiggle {
+            animation: fx-grid-jiggle 180ms ease-in-out;
+        }
         .fx-wobble { 
             animation: fx-wobble 180ms ease-in-out; 
         } 
@@ -2345,6 +2351,21 @@
             80% { transform: translate(1px, 2px); } 
             100% { transform: translate(0, 0); } 
         } 
+        @keyframes fx-shake-impact {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(calc(var(--fx-impact-distance, 2px) * -1), calc(var(--fx-impact-distance, 2px) * 0.35)); }
+            40% { transform: translate(var(--fx-impact-distance, 2px), calc(var(--fx-impact-distance, 2px) * -0.35)); }
+            60% { transform: translate(calc(var(--fx-impact-distance, 2px) * -0.6), calc(var(--fx-impact-distance, 2px) * -0.7)); }
+            80% { transform: translate(calc(var(--fx-impact-distance, 2px) * 0.6), calc(var(--fx-impact-distance, 2px) * 0.7)); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes fx-grid-jiggle {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(calc(var(--fx-impact-distance, 2px) * -0.55), calc(var(--fx-impact-distance, 2px) * 0.28)) rotate(-0.5deg); }
+            50% { transform: translate(calc(var(--fx-impact-distance, 2px) * 0.55), calc(var(--fx-impact-distance, 2px) * -0.28)) rotate(0.5deg); }
+            75% { transform: translate(calc(var(--fx-impact-distance, 2px) * -0.3), calc(var(--fx-impact-distance, 2px) * -0.45)) rotate(-0.25deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
         @keyframes fx-wobble { 
             0% { transform: rotate(0deg); } 
             25% { transform: rotate(-2deg); } 
@@ -2398,7 +2419,7 @@
             }
         }
         @media (prefers-reduced-motion: reduce) { 
-            .fx-pop, .fx-shake, .fx-wobble, .fx-pulse-up, .fx-pulse-down, .fx-fade-up, .fx-camera-nudge, .fx-day-wipe, .fx-panel-tint { 
+            .fx-pop, .fx-shake, .fx-shake-impact, .fx-grid-jiggle, .fx-wobble, .fx-pulse-up, .fx-pulse-down, .fx-fade-up, .fx-camera-nudge, .fx-day-wipe, .fx-panel-tint { 
                 animation: none !important; 
             } 
             .profile-avatar-shake {

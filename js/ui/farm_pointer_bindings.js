@@ -2,6 +2,8 @@ export function stopFarmPointerInteractionAction(farmPointerState) {
   farmPointerState.active = false;
   farmPointerState.pointerId = null;
   farmPointerState.processedIndices.clear();
+  farmPointerState.startIndex = null;
+  farmPointerState.didPromoteStartToBulk = false;
 }
 
 export function installFarmPointerHandlersAction(deps) {
@@ -10,7 +12,8 @@ export function installFarmPointerHandlersAction(deps) {
     getGridIndexFromPointerEvent,
     farmPointerState,
     applyGridActionForIndex,
-    stopFarmPointerInteraction
+    stopFarmPointerInteraction,
+    shouldPromoteStartToBulk
   } = deps;
 
   const grid = document.getElementById('grid');
@@ -25,6 +28,8 @@ export function installFarmPointerHandlersAction(deps) {
     farmPointerState.pointerId = event.pointerId;
     farmPointerState.processedIndices.clear();
     farmPointerState.processedIndices.add(index);
+    farmPointerState.startIndex = index;
+    farmPointerState.didPromoteStartToBulk = false;
     farmPointerState.suppressClickUntil = Date.now() + 260;
     applyGridActionForIndex(index, { mode: 'tap' });
     if (typeof grid.setPointerCapture === 'function') {
@@ -46,6 +51,16 @@ export function installFarmPointerHandlersAction(deps) {
     }
     const index = getGridIndexFromPointerEvent(event);
     if (!Number.isInteger(index)) return;
+    if (
+      !farmPointerState.didPromoteStartToBulk
+      && Number.isInteger(farmPointerState.startIndex)
+      && typeof shouldPromoteStartToBulk === 'function'
+      && shouldPromoteStartToBulk(farmPointerState.startIndex)
+    ) {
+      // First move turns the starting tapped cell into bulk selection.
+      applyGridActionForIndex(farmPointerState.startIndex, { mode: 'drag' });
+      farmPointerState.didPromoteStartToBulk = true;
+    }
     if (farmPointerState.processedIndices.has(index)) return;
     farmPointerState.processedIndices.add(index);
     applyGridActionForIndex(index, { mode: 'drag' });

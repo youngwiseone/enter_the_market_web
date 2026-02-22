@@ -52,15 +52,21 @@ export function renderSelectedItemInsightAction(deps) {
     farmDock.classList.remove('is-visible');
     farmButton.textContent = '';
     farmButton.disabled = true;
+    delete farmButton.dataset.sellActionButton;
     farmButton.onclick = null;
     setRestReplacementMode(false);
   }
 
-  function setFarmActionButton(label, onClick, disabled = false) {
+  function setFarmActionButton(label, onClick, disabled = false, isSellAction = false) {
     if (!farmDock || !farmButton) return;
     farmDock.classList.add('is-visible');
     farmButton.textContent = label;
     farmButton.disabled = !!disabled;
+    if (isSellAction) {
+      farmButton.dataset.sellActionButton = 'true';
+    } else {
+      delete farmButton.dataset.sellActionButton;
+    }
     farmButton.onclick = onClick || null;
     setRestReplacementMode(isMobileLayout && isFarmVisible);
   }
@@ -69,21 +75,24 @@ export function renderSelectedItemInsightAction(deps) {
     if (bulkInsight && bulkInsight.count > 0) {
       setFarmActionButton(
         `Sell for $${bulkInsight.totalSale.toFixed(2)} (profit ${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)})`,
-        () => sellBulkSelectedGridItems(),
-        false
+        () => sellBulkSelectedGridItems(farmButton),
+        false,
+        true
       );
     } else if (gridInsight) {
       if (gridInsight.canSell) {
         setFarmActionButton(
           `Sell for $${gridInsight.sellNow.toFixed(2)} (profit ${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)})`,
-          () => sellSelectedGridItem(),
-          false
+          () => sellSelectedGridItem(farmButton),
+          false,
+          true
         );
       } else {
         setFarmActionButton(
           `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`,
           null,
-          true
+          true,
+          false
         );
       }
     } else {
@@ -116,7 +125,7 @@ export function renderSelectedItemInsightAction(deps) {
         ['Total Bought', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
         ['Total Sell Now', `$${bulkInsight.totalSale.toFixed(2)}`, ''],
         ['Bulk Profit', `${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)}`, bulkInsight.totalProfit >= 0 ? 'good' : 'bad'],
-        ['Energy Cost', `${bulkInsight.count}`, '']
+        ['Energy Cost', '0', 'good']
       ];
       rows.forEach(([label, value, tone]) => {
         const metric = document.createElement('div');
@@ -142,8 +151,9 @@ export function renderSelectedItemInsightAction(deps) {
       sellButton.type = 'button';
       sellButton.className = 'button';
       sellButton.textContent = `Sell Selected (${bulkInsight.count})`;
+      sellButton.dataset.sellActionButton = 'true';
       sellButton.addEventListener('click', () => {
-        sellBulkSelectedGridItems();
+        sellBulkSelectedGridItems(sellButton);
       });
       chipRow.appendChild(sellButton);
       panel.appendChild(chipRow);
@@ -196,8 +206,11 @@ export function renderSelectedItemInsightAction(deps) {
       sellButton.className = 'button';
       sellButton.textContent = gridInsight.canSell ? `Sell Selected ($${gridInsight.sellNow.toFixed(2)})` : 'Sell Selected (Locked)';
       sellButton.disabled = !gridInsight.canSell;
+      if (gridInsight.canSell) {
+        sellButton.dataset.sellActionButton = 'true';
+      }
       sellButton.addEventListener('click', () => {
-        sellSelectedGridItem();
+        sellSelectedGridItem(sellButton);
       });
       chipRow.appendChild(sellButton);
       panel.appendChild(chipRow);
