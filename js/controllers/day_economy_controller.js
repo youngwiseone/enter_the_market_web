@@ -12,6 +12,7 @@ export function createDayEconomyController(deps) {
   } = deps;
 
   let lowEnergyNoticeDay = null;
+  let weatherForecastNoticeDay = null;
 
   function registerSaleEvent(itemName, saleValue, quantity = 1) {
     const safeValue = Math.max(0, Number(saleValue) || 0);
@@ -70,11 +71,28 @@ export function createDayEconomyController(deps) {
         }
       });
     }
+    const currentEnergyMax = Math.max(1, Number(state.player.energyMax) || 1);
+    const energyRatio = Math.max(0, Number(state.player.energy) || 0) / currentEnergyMax;
+    const isRainTomorrow = String(state.nextDayWeather?.id || '') === 'rain';
+    if (energyRatio <= 0.10 && isRainTomorrow && weatherForecastNoticeDay !== state.player.day) {
+      weatherForecastNoticeDay = state.player.day;
+      addMessage({
+        id: 'weather.storm_tomorrow_warning',
+        meta: {
+          speaker: 'farmer',
+          emotion: 'neutral',
+          category: 'weather',
+          priority: 'low',
+          replaceKey: 'weather:forecast'
+        }
+      });
+    }
     return true;
   }
 
   function resetLowEnergyNoticeDay() {
     lowEnergyNoticeDay = null;
+    weatherForecastNoticeDay = null;
   }
 
   function getCurrentDaySnapshot() {
@@ -126,6 +144,8 @@ export function createDayEconomyController(deps) {
   }
 
   function generateDailyTip() {
+    const isRainDay = String(state.weather?.id || '') === 'rain';
+    if (isRainDay) return;
     const optionalTips = [];
     let bestBuy = null;
     let bestBuyDiff = 0;

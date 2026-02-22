@@ -117,6 +117,7 @@ export function renderMarketAction(deps) {
   }
   if (gridEl) {
     gridEl.classList.toggle('farm-two', state.activeFarmId === FARM_SECONDARY_ID);
+    gridEl.classList.toggle('weather-rain', String(state.weather?.id || '') === 'rain');
   }
 
   updateFarmToggleButton();
@@ -406,6 +407,82 @@ export function renderMarketAction(deps) {
       ev.preventDefault();
     });
     if (gridEl) gridEl.appendChild(cell);
+  }
+  if (gridEl && String(state.weather?.id || '') === 'rain') {
+    const rainOverlay = document.createElement('div');
+    rainOverlay.className = 'weather-rain-overlay';
+    rainOverlay.setAttribute('aria-hidden', 'true');
+
+    // Deterministic per-day/per-farm splash layout so visuals look lively
+    // without flickering to new random positions on every render.
+    let splashSeed = (
+      ((Number(state.player?.day) || 1) * 1103515245)
+      + ((Number(state.activeFarmId) || 1) * 12345)
+    ) >>> 0;
+    const nextSplashRand = () => {
+      splashSeed = (splashSeed * 1664525 + 1013904223) >>> 0;
+      return splashSeed / 4294967296;
+    };
+    const GRID_SIDE = 7;
+    const totalCells = GRID_SIDE * GRID_SIDE;
+    const cellIndices = Array.from({ length: totalCells }, (_, idx) => idx);
+    for (let i = cellIndices.length - 1; i > 0; i -= 1) {
+      const swapIndex = Math.floor(nextSplashRand() * (i + 1));
+      const temp = cellIndices[i];
+      cellIndices[i] = cellIndices[swapIndex];
+      cellIndices[swapIndex] = temp;
+    }
+
+    const splashCount = 16;
+    const appendSplash = ({ x, y, size, durationMs, delayMs, variant = '' }) => {
+      const splash = document.createElement('span');
+      splash.className = `weather-rain-splash size-${size}${variant ? ` ${variant}` : ''}`;
+      splash.style.setProperty('--splash-x', `${Math.max(2, Math.min(98, x))}%`);
+      splash.style.setProperty('--splash-y', `${Math.max(4, Math.min(96, y))}%`);
+      splash.style.setProperty('--splash-duration', `${durationMs}ms`);
+      splash.style.setProperty('--splash-delay', `${delayMs}ms`);
+      rainOverlay.appendChild(splash);
+    };
+
+    for (let splashIndex = 0; splashIndex < splashCount; splashIndex += 1) {
+      const cellIndex = cellIndices[splashIndex % cellIndices.length];
+      const row = Math.floor(cellIndex / GRID_SIDE);
+      const col = cellIndex % GRID_SIDE;
+      const cellCenterX = ((col + 0.5) / GRID_SIDE) * 100;
+      const cellCenterY = ((row + 0.5) / GRID_SIDE) * 100;
+      const jitterX = (nextSplashRand() - 0.5) * 8.5;
+      const jitterY = (nextSplashRand() - 0.5) * 8.5;
+      const sizeRoll = nextSplashRand();
+      const splashSize = sizeRoll < 0.5 ? 1 : (sizeRoll < 0.84 ? 2 : 3);
+      const x = cellCenterX + jitterX;
+      const y = cellCenterY + jitterY;
+      const durationMs = 1800 + Math.round(nextSplashRand() * 1800);
+      const delayMs = -Math.round(nextSplashRand() * durationMs);
+      appendSplash({ x, y, size: splashSize, durationMs, delayMs });
+
+      // Break larger impacts into a few smaller nearby splashes so they feel less blob-like.
+      if (splashSize === 3) {
+        const shardCount = 2 + Math.floor(nextSplashRand() * 2);
+        for (let shardIndex = 0; shardIndex < shardCount; shardIndex += 1) {
+          const angle = nextSplashRand() * Math.PI * 2;
+          const radius = 1.5 + (nextSplashRand() * 3.8);
+          const shardX = x + (Math.cos(angle) * radius);
+          const shardY = y + (Math.sin(angle) * radius * 0.7);
+          const shardDuration = Math.max(1200, durationMs - (220 + Math.round(nextSplashRand() * 500)));
+          const shardDelay = delayMs + Math.round(nextSplashRand() * 180) - 90;
+          const shardSize = nextSplashRand() < 0.7 ? 1 : 2;
+          appendSplash({
+            x: shardX,
+            y: shardY,
+            size: shardSize,
+            durationMs: shardDuration,
+            delayMs: shardDelay,
+            variant: 'is-shard'
+          });
+        }
+      }
+    }
+    gridEl.appendChild(rainOverlay);
   }
   if (runtimeFlags) {
     runtimeFlags.gridPriceBadgesVisibleLastRender = lastGridPriceBadgeVisible;

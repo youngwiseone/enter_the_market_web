@@ -232,6 +232,7 @@ export function createFarmUiRuntimeController(deps) {
       state,
       tool,
       TOOL_LIST,
+      TOOL_PICKAXE,
       isToolUnlocked,
       addMessage,
       updateToolButtons,

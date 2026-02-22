@@ -231,6 +231,7 @@ export function setActiveToolAction(deps) {
     state,
     tool,
     TOOL_LIST,
+    TOOL_PICKAXE,
     isToolUnlocked,
     addMessage,
     updateToolButtons,
@@ -250,6 +251,17 @@ export function setActiveToolAction(deps) {
   saveToStorage('activeTool', state.activeTool);
   if (typeof onToolSelected === 'function') {
     onToolSelected(tool);
+  }
+  if (tool === TOOL_PICKAXE && String(state.weather?.id || '') === 'rain') {
+    addMessage({
+      id: 'weather.rain_muddy_ground_pickaxe',
+      meta: {
+        speaker: 'farmer',
+        category: 'weather',
+        priority: 'low',
+        replaceKey: 'weather:pickaxe-rain'
+      }
+    });
   }
   return true;
 }

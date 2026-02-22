@@ -70,6 +70,10 @@ export function purchaseAndPlaceSelectedAction(deps) {
     const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
     state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
   }
+  if (String(state.weather?.id || '') === 'rain') {
+    if (Array.isArray(state.gridWateredDay)) state.gridWateredDay[cellIndex] = state.player.day;
+    if (Array.isArray(state.gridWateredCount)) state.gridWateredCount[cellIndex] = 1;
+  }
   awardPlayerXp(xpRewards.plant);
   updateNetWorth();
   evaluateGoals();

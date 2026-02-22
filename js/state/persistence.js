@@ -20,6 +20,8 @@ export function persistFullState(saveFn, state) {
   saveFn('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
   saveFn('lastPriceMovesByItem', state.lastPriceMovesByItem);
   saveFn('dayStartSnapshot', state.dayStartSnapshot);
+  saveFn('weather', state.weather);
+  saveFn('nextDayWeather', state.nextDayWeather);
   saveFn('daySalesCount', state.daySalesCount);
   saveFn('daySalesTotal', state.daySalesTotal);
   saveFn('dayTopSale', state.dayTopSale);

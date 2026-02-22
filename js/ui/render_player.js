@@ -107,8 +107,13 @@ export function renderHUDAction(deps) {
   const { day, cash, netWorth } = state.player;
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const dow = daysOfWeek[(day - 1) % 7];
+  const weatherId = String(state.weather?.id || '');
+  const weatherLabel = weatherId === 'rain' ? 'Rain' : '';
+  if (document.body) {
+    document.body.setAttribute('data-weather', weatherId || 'clear');
+  }
   dayElems.forEach((el) => {
-    el.textContent = `${dow} - Day ${day}`;
+    el.textContent = weatherLabel ? `${dow} - Day ${day} - ${weatherLabel}` : `${dow} - Day ${day}`;
   });
   cashElems.forEach((el) => {
     el.textContent = `Cash: $${cash.toFixed(2)}`;

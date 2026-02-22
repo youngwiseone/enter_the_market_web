@@ -453,6 +453,11 @@
             border: 1px solid var(--header-border, #808080);
             cursor: inherit;
             touch-action: none;
+            position: relative;
+            overflow: hidden;
+        }
+        #grid.weather-rain {
+            box-shadow: inset 0 0 0 1px rgba(120, 180, 255, 0.18), inset 0 0 26px rgba(70, 110, 170, 0.12);
         }
         .grid-cell { 
             box-sizing: border-box; 
@@ -472,7 +477,110 @@
             position: relative; 
             overflow: hidden; 
             transition: transform 80ms ease-out, box-shadow 80ms ease-out; 
+            z-index: 1;
         } 
+        #grid.weather-rain .grid-cell.revealed {
+            filter: saturate(0.95) brightness(0.94);
+        }
+        #grid.weather-rain .grid-cell {
+            box-shadow: inset 0 0 0 999px rgba(110, 150, 200, 0.04);
+        }
+        .weather-rain-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0.95;
+            image-rendering: pixelated;
+        }
+        .weather-rain-overlay::before,
+        .weather-rain-overlay::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .weather-rain-overlay::before {
+            opacity: 0.18;
+            background:
+                linear-gradient(180deg, rgba(180, 210, 255, 0.1), rgba(70, 95, 135, 0)),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(160, 205, 255, 0.08) 0px,
+                    rgba(160, 205, 255, 0.08) 1px,
+                    rgba(255, 255, 255, 0) 1px,
+                    rgba(255, 255, 255, 0) 6px
+                );
+            animation: weather-rain-ambience 2100ms steps(7, end) infinite;
+        }
+        .weather-rain-overlay::after {
+            background: linear-gradient(180deg, rgba(165, 205, 255, 0.08), rgba(55, 85, 130, 0.03));
+        }
+        .weather-rain-splash {
+            position: absolute;
+            left: var(--splash-x, 50%);
+            top: var(--splash-y, 60%);
+            width: 3px;
+            height: 3px;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: none;
+            animation: weather-rain-splash-pop var(--splash-duration, 2200ms) steps(7, end) infinite;
+            animation-delay: var(--splash-delay, 0ms);
+        }
+        .weather-rain-splash::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 3px;
+            background: rgba(210, 235, 255, 0.9);
+            box-shadow:
+                -3px 0 0 rgba(190, 225, 255, 0.72),
+                3px 0 0 rgba(190, 225, 255, 0.72),
+                0 -3px 0 rgba(190, 225, 255, 0.72),
+                0 3px 0 rgba(190, 225, 255, 0.72),
+                -3px -3px 0 rgba(170, 214, 255, 0.42),
+                3px -3px 0 rgba(170, 214, 255, 0.42);
+        }
+        .weather-rain-splash.is-shard {
+            opacity: 0;
+        }
+        .weather-rain-splash.is-shard::before {
+            background: rgba(200, 230, 255, 0.72);
+            box-shadow:
+                -2px 0 0 rgba(175, 215, 255, 0.45),
+                2px 0 0 rgba(175, 215, 255, 0.45),
+                0 -2px 0 rgba(175, 215, 255, 0.4);
+        }
+        @keyframes weather-rain-ambience {
+            0%, 100% { opacity: 0.12; }
+            50% { opacity: 0.22; }
+        }
+        @keyframes weather-rain-splash-pop {
+            0%, 76%, 100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(var(--splash-scale, 1));
+            }
+            79% {
+                opacity: 0.45;
+                transform: translate(-50%, -50%) scale(calc(var(--splash-scale, 1) * 0.82));
+            }
+            86% {
+                opacity: 0.95;
+                transform: translate(-50%, -50%) scale(calc(var(--splash-scale, 1) * 1.22));
+            }
+            94% {
+                opacity: 0.2;
+                transform: translate(-50%, -50%) scale(calc(var(--splash-scale, 1) * 1.55));
+            }
+        }
+        .weather-rain-splash.size-1 { --splash-scale: 0.85; }
+        .weather-rain-splash.size-2 { --splash-scale: 1.25; }
+        .weather-rain-splash.size-3 { --splash-scale: 0.95; }
+        .weather-rain-splash.is-shard.size-1 { --splash-scale: 0.55; }
+        .weather-rain-splash.is-shard.size-2 { --splash-scale: 0.82; }
         @media (hover: hover) and (pointer: fine) { 
             .grid-cell:hover { 
                 transform: translateY(-1px); 
@@ -2486,6 +2594,11 @@
             body.theme-gold #hud-cash,
             body.theme-diamond #hud-cash,
             body.theme-diamond #hud-networth {
+                animation: none !important;
+            }
+            .weather-rain-overlay,
+            .weather-rain-overlay::before,
+            .weather-rain-splash {
                 animation: none !important;
             }
         } 

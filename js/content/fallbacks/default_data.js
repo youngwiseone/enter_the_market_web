@@ -715,6 +715,86 @@ export const DEFAULT_DATA = {
       category: 'progress',
       priority: 'normal',
       template: 'Mixing it up I see!'
+    },
+    {
+      id: 'idle.rain_crops_sparkle',
+      type: 'idle',
+      icon: 'sparkle',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: 'The rain makes your crops sparkle!'
+    },
+    {
+      id: 'idle.rain_cosy_noises',
+      type: 'idle',
+      icon: 'chat',
+      speaker: 'player',
+      emotion: 'neutral',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: '*Cosy rain noises*'
+    },
+    {
+      id: 'idle.rain_free_watering',
+      type: 'idle',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: 'Rain day perk: no watering rounds today.'
+    },
+    {
+      id: 'idle.rain_muddy_boots',
+      type: 'idle',
+      icon: 'chat',
+      speaker: 'player',
+      emotion: 'neutral',
+      category: 'idle',
+      priority: 'low',
+      cooldownMs: 60000,
+      template: 'Muddy boots, happy crops.'
+    },
+    {
+      id: 'weather.rain_today',
+      type: 'weather',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'weather',
+      priority: 'normal',
+      replaceKey: 'weather:today',
+      replaceScope: 'day',
+      template: "It's raining today! No watering needed!"
+    },
+    {
+      id: 'weather.storm_tomorrow_warning',
+      type: 'weather',
+      icon: 'chat',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'weather',
+      priority: 'low',
+      replaceKey: 'weather:forecast',
+      replaceScope: 'day',
+      template: 'Looks like clouds on the horizon.'
+    },
+    {
+      id: 'weather.rain_muddy_ground_pickaxe',
+      type: 'weather',
+      icon: 'pickaxe',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'weather',
+      priority: 'low',
+      replaceKey: 'weather:pickaxe-rain',
+      replaceScope: 'day',
+      template: 'Muddy ground today: mining costs +1 energy.'
     }
   ],
   // History of news events by week. This structure records which

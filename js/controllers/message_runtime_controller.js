@@ -147,6 +147,7 @@ export function createMessageRuntimeController(deps) {
 
   function emitIdleLine() {
     const day = Math.max(1, Number(state.player?.day) || 1);
+    const isRainDay = String(state.weather?.id || '') === 'rain';
     const sessionDuration = formatSessionDurationCompact(getActivePlaytimeMs());
     const itemNamePlural = getRandomGrowingItemPlural();
     const earlyPool = [
@@ -165,7 +166,15 @@ export function createMessageRuntimeController(deps) {
       'idle.anime_hype_3',
       'idle.anime_hype_4'
     ];
-    const pool = day <= 10 ? earlyPool : latePool;
+    const pool = day <= 10 ? earlyPool.slice() : latePool.slice();
+    if (isRainDay) {
+      pool.push(
+        'idle.rain_crops_sparkle',
+        'idle.rain_cosy_noises',
+        'idle.rain_free_watering',
+        'idle.rain_muddy_boots'
+      );
+    }
     const id = pickRandomValue(pool);
     if (!id) return;
     addMessageById(id, { sessionDuration, itemNamePlural });

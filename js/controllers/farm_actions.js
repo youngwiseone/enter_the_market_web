@@ -22,7 +22,8 @@ export function mineGridTileAction(deps) {
 
   if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false;
   if (state.gridUnlocked[index]) return false;
-  const miningEnergyCost = getActiveFarmMiningEnergyCost();
+  const isRainDay = String(state.weather?.id || '') === 'rain';
+  const miningEnergyCost = getActiveFarmMiningEnergyCost() + (isRainDay ? 1 : 0);
   if (!consumeEnergy(miningEnergyCost, 'mine this tile')) return true;
   registerDayAction();
   const mineXpReward = state.activeFarmId === farmSecondaryId ? 40 : xpRewards.mine;

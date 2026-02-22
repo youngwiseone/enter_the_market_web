@@ -1,3 +1,5 @@
+import { normalizeWeatherId, rollWeatherId } from '../sim/weather.js';
+
 export function initialiseStateAction(deps) {
   const {
     state,
@@ -61,6 +63,30 @@ export function initialiseStateAction(deps) {
     ? loadedLastPriceMovesByItem
     : {};
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
+  const loadedWeather = loadFromStorage('weather', null);
+  const loadedNextDayWeather = loadFromStorage('nextDayWeather', null);
+  const currentLoadedDay = Math.max(1, Number(state.player?.day) || 1);
+  state.weather = (loadedWeather && typeof loadedWeather === 'object')
+    ? {
+      id: normalizeWeatherId(loadedWeather.id),
+      rolledOnDay: Math.max(1, Number(loadedWeather.rolledOnDay) || currentLoadedDay)
+    }
+    : {
+      id: normalizeWeatherId('clear'),
+      rolledOnDay: currentLoadedDay
+    };
+  state.nextDayWeather = (loadedNextDayWeather && typeof loadedNextDayWeather === 'object')
+    ? {
+      id: normalizeWeatherId(loadedNextDayWeather.id),
+      rolledOnDay: Math.max(1, Number(loadedNextDayWeather.rolledOnDay) || currentLoadedDay),
+      day: Math.max(currentLoadedDay + 1, Number(loadedNextDayWeather.day) || (currentLoadedDay + 1))
+    }
+    : {
+      // Seed a lightweight forecast so daytime hints can reference tomorrow's weather.
+      id: rollWeatherId(),
+      rolledOnDay: currentLoadedDay,
+      day: currentLoadedDay + 1
+    };
   hydrateDaySalesState(state, loadFromStorage);
   state.newsHistory = loadFromStorage('newsHistory', null) ?? clone(DEFAULT_DATA.newsHistory);
   ensurePlayerProgressState();

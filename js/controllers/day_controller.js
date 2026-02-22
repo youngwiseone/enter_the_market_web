@@ -1,4 +1,44 @@
+import { WEATHER_IDS, rollWeatherId, normalizeWeatherId } from '../sim/weather.js';
+
 const ROLL_MEAN_REVERSION_DAYS = 3;
+
+function applyRainWateringToFarm(farm, dayNumber) {
+  if (!farm || typeof farm !== 'object') return;
+  if (!Array.isArray(farm.gridItems) || !Array.isArray(farm.gridWateredDay) || !Array.isArray(farm.gridWateredCount)) {
+    return;
+  }
+  for (let i = 0; i < farm.gridItems.length; i += 1) {
+    if (!farm.gridItems[i]) continue;
+    if (farm.gridWateredDay[i] === dayNumber) continue;
+    farm.gridWateredDay[i] = dayNumber;
+    farm.gridWateredCount[i] = Math.max(0, Number(farm.gridWateredCount[i]) || 0) + 1;
+  }
+}
+
+function applyDailyWeatherEffects(state, addMessage) {
+  const dayNumber = Math.max(1, Number(state.player?.day) || 1);
+  const weatherId = normalizeWeatherId(state.weather?.id);
+
+  if (weatherId !== WEATHER_IDS.RAIN) return;
+
+  if (state.farms && typeof state.farms === 'object') {
+    Object.values(state.farms).forEach((farm) => {
+      applyRainWateringToFarm(farm, dayNumber);
+    });
+  } else {
+    applyRainWateringToFarm(state, dayNumber);
+  }
+
+  addMessage({
+    id: 'weather.rain_today',
+    meta: {
+      speaker: 'farmer',
+      category: 'weather',
+      priority: 'normal',
+      replaceKey: 'weather:today'
+    }
+  });
+}
 
 export function nextDayAction(deps) {
   const {
@@ -70,6 +110,7 @@ export function nextDayAction(deps) {
     });
   }
 
+  const nextDayWeatherId = normalizeWeatherId(state.nextDayWeather?.id || rollWeatherId());
   state.player.day += 1;
   resetLowEnergyNoticeDay();
   ensurePlayerProgressState();
@@ -78,6 +119,16 @@ export function nextDayAction(deps) {
   state.dayEnergySpent = 0;
   const dowIndex = (state.player.day - 1) % 7;
   if (dowIndex === 0 && state.player.day !== 1) state.player.week += 1;
+  state.weather = {
+    id: nextDayWeatherId,
+    rolledOnDay: Math.max(1, Number(state.player.day) || 1)
+  };
+  state.nextDayWeather = {
+    id: rollWeatherId(),
+    rolledOnDay: Math.max(1, Number(state.player.day) || 1),
+    day: Math.max(1, Number(state.player.day) || 1) + 1
+  };
+  applyDailyWeatherEffects(state, addMessage);
 
   state.shop.forEach((entry) => {
     if (!isShopItemUnlocked(entry.itemId)) return;
