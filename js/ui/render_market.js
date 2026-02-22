@@ -1,3 +1,35 @@
+const MARKET_SORT_KEYS = Object.freeze({
+  NAME: 'name',
+  PRICE: 'price'
+});
+
+let activeMarketSortKey = MARKET_SORT_KEYS.PRICE;
+let activeMarketSortDirection = 'asc';
+
+function compareMarketRows(left, right, sortKey, sortDirection) {
+  const leftName = String(left?.item?.name || '').toLowerCase();
+  const rightName = String(right?.item?.name || '').toLowerCase();
+  const leftPrice = Math.max(0, Number(left?.entry?.price) || 0);
+  const rightPrice = Math.max(0, Number(right?.entry?.price) || 0);
+
+  let primary = 0;
+  if (sortKey === MARKET_SORT_KEYS.NAME) {
+    primary = leftName.localeCompare(rightName);
+    if (primary === 0) primary = leftPrice - rightPrice;
+  } else {
+    primary = leftPrice - rightPrice;
+    if (primary === 0) primary = leftName.localeCompare(rightName);
+  }
+
+  if (primary === 0) {
+    const leftId = Number(left?.item?.id) || 0;
+    const rightId = Number(right?.item?.id) || 0;
+    primary = leftId - rightId;
+  }
+
+  return sortDirection === 'desc' ? -primary : primary;
+}
+
 export function renderMarketAction(deps) {
   const {
     state,
@@ -77,17 +109,47 @@ export function renderMarketAction(deps) {
   const table = document.createElement('table');
   table.className = 'zebra-table';
   const headerRow = document.createElement('tr');
-  ['Img', 'Item', 'Price'].forEach((h) => {
+  [
+    { label: 'Img', sortKey: null },
+    { label: 'Item', sortKey: MARKET_SORT_KEYS.NAME },
+    { label: 'Price', sortKey: MARKET_SORT_KEYS.PRICE }
+  ].forEach(({ label, sortKey }) => {
     const th = document.createElement('th');
-    th.textContent = h;
+    if (!sortKey) {
+      th.textContent = label;
+      headerRow.appendChild(th);
+      return;
+    }
+
+    const isActiveSort = activeMarketSortKey === sortKey;
+    const sortIndicator = isActiveSort ? (activeMarketSortDirection === 'asc' ? ' ^' : ' v') : '';
+    th.textContent = `${label}${sortIndicator}`;
+    th.style.cursor = 'pointer';
+    th.title = isActiveSort ? `Sorted ${activeMarketSortDirection}. Click to toggle.` : 'Click to sort.';
+    th.addEventListener('click', () => {
+      if (activeMarketSortKey === sortKey) {
+        activeMarketSortDirection = activeMarketSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        activeMarketSortKey = sortKey;
+        activeMarketSortDirection = 'asc';
+      }
+      renderMarketAction(deps);
+    });
     headerRow.appendChild(th);
   });
   table.appendChild(headerRow);
 
+  const marketRows = [];
   state.shop.forEach((entry) => {
     if (!isShopItemUnlocked(entry.itemId)) return;
     const item = state.items.find((it) => it.id === entry.itemId);
     if (!item) return;
+    marketRows.push({ entry, item });
+  });
+
+  marketRows
+    .sort((left, right) => compareMarketRows(left, right, activeMarketSortKey, activeMarketSortDirection))
+    .forEach(({ entry, item }) => {
 
     const row = document.createElement('tr');
     row.style.cursor = 'pointer';
