@@ -51,12 +51,22 @@
             flex-direction: column;
         }
         /* Prevent mobile browser tap highlight flash on interactive game UI. */
-        html {
+        html,
+        body,
+        body *,
+        body *::before,
+        body *::after {
             -webkit-tap-highlight-color: transparent;
         }
         #grid,
+        #grid *,
         .grid-cell,
+        .grid-cell *,
         .market-row,
+        .market-row *,
+        #market-table td,
+        #market-table th,
+        #store-content *,
         button,
         .button,
         .tab-button,
