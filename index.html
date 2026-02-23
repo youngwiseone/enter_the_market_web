@@ -50,9 +50,17 @@
             display: flex;
             flex-direction: column;
         }
-        /* Prevent mobile browser tap highlight flash on the farm grid. */
+        /* Prevent mobile browser tap highlight flash on interactive game UI. */
+        html {
+            -webkit-tap-highlight-color: transparent;
+        }
         #grid,
-        .grid-cell {
+        .grid-cell,
+        .market-row,
+        button,
+        .button,
+        .tab-button,
+        .tool-button {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
         }
