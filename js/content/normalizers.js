@@ -115,7 +115,12 @@ export function mergeStoreCosmeticsWithDefaults(store, defaultStore) {
   if (!Array.isArray(store.cosmetics) || store.cosmetics.length !== mergedCosmetics.length) {
     changed = true;
   }
-  return { store: { ...store, cosmetics: mergedCosmetics }, changed };
+  const nextStore = { ...store, cosmetics: mergedCosmetics };
+  if (Object.prototype.hasOwnProperty.call(nextStore, 'crafting')) {
+    delete nextStore.crafting;
+    changed = true;
+  }
+  return { store: nextStore, changed };
 }
 
 export function mergeGoalsWithDefaults(goals, defaultGoals) {

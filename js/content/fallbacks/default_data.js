@@ -801,9 +801,9 @@ export const DEFAULT_DATA = {
   // events were generated on each week so that players can browse
   // previous news. Each entry is an array of event objects.
   newsHistory: [],
-  // Store items for cosmetics and crafting. These
-  // definitions include pricing and unlocked state. When adding more
-  // themes or skins, populate this list accordingly.
+  // Store items for cosmetics. These definitions include pricing and
+  // unlocked state. When adding more themes or skins, populate this
+  // list accordingly.
   store: {
     cosmetics: [
       { id: 'theme-default', name: 'Default', type: 'theme', price: 0, unlocked: true },
@@ -817,11 +817,6 @@ export const DEFAULT_DATA = {
       { id: 'theme-marble',  name: 'Marble Luxe', type: 'theme', price: 20000, unlocked: false },
       { id: 'theme-gold',    name: 'Gold Dynasty', type: 'theme', price: 200000, unlocked: false },
       { id: 'theme-diamond', name: 'Diamond Apex', type: 'theme', price: 2000000, unlocked: false }
-    ],
-    // Future categories: screensavers and UI skins can be added here.
-    crafting: [
-      // Example recipe: 2 units of Copper + 1 unit of Plastic → 1 unit of Circuit at cost
-      { id: 'recipe-circuit', input: [{ id: 3, qty: 2 }, { id: 5, qty: 1 }], output: { id: 6, qty: 1 }, costMultiplier: 0.05 }
     ]
   }
 };

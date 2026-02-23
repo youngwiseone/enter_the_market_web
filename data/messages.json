@@ -377,26 +377,6 @@
       "template": "Insufficient funds to buy this cosmetic."
     },
     {
-      "id": "warning.not_enough_materials",
-      "type": "warning",
-      "icon": "warning",
-      "speaker": "merchant",
-      "emotion": "neutral",
-      "category": "progress",
-      "priority": "normal",
-      "template": "Not enough materials to craft."
-    },
-    {
-      "id": "warning.insufficient_craft_funds",
-      "type": "warning",
-      "icon": "warning",
-      "speaker": "merchant",
-      "emotion": "neutral",
-      "category": "progress",
-      "priority": "normal",
-      "template": "Insufficient funds to craft."
-    },
-    {
       "id": "commerce.theme_purchased",
       "type": "market",
       "icon": "coin",
@@ -415,16 +395,6 @@
       "category": "progress",
       "priority": "normal",
       "template": "Selected {itemName} theme."
-    },
-    {
-      "id": "commerce.crafted_item",
-      "type": "market",
-      "icon": "coin",
-      "speaker": "merchant",
-      "emotion": "neutral",
-      "category": "progress",
-      "priority": "normal",
-      "template": "Crafted {quantity} x {itemName} for ${totalCost}"
     },
     {
       "id": "commerce.bought_item_free",

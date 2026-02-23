@@ -61,8 +61,7 @@ export function createUiRuntimeController(deps) {
         currentStoreTab = tab;
       },
       purchaseCosmetic: deps.purchaseCosmetic,
-      selectCosmetic: deps.selectCosmetic,
-      craftItem: deps.craftItem
+      selectCosmetic: deps.selectCosmetic
     });
   }
 

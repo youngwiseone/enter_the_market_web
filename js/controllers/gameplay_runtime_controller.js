@@ -6,7 +6,6 @@ export function createGameplayRuntimeController(deps) {
     purchaseCosmeticAction,
     selectCosmeticAction,
     applyThemeAction,
-    craftItemAction,
     mineGridTileAction,
     waterGridTileAction,
     purchaseAndPlaceSelectedAction,
@@ -124,17 +123,6 @@ export function createGameplayRuntimeController(deps) {
 
   function applyTheme(themeId) {
     applyThemeAction(themeId);
-  }
-
-  function craftItem(recipeId, quantity) {
-    craftItemAction({
-      state,
-      recipeId,
-      quantity,
-      saveState,
-      addMessage,
-      renderAll
-    });
   }
 
   function mineGridTile(index) {
@@ -275,7 +263,6 @@ export function createGameplayRuntimeController(deps) {
     purchaseCosmetic,
     selectCosmetic,
     applyTheme,
-    craftItem,
     mineGridTile,
     waterGridTile,
     purchaseAndPlaceSelected,

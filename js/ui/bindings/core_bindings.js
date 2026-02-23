@@ -105,14 +105,13 @@ export function attachCoreEventHandlers(deps) {
       if (event.target === daySummaryModal) continueDaySummaryModal();
     });
   }
-  document.getElementById('store-cosmetics').onclick = () => {
-    setCurrentStoreTab('cosmetics');
-    renderStore();
-  };
-  document.getElementById('store-crafting').onclick = () => {
-    setCurrentStoreTab('crafting');
-    renderStore();
-  };
+  const storeCosmeticsButton = document.getElementById('store-cosmetics');
+  if (storeCosmeticsButton) {
+    storeCosmeticsButton.onclick = () => {
+      setCurrentStoreTab('cosmetics');
+      renderStore();
+    };
+  }
   document.getElementById('reset-game').onclick = resetGame;
   document.getElementById('next-day').onclick = nextDay;
 

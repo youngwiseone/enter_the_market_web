@@ -122,7 +122,6 @@ import {
 } from './js/controllers/shop_market_controller.js';
 import { buyItemAction, sellItemAction } from './js/controllers/shop_controller.js';
 import {
-  craftItemAction,
   purchaseCosmeticAction,
   selectCosmeticAction
 } from './js/controllers/store_cosmetics.js';
@@ -1014,10 +1013,8 @@ function renderMarket() {
 }
 
 /**
- * Render the Store tab. Handles sub‑tabs for cosmetics and crafting.
- * Based on the selected sub‑tab, the store content
- * area is populated accordingly. Buttons to buy or select items call
- * into functions that update state and persist changes.
+ * Render the Store tab. The store content area is populated with
+ * cosmetics and buttons that update state and persist changes.
  */
 const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   state,
@@ -1040,7 +1037,6 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   renderProfileGoalSummaryAction,
   purchaseCosmetic,
   selectCosmetic,
-  craftItem,
   getGoalConditions,
   getGoalMetricValue,
   doesConditionMeet,
@@ -1427,7 +1423,6 @@ const gameplayRuntimeController = createGameplayRuntimeController({
   purchaseCosmeticAction,
   selectCosmeticAction,
   applyThemeAction: applyThemeDom,
-  craftItemAction,
   mineGridTileAction,
   waterGridTileAction,
   purchaseAndPlaceSelectedAction,
@@ -1660,19 +1655,6 @@ function selectCosmetic(itemId) {
  */
 function applyTheme(themeId) {
   gameplayRuntimeController.applyTheme(themeId);
-}
-
-/**
- * Craft items using a recipe. Consumes input items from the player's
- * inventory and produces the output item at a cost. This function
- * should enforce requirements like sufficient input quantities and
- * cash to cover craft cost.
- *
- * @param {string} recipeId The identifier of the recipe to execute
- * @param {number} quantity The number of times to perform the recipe
- */
-function craftItem(recipeId, quantity) {
-  gameplayRuntimeController.craftItem(recipeId, quantity);
 }
 
 /**
