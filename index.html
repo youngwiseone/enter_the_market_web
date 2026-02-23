@@ -50,6 +50,12 @@
             display: flex;
             flex-direction: column;
         }
+        /* Prevent mobile browser tap highlight flash on the farm grid. */
+        #grid,
+        .grid-cell {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
         #hud {
             display: flex;
             flex-wrap: wrap;
