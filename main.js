@@ -249,7 +249,6 @@ import {
 import { renderMarketAction } from './js/ui/render_market.js';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js';
 import { createMessagesController } from './js/ui/messages_controller.js';
-import { renderStorePanel } from './js/ui/render_store.js';
 import { renderAllAction } from './js/ui/render_root.js';
 import {
   installSidePanelScrollHandlersAction,
@@ -265,10 +264,12 @@ import {
 import { createUiRuntimeController } from './js/ui/ui_runtime_controller.js';
 import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js';
 import {
-  getCurrentStoreUnlockIdsAction,
-  getNewStoreUnlockCountAction,
+  getCurrentMarketUnlockIdsAction,
+  getNewMarketUnlockCountAction,
+  getNewMarketUnlockCountsAction,
   getPendingGoalsCountAction,
-  markStoreUnlocksSeenAction,
+  markMarketUnlocksSeenAction,
+  markMarketUnlocksSeenForViewAction,
   renderProfileGoalSummaryAction,
   setTabBadgeCountAction,
   updateTabNotificationBadgesAction
@@ -1005,6 +1006,34 @@ function renderMarket() {
         ? farmUiRuntimeController.getGridPriceBadgeDisplayState()
         : { visible: false, fading: false }
     ),
+    purchaseCosmetic,
+    selectCosmetic,
+    isStoreTabUnlocked,
+    getCurrentMarketTableView: () => (
+      uiRuntimeController && typeof uiRuntimeController.getCurrentMarketTableView === 'function'
+        ? uiRuntimeController.getCurrentMarketTableView()
+        : 'items'
+    ),
+    setCurrentMarketTableView: (viewId) => {
+      if (uiRuntimeController && typeof uiRuntimeController.setCurrentMarketTableView === 'function') {
+        uiRuntimeController.setCurrentMarketTableView(viewId);
+      }
+    },
+    markMarketUnlocksSeenForView: (viewId) => {
+      if (uiRuntimeController && typeof uiRuntimeController.markMarketUnlocksSeenForView === 'function') {
+        uiRuntimeController.markMarketUnlocksSeenForView(viewId);
+      }
+    },
+    isActiveMainTabMarket: () => (
+      uiRuntimeController && typeof uiRuntimeController.isActiveMainTabMarket === 'function'
+        ? uiRuntimeController.isActiveMainTabMarket()
+        : false
+    ),
+    getNewMarketUnlockCounts: () => (
+      uiRuntimeController && typeof uiRuntimeController.getNewMarketUnlockCounts === 'function'
+        ? uiRuntimeController.getNewMarketUnlockCounts()
+        : { market: 0, cosmetics: 0, total: 0 }
+    ),
     farmPointerState: farmPointerRuntimeController.getFarmPointerState(),
     applyGridActionForIndex,
     renderSelectedItemInsight,
@@ -1012,15 +1041,10 @@ function renderMarket() {
   }));
 }
 
-/**
- * Render the Store tab. The store content area is populated with
- * cosmetics and buttons that update state and persist changes.
- */
 const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   state,
   trackRenderCall,
   trackActionDuration,
-  renderStorePanel,
   calculateGoalProgress,
   renderGoalsPanel,
   updateMainViewVisibilityDom,
@@ -1029,14 +1053,14 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   showTabDom,
   renderAllAction,
   getPendingGoalsCountAction,
-  getCurrentStoreUnlockIdsAction,
-  markStoreUnlocksSeenAction,
-  getNewStoreUnlockCountAction,
+  getCurrentMarketUnlockIdsAction,
+  markMarketUnlocksSeenAction,
+  markMarketUnlocksSeenForViewAction,
+  getNewMarketUnlockCountAction,
+  getNewMarketUnlockCountsAction,
   setTabBadgeCountAction,
   updateTabNotificationBadgesAction,
   renderProfileGoalSummaryAction,
-  purchaseCosmetic,
-  selectCosmetic,
   getGoalConditions,
   getGoalMetricValue,
   doesConditionMeet,
@@ -1054,10 +1078,6 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   renderHUD,
   updateTimeOfDayMood
 }));
-
-function renderStore() {
-  uiRuntimeController.renderStore();
-}
 
 function getGoalProgress(goal) {
   return uiRuntimeController.getGoalProgress(goal);
@@ -1186,16 +1206,16 @@ function getPendingGoalsCount() {
   return uiRuntimeController.getPendingGoalsCount();
 }
 
-function getCurrentStoreUnlockIds() {
-  return uiRuntimeController.getCurrentStoreUnlockIds();
+function getCurrentMarketUnlockIds() {
+  return uiRuntimeController.getCurrentMarketUnlockIds();
 }
 
-function markStoreUnlocksSeen() {
-  uiRuntimeController.markStoreUnlocksSeen();
+function markMarketUnlocksSeen() {
+  uiRuntimeController.markMarketUnlocksSeen();
 }
 
-function getNewStoreUnlockCount() {
-  return uiRuntimeController.getNewStoreUnlockCount();
+function getNewMarketUnlockCount() {
+  return uiRuntimeController.getNewMarketUnlockCount();
 }
 
 function setTabBadgeCount(badgeId, count) {
@@ -2006,8 +2026,6 @@ function attachEventHandlers() {
     continueGoalCelebration: sessionRuntimeController.continueGoalCelebration,
     continueDailyRollModal: sessionRuntimeController.continueDailyRollModal,
     continueDaySummaryModal: sessionRuntimeController.continueDaySummaryModal,
-    setCurrentStoreTab: uiRuntimeController.setCurrentStoreTab,
-    renderStore,
     resetGame,
     nextDay,
     clearShopSelection,
@@ -2046,7 +2064,7 @@ async function main() {
     attachEventHandlers,
     startPlaytimeTracking: sessionRuntimeController.startPlaytimeTracking,
     initialiseMessageUI,
-    markStoreUnlocksSeen,
+    markMarketUnlocksSeen,
     updateToolButtons,
     refreshTimedGridPriceBadgeVisibilityForCurrentTool: () => {
       if (farmUiRuntimeController && typeof farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool === 'function') {

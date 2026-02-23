@@ -8,12 +8,35 @@ const GOAL_FILTER_OPTIONS = [
   { id: 'other', label: 'Other' }
 ];
 
+const MARKET_TABLE_VIEW_STORAGE_KEY = 'etm.market_table_view';
+
+function normalizeMarketTableView(view) {
+  return view === 'cosmetics' ? 'cosmetics' : 'items';
+}
+
+function readPersistedMarketTableView() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return 'items';
+    return normalizeMarketTableView(window.localStorage.getItem(MARKET_TABLE_VIEW_STORAGE_KEY));
+  } catch {
+    return 'items';
+  }
+}
+
+function persistMarketTableView(view) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.setItem(MARKET_TABLE_VIEW_STORAGE_KEY, normalizeMarketTableView(view));
+  } catch {
+    // Ignore storage failures; UI state still works for this session.
+  }
+}
+
 export function createUiRuntimeController(deps) {
   const {
     state,
     trackRenderCall,
     trackActionDuration,
-    renderStorePanel,
     calculateGoalProgress,
     renderGoalsPanel,
     updateMainViewVisibilityDom,
@@ -22,20 +45,22 @@ export function createUiRuntimeController(deps) {
     showTabDom,
     renderAllAction,
     getPendingGoalsCountAction,
-    getCurrentStoreUnlockIdsAction,
-    markStoreUnlocksSeenAction,
-    getNewStoreUnlockCountAction,
+    getCurrentMarketUnlockIdsAction,
+    markMarketUnlocksSeenAction,
+    markMarketUnlocksSeenForViewAction,
+    getNewMarketUnlockCountAction,
+    getNewMarketUnlockCountsAction,
     setTabBadgeCountAction,
     updateTabNotificationBadgesAction,
     renderProfileGoalSummaryAction
   } = deps;
 
-  let currentStoreTab = 'cosmetics';
   let currentGoalFilter = 'all';
+  let currentMarketTableView = readPersistedMarketTableView();
   let activeMainTab = 'market';
   let tabBeforeMessages = 'market';
   let highlightedGoalId = null;
-  const seenStoreUnlockIds = new Set();
+  const seenMarketUnlockIds = new Set();
 
   function getCurrentGoalFilter() {
     return currentGoalFilter;
@@ -45,24 +70,13 @@ export function createUiRuntimeController(deps) {
     currentGoalFilter = filterId;
   }
 
-  function getCurrentStoreTab() {
-    return currentStoreTab;
+  function getCurrentMarketTableView() {
+    return currentMarketTableView;
   }
 
-  function setCurrentStoreTab(tab) {
-    currentStoreTab = tab;
-  }
-
-  function renderStore() {
-    renderStorePanel({
-      state,
-      currentStoreTab,
-      setCurrentStoreTab: (tab) => {
-        currentStoreTab = tab;
-      },
-      purchaseCosmetic: deps.purchaseCosmetic,
-      selectCosmetic: deps.selectCosmetic
-    });
+  function setCurrentMarketTableView(viewId) {
+    currentMarketTableView = normalizeMarketTableView(viewId);
+    persistMarketTableView(currentMarketTableView);
   }
 
   function getGoalProgress(goal) {
@@ -91,6 +105,10 @@ export function createUiRuntimeController(deps) {
 
   function updateMainViewVisibility() {
     updateMainViewVisibilityDom(activeMainTab);
+  }
+
+  function isActiveMainTabMarket() {
+    return activeMainTab === 'market';
   }
 
   function updateMainTabButtons() {
@@ -126,12 +144,10 @@ export function createUiRuntimeController(deps) {
       },
       updateMainViewVisibility,
       updateMainTabButtons,
-      markStoreUnlocksSeen,
       renderMarket: deps.renderMarket,
       renderSelectedItemInsight: deps.renderSelectedItemInsight,
       renderGuidancePanel: deps.renderGuidancePanel,
       renderEnergyBar: deps.renderEnergyBar,
-      renderStore,
       renderGoals,
       updateTabNotificationBadges,
       updateGridSize: deps.updateGridSize,
@@ -143,16 +159,24 @@ export function createUiRuntimeController(deps) {
     return getPendingGoalsCountAction(state, deps.doesGoalMeetCondition);
   }
 
-  function getCurrentStoreUnlockIds() {
-    return getCurrentStoreUnlockIdsAction(state, deps.isShopItemUnlocked);
+  function getCurrentMarketUnlockIds() {
+    return getCurrentMarketUnlockIdsAction(state, deps.isShopItemUnlocked);
   }
 
-  function markStoreUnlocksSeen() {
-    markStoreUnlocksSeenAction(seenStoreUnlockIds, getCurrentStoreUnlockIds);
+  function markMarketUnlocksSeen() {
+    markMarketUnlocksSeenAction(seenMarketUnlockIds, getCurrentMarketUnlockIds);
   }
 
-  function getNewStoreUnlockCount() {
-    return getNewStoreUnlockCountAction(seenStoreUnlockIds, getCurrentStoreUnlockIds);
+  function markMarketUnlocksSeenForView(viewId = currentMarketTableView) {
+    markMarketUnlocksSeenForViewAction(seenMarketUnlockIds, getCurrentMarketUnlockIds, viewId);
+  }
+
+  function getNewMarketUnlockCount() {
+    return getNewMarketUnlockCountAction(seenMarketUnlockIds, getCurrentMarketUnlockIds);
+  }
+
+  function getNewMarketUnlockCounts() {
+    return getNewMarketUnlockCountsAction(seenMarketUnlockIds, getCurrentMarketUnlockIds);
   }
 
   function setTabBadgeCount(badgeId, count) {
@@ -162,10 +186,11 @@ export function createUiRuntimeController(deps) {
   function updateTabNotificationBadges() {
     updateTabNotificationBadgesAction({
       activeMainTab,
-      markStoreUnlocksSeen,
+      activeMarketTableView: currentMarketTableView,
+      markMarketUnlocksSeenForView,
       setTabBadgeCount,
       getPendingGoalsCount,
-      getNewStoreUnlockCount
+      getNewMarketUnlockCounts
     });
   }
 
@@ -199,7 +224,6 @@ export function createUiRuntimeController(deps) {
       renderGuidancePanel: deps.renderGuidancePanel,
       renderMarket: deps.renderMarket,
       renderSelectedItemInsight: deps.renderSelectedItemInsight,
-      renderStore,
       renderGoals,
       updateMainViewVisibility,
       updateMainTabButtons,
@@ -212,19 +236,21 @@ export function createUiRuntimeController(deps) {
   return {
     getCurrentGoalFilter,
     setCurrentGoalFilter,
-    getCurrentStoreTab,
-    setCurrentStoreTab,
-    renderStore,
+    getCurrentMarketTableView,
+    setCurrentMarketTableView,
     getGoalProgress,
     renderGoals,
     updateMainViewVisibility,
+    isActiveMainTabMarket,
     updateMainTabButtons,
     toggleMessagesPanel,
     showTab,
     getPendingGoalsCount,
-    getCurrentStoreUnlockIds,
-    markStoreUnlocksSeen,
-    getNewStoreUnlockCount,
+    getCurrentMarketUnlockIds,
+    markMarketUnlocksSeen,
+    markMarketUnlocksSeenForView,
+    getNewMarketUnlockCount,
+    getNewMarketUnlockCounts,
     setTabBadgeCount,
     updateTabNotificationBadges,
     renderProfileGoalSummary,

@@ -68,7 +68,6 @@
         .market-row *,
         #market-table td,
         #market-table th,
-        #store-content *,
         button,
         .button,
         .tab-button,
@@ -86,9 +85,6 @@
         #tabs {
             display: flex;
             gap: 4px;
-        }
-        #store {
-            display: none;
         }
         #goals-panel {
             display: none;
@@ -118,12 +114,6 @@
             overflow-y: auto;
             padding: 4px;
         }
-        #store-tabs button {
-            display: block;
-            width: 100%;
-            margin-bottom: 4px;
-        }
-
         #hud span {
             margin-right: 16px;
         }
@@ -1079,6 +1069,28 @@
             gap: 4px;
             flex-wrap: wrap;
         }
+        .market-table-switcher {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin: 0 0 6px;
+            align-items: flex-end;
+        }
+        .market-table-switcher-button.tab-button {
+            min-width: 0;
+            min-height: 26px;
+            padding: 2px 8px;
+            font-size: 12px;
+            line-height: 1.1;
+        }
+        .market-subtable-note {
+            margin: 0 0 6px;
+            padding: 4px 6px;
+            border: 1px solid rgba(127, 127, 127, 0.35);
+            background: rgba(255, 255, 255, 0.45);
+            font-size: 12px;
+            color: #333;
+        }
         .market-guidance {
             margin-top: 6px;
             padding: 6px;
@@ -1283,7 +1295,7 @@
             min-width: 65px;
             padding: 4px 10px;
             font-size: var(--font-ui);
-            background-color: #c0c0c0;
+            background-color: #d4d0c8;
             border-left: 1px solid white;
             border-top: 1px solid white;
             border-right: 1px solid #808080;
@@ -1294,8 +1306,18 @@
             cursor: pointer;
         }
         .tab-button.active {
+            background: linear-gradient(180deg, #ccf0d1 0%, #bdeac4 100%);
+            border-left: 1px solid #808080;
+            border-top: 1px solid #808080;
+            border-right: 1px solid white;
+            border-bottom: 1px solid white;
+        }
+        .tab-button:active {
             background-color: #d4d0c8;
-            border-bottom-color: #d4d0c8;
+            border-left: 1px solid #808080;
+            border-top: 1px solid #808080;
+            border-right: 1px solid white;
+            border-bottom: 1px solid white;
         }
         .tab-badge {
             margin-left: 6px;
@@ -2020,19 +2042,6 @@
             padding: 8px;
             box-sizing: border-box;
         }
-        #store {
-            display: none;
-            flex: 1 1 auto;
-            min-height: 0;
-            max-height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            touch-action: pan-y;
-            position: relative;
-            z-index: 61;
-            pointer-events: auto;
-        }
         #goals-panel {
             flex: 1 1 auto;
             min-height: 0;
@@ -2177,6 +2186,7 @@
             align-self: stretch;
             width: 100%;
             max-width: 100%;
+            margin: 0;
             box-sizing: border-box;
         }
         body.mobile-layout #market {
@@ -2188,8 +2198,24 @@
             width: 100%;
             max-width: 100%;
         }
+        body.mobile-layout #market-table-container,
+        body.mobile-layout #goals-panel {
+            align-self: stretch;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
         body.mobile-layout .market-tabs {
             display: none;
+        }
+        body.mobile-layout .market-table-switcher {
+            display: flex;
+        }
+        body.mobile-layout .market-table-switcher-button.tab-button {
+            min-height: 28px;
+            padding: 3px 8px;
+            font-size: 12px;
         }
         #mobile-profile-row {
             display: flex;
@@ -2362,23 +2388,9 @@
         body.mobile-layout #farm-title {
             order: 1;
         }
-        body.mobile-layout #store-tabs {
-            width: auto !important;
-            float: none !important;
-            display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        body.mobile-layout #store-tabs button {
-            flex: 1 1 auto;
-            margin-bottom: 0;
-        }
-        body.mobile-layout #store-content {
-            margin-left: 0 !important;
-        }
         body.mobile-layout #mobile-bottom-tabs {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 4px;
             position: fixed;
             left: calc(8px + var(--safe-left));
@@ -2391,9 +2403,41 @@
             box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
         }
         body.mobile-layout #mobile-bottom-tabs .tab-button {
-            min-height: 42px;
-            padding: 4px;
-            font-size: clamp(12px, 2.8vw, 14px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            min-width: 0 !important;
+            max-width: 100%;
+            min-height: 40px;
+            padding: 3px 4px;
+            font-size: clamp(11px, 2.6vw, 13px);
+            line-height: 1.05;
+            white-space: normal;
+            box-sizing: border-box;
+            background-color: #d4d0c8;
+            border-left: 1px solid white;
+            border-top: 1px solid white;
+            border-right: 1px solid #808080;
+            border-bottom: 1px solid #808080;
+        }
+        body.mobile-layout #mobile-bottom-tabs .tab-button.active {
+            background: linear-gradient(180deg, #ccf0d1 0%, #bdeac4 100%);
+            border-left: 1px solid #808080;
+            border-top: 1px solid #808080;
+            border-right: 1px solid white;
+            border-bottom: 1px solid white;
+        }
+        body.mobile-layout #mobile-bottom-tabs .tab-button:active {
+            border-left: 1px solid #808080;
+            border-top: 1px solid #808080;
+            border-right: 1px solid white;
+            border-bottom: 1px solid white;
+            background-color: #d4d0c8;
+        }
+        body.mobile-layout #mobile-bottom-tabs .tab-button .tab-badge {
+            margin-left: 2px;
         }
         body.mobile-layout #market-header {
             display: none;
@@ -2735,7 +2779,6 @@
                 <div id="market-header" class="panel market-header">
                     <div class="market-tabs" role="tablist">
                         <button id="tab-market" data-main-tab="market" class="tab-button active" role="tab" aria-selected="true">Market <span id="tab-market-badge" class="tab-badge">0</span></button>
-                        <button id="tab-store" data-main-tab="store" class="tab-button" role="tab" aria-selected="false">Shop</button>
                         <button id="tab-goals" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goal <span id="tab-goals-badge" class="tab-badge">0</span></button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
@@ -2747,13 +2790,6 @@
                 </div>
         <div id="market-table-container" class="panel">
             <div id="market-table"></div>
-        </div>
-        <div id="store" class="panel">
-            <div id="store-tabs" style="width: 140px; float: left;">
-                <button id="store-cosmetics" class="button">Cosmetics</button>
-            </div>
-            <div id="store-content" style="margin-left: 150px;"></div>
-            <div style="clear: both;"></div>
         </div>
         <div id="goals-panel" class="panel">
             <div id="goals-content"></div>
@@ -2777,7 +2813,6 @@
     <div id="mobile-bottom-tabs" role="tablist" aria-label="Mobile navigation">
         <button id="tab-farm-mobile" data-main-tab="farm" class="tab-button active" role="tab" aria-selected="true">Farm</button>
         <button id="tab-market-mobile" data-main-tab="market" class="tab-button" role="tab" aria-selected="false">Market <span class="tab-badge" data-badge-for="tab-market-badge">0</span></button>
-        <button id="tab-store-mobile" data-main-tab="store" class="tab-button" role="tab" aria-selected="false">Shop</button>
         <button id="tab-goals-mobile" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goals <span class="tab-badge" data-badge-for="tab-goals-badge">0</span></button>
     </div>
 

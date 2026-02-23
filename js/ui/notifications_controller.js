@@ -9,7 +9,7 @@ export function getPendingGoalsCountAction(state, doesGoalMeetCondition) {
   }, 0);
 }
 
-export function getCurrentStoreUnlockIdsAction(state, isShopItemUnlocked) {
+export function getCurrentMarketUnlockIdsAction(state, isShopItemUnlocked) {
   const ids = [];
   if (Array.isArray(state.items)) {
     state.items.forEach((item) => {
@@ -17,20 +17,52 @@ export function getCurrentStoreUnlockIdsAction(state, isShopItemUnlocked) {
       if (isShopItemUnlocked(item.id)) ids.push(`shop:${item.id}`);
     });
   }
+  const cosmetics = Array.isArray(state?.store?.cosmetics) ? state.store.cosmetics : [];
+  cosmetics.forEach((item) => {
+    if (!item || typeof item.id !== 'string') return;
+    if (item.unlocked) ids.push(`cosmetic:${item.id}`);
+  });
   return ids;
 }
 
-export function markStoreUnlocksSeenAction(seenStoreUnlockIds, getCurrentStoreUnlockIds) {
-  seenStoreUnlockIds.clear();
-  getCurrentStoreUnlockIds().forEach((id) => seenStoreUnlockIds.add(id));
+function getUnlockPrefixForMarketView(viewId) {
+  return viewId === 'cosmetics' ? 'cosmetic:' : 'shop:';
 }
 
-export function getNewStoreUnlockCountAction(seenStoreUnlockIds, getCurrentStoreUnlockIds) {
-  let count = 0;
-  getCurrentStoreUnlockIds().forEach((id) => {
-    if (!seenStoreUnlockIds.has(id)) count += 1;
+export function markMarketUnlocksSeenAction(seenMarketUnlockIds, getCurrentMarketUnlockIds) {
+  seenMarketUnlockIds.clear();
+  getCurrentMarketUnlockIds().forEach((id) => seenMarketUnlockIds.add(id));
+}
+
+export function markMarketUnlocksSeenForViewAction(seenMarketUnlockIds, getCurrentMarketUnlockIds, viewId) {
+  const prefix = getUnlockPrefixForMarketView(viewId);
+  getCurrentMarketUnlockIds().forEach((id) => {
+    if (String(id).startsWith(prefix)) {
+      seenMarketUnlockIds.add(id);
+    }
   });
-  return count;
+}
+
+export function getNewMarketUnlockCountsAction(seenMarketUnlockIds, getCurrentMarketUnlockIds) {
+  let market = 0;
+  let cosmetics = 0;
+  getCurrentMarketUnlockIds().forEach((id) => {
+    if (seenMarketUnlockIds.has(id)) return;
+    if (String(id).startsWith('cosmetic:')) {
+      cosmetics += 1;
+      return;
+    }
+    market += 1;
+  });
+  return {
+    market,
+    cosmetics,
+    total: market + cosmetics
+  };
+}
+
+export function getNewMarketUnlockCountAction(seenMarketUnlockIds, getCurrentMarketUnlockIds) {
+  return getNewMarketUnlockCountsAction(seenMarketUnlockIds, getCurrentMarketUnlockIds).total;
 }
 
 export function setTabBadgeCountAction(badgeId, count) {
@@ -50,16 +82,24 @@ export function setTabBadgeCountAction(badgeId, count) {
 export function updateTabNotificationBadgesAction(deps) {
   const {
     activeMainTab,
-    markStoreUnlocksSeen,
+    activeMarketTableView,
+    markMarketUnlocksSeenForView,
     setTabBadgeCount,
     getPendingGoalsCount,
-    getNewStoreUnlockCount
+    getNewMarketUnlockCounts
   } = deps;
   if (activeMainTab === 'market') {
-    markStoreUnlocksSeen();
+    markMarketUnlocksSeenForView(activeMarketTableView);
   }
+  const unlockCounts = getNewMarketUnlockCounts();
   setTabBadgeCount('tab-goals-badge', getPendingGoalsCount());
-  setTabBadgeCount('tab-market-badge', getNewStoreUnlockCount());
+  setTabBadgeCount('tab-market-badge', unlockCounts.total);
+  document.querySelectorAll('[data-main-tab="market"]').forEach((tab) => {
+    if (!(tab instanceof HTMLElement)) return;
+    tab.title = unlockCounts.total > 0
+      ? `Open Market (${unlockCounts.total} new market/cosmetic unlock${unlockCounts.total === 1 ? '' : 's'})`
+      : 'Open Market';
+  });
 }
 
 export function renderProfileGoalSummaryAction(deps) {

@@ -8,7 +8,6 @@ export function renderAllAction(deps) {
     renderGuidancePanel,
     renderMarket,
     renderSelectedItemInsight,
-    renderStore,
     renderGoals,
     updateMainViewVisibility,
     updateMainTabButtons,
@@ -25,11 +24,6 @@ export function renderAllAction(deps) {
   renderGuidancePanel();
   renderMarket();
   renderSelectedItemInsight();
-
-  const storeEl = document.getElementById('store');
-  if (storeEl && window.getComputedStyle(storeEl).display !== 'none') {
-    renderStore();
-  }
   const goalsEl = document.getElementById('goals-panel');
   if (goalsEl && window.getComputedStyle(goalsEl).display !== 'none') {
     renderGoals();

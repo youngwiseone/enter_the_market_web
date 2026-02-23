@@ -68,11 +68,7 @@ export function syncGuidedUnlocksAction(deps) {
 }
 
 export function requestLockedTabAction(deps) {
-  const { tabName, isStoreTabUnlocked, isGoalsTabUnlocked, addMessage } = deps;
-  if (tabName === 'store' && !isStoreTabUnlocked()) {
-    addMessage({ id: 'tip.unlock_store' });
-    return false;
-  }
+  const { tabName, isGoalsTabUnlocked, addMessage } = deps;
   if (tabName === 'goals' && !isGoalsTabUnlocked()) {
     addMessage({ id: 'tip.unlock_goals' });
     return false;

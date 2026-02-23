@@ -7,7 +7,7 @@ export async function runAppBootstrap(deps) {
     attachEventHandlers,
     startPlaytimeTracking,
     initialiseMessageUI,
-    markStoreUnlocksSeen,
+    markMarketUnlocksSeen,
     updateToolButtons,
     refreshTimedGridPriceBadgeVisibilityForCurrentTool,
     updateCursorForTool,
@@ -32,7 +32,7 @@ export async function runAppBootstrap(deps) {
   attachEventHandlers();
   startPlaytimeTracking();
   initialiseMessageUI();
-  markStoreUnlocksSeen();
+  markMarketUnlocksSeen();
   const header = document.getElementById('market-header');
   if (header) {
     Array.from(header.children).forEach((child) => {

@@ -7,8 +7,6 @@ export function attachCoreEventHandlers(deps) {
     continueGoalCelebration,
     continueDailyRollModal,
     continueDaySummaryModal,
-    setCurrentStoreTab,
-    renderStore,
     resetGame,
     nextDay,
     clearShopSelection,
@@ -104,13 +102,6 @@ export function attachCoreEventHandlers(deps) {
     daySummaryModal.addEventListener('click', (event) => {
       if (event.target === daySummaryModal) continueDaySummaryModal();
     });
-  }
-  const storeCosmeticsButton = document.getElementById('store-cosmetics');
-  if (storeCosmeticsButton) {
-    storeCosmeticsButton.onclick = () => {
-      setCurrentStoreTab('cosmetics');
-      renderStore();
-    };
   }
   document.getElementById('reset-game').onclick = resetGame;
   document.getElementById('next-day').onclick = nextDay;
