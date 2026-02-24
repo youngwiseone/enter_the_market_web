@@ -216,6 +216,28 @@ export function renderSelectedItemInsightAction(deps) {
         : `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`)
         : `Resale: ${gridInsight.resaleRatePct || 80}%`;
       chipRow.appendChild(stageChip);
+      if (!gridInsight.isProduce && gridInsight.tankCapacity !== null) {
+        const tankChip = document.createElement('span');
+        tankChip.className = 'insight-chip';
+        tankChip.textContent = `Tank: ${Number(gridInsight.tankCurrent || 0)}/${Number(gridInsight.tankCapacity || 0)}`;
+        chipRow.appendChild(tankChip);
+        if (String(gridInsight.itemType || '') === 'sprinkler') {
+          const dawnChip = document.createElement('span');
+          dawnChip.className = 'insight-chip';
+          dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops)';
+          chipRow.appendChild(dawnChip);
+        }
+        if (
+          String(gridInsight.itemType || '') === 'sprinkler'
+          && typeof window !== 'undefined'
+          && window.__etmDebugSprinklerConfig === true
+        ) {
+          const debugChip = document.createElement('span');
+          debugChip.className = 'insight-chip';
+          debugChip.textContent = `Dbg L${Number(gridInsight.sprinklerLevel || 1)} R${Number(gridInsight.sprinklerRadius || 1)} E${Number(gridInsight.sprinklerEfficiencyLevel || 1)}`;
+          chipRow.appendChild(debugChip);
+        }
+      }
 
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
@@ -277,6 +299,22 @@ export function renderSelectedItemInsightAction(deps) {
       resaleChip.className = 'insight-chip';
       resaleChip.textContent = `Resale rate: ${shopInsight.resaleRatePct || 80}%`;
       chipRow.appendChild(resaleChip);
+      if (String(shopInsight.itemType || '') === 'sprinkler') {
+        const dawnChip = document.createElement('span');
+        dawnChip.className = 'insight-chip';
+        dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops)';
+        chipRow.appendChild(dawnChip);
+      }
+      if (
+        String(shopInsight.itemType || '') === 'sprinkler'
+        && typeof window !== 'undefined'
+        && window.__etmDebugSprinklerConfig === true
+      ) {
+        const debugChip = document.createElement('span');
+        debugChip.className = 'insight-chip';
+        debugChip.textContent = `Dbg L${Number(shopInsight.sprinklerLevel || 1)} R${Number(shopInsight.sprinklerRadius || 1)} E${Number(shopInsight.sprinklerEfficiencyLevel || 1)}`;
+        chipRow.appendChild(debugChip);
+      }
       panel.appendChild(chipRow);
       if (shopInsight.description) {
         const descRow = document.createElement('div');

@@ -89,7 +89,19 @@ export async function loadJSONDataIntoDefaults(defaultData) {
     if (messagesResp.ok) {
       const messagesData = await messagesResp.json();
       if (messagesData && Array.isArray(messagesData.messages)) {
-        defaultData.messages = messagesData.messages;
+        const existing = Array.isArray(defaultData.messages) ? defaultData.messages : [];
+        const mergedById = new Map();
+        existing.forEach((entry) => {
+          const id = String(entry?.id || '').trim();
+          if (!id) return;
+          mergedById.set(id, entry);
+        });
+        messagesData.messages.forEach((entry) => {
+          const id = String(entry?.id || '').trim();
+          if (!id) return;
+          mergedById.set(id, entry);
+        });
+        defaultData.messages = Array.from(mergedById.values());
       }
     }
   } catch (err) {

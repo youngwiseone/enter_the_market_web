@@ -3,6 +3,7 @@ import {
   shouldSuppressSeedStandardBuyMessage
 } from './seed_buy_streak_controller.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
 
 export function purchaseAndPlaceSelectedAction(deps) {
   const {
@@ -76,7 +77,10 @@ export function purchaseAndPlaceSelectedAction(deps) {
   if (Array.isArray(state.gridPlacedMeta)) {
     state.gridPlacedMeta[cellIndex] = isProduce
       ? null
-      : { tableKey, itemType: String(item.type || '').trim().toLowerCase() || 'unknown' };
+      : ensureInfrastructureMetaForPlacedItem(item, {
+        tableKey,
+        itemType: String(item.type || '').trim().toLowerCase() || 'unknown'
+      });
   }
   if (Array.isArray(state.gridRarity)) state.gridRarity[cellIndex] = null;
   if (Array.isArray(state.gridPlantedDay)) {
@@ -130,6 +134,21 @@ export function purchaseAndPlaceSelectedAction(deps) {
     });
   } else if (isProduce && streakMessageId === 'commerce.buy_streak_seed_mixed') {
     addMessage({ id: 'commerce.buy_streak_seed_mixed' });
+  }
+  if (String(item?.type || '').trim().toLowerCase() === 'sprinkler') {
+    if (!state.goalFlags || typeof state.goalFlags !== 'object') state.goalFlags = {};
+    if (!state.goalFlags.sprinklerTutorialShown) {
+      state.goalFlags.sprinklerTutorialShown = true;
+      addMessage({
+        id: 'tip.sprinkler_dawn_refill',
+        meta: {
+          speaker: 'farmer',
+          category: 'tips',
+          priority: 'normal',
+          replaceKey: 'tip:sprinkler-basics'
+        }
+      });
+    }
   }
 
   renderAll();

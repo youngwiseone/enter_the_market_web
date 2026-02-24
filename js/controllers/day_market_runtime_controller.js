@@ -39,7 +39,12 @@ export function createDayMarketRuntimeController(deps) {
     evaluateGoals,
     saveState,
     renderAll,
-    showDaySummaryModal
+    showDaySummaryModal,
+    getTileCenter,
+    getGridActionFxTargets,
+    spawnBurst,
+    spawnRing,
+    triggerFxClass
   } = deps;
 
   function getHeldQuantityForItem(itemId) {
@@ -147,7 +152,12 @@ export function createDayMarketRuntimeController(deps) {
         generateDailyTip,
         evaluateGoals,
         saveState,
-        renderAll
+        renderAll,
+        getTileCenter,
+        getGridActionFxTargets,
+        spawnBurst,
+        spawnRing,
+        triggerFxClass
       });
     } finally {
       trackActionDuration('nextDay', performance.now() - perfStart);

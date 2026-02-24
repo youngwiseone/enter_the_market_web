@@ -156,7 +156,8 @@ export function createFarmPointerRuntimeController(deps) {
       setSelectedShopItemId,
       setSelectionPulseId,
       updateCursorForTool,
-      renderMarket
+      renderMarket,
+      addMessage
     });
   }
 

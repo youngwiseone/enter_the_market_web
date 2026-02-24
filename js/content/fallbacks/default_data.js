@@ -795,6 +795,102 @@ export const DEFAULT_DATA = {
       replaceKey: 'weather:pickaxe-rain',
       replaceScope: 'day',
       template: 'Muddy ground today: mining costs +1 energy.'
+    },
+    {
+      id: 'progress.infrastructure_refilled',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:water',
+      replaceScope: 'day',
+      template: '{itemName} tank: {currentUnits}/{capacityUnits} (+{addedUnits})'
+    },
+    {
+      id: 'progress.infrastructure_tank_full',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'player',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:water',
+      replaceScope: 'day',
+      template: '{itemName} tank full! ({currentUnits}/{capacityUnits})'
+    },
+    {
+      id: 'progress.sprinkler_out_of_water',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:sprinkler-dry',
+      replaceScope: 'day',
+      template: 'Sprinkler is out of water. Refill it with the watering can!'
+    },
+    {
+      id: 'progress.sprinkler_tank_low',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'low',
+      replaceKey: 'progress:sprinkler-low',
+      replaceScope: 'day',
+      template: 'Sprinkler tank low: {currentUnits}/{capacityUnits}'
+    },
+    {
+      id: 'progress.sprinklers_empty_at_dawn',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'low',
+      replaceKey: 'progress:sprinklers-empty-dawn',
+      replaceScope: 'day',
+      template: '{sprinklerCount} sprinkler(s) ran dry at dawn. Refill with the watering can.'
+    },
+    {
+      id: 'tip.sprinkler_dawn_refill',
+      type: 'tip',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'neutral',
+      category: 'tips',
+      priority: 'normal',
+      replaceKey: 'tip:sprinkler-basics',
+      replaceScope: 'global',
+      template: 'Sprinklers water at dawn. Refill them with the watering can.'
+    },
+    {
+      id: 'progress.sprinklers_dawn_watered',
+      type: 'farm',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'watering',
+      category: 'progress',
+      priority: 'normal',
+      replaceKey: 'progress:sprinklers-dawn',
+      replaceScope: 'day',
+      template: 'Dawn sprinklers: {sprinklerCount} active, watered {cropsWatered} crop(s), used {waterUnitsConsumed} water{bonusText}.'
+    },
+    {
+      id: 'progress.sprinklers_rain_refilled',
+      type: 'weather',
+      icon: 'watering',
+      speaker: 'farmer',
+      emotion: 'watering',
+      category: 'weather',
+      priority: 'low',
+      replaceKey: 'weather:sprinkler-refill',
+      replaceScope: 'day',
+      template: 'Rain refilled {sprinklersRefilled} sprinkler tank(s) (+{waterUnitsAdded} water).'
     }
   ],
   // History of news events by week. This structure records which

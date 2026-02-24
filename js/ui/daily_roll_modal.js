@@ -250,8 +250,8 @@ export async function showDailyMarketRollModalAction(deps) {
   const shouldSkip = () => typeof consumeDailyRollSkipRequested === 'function' && consumeDailyRollSkipRequested();
 
   if (continueBtn) {
-    continueBtn.disabled = true;
-    continueBtn.setAttribute('aria-disabled', 'true');
+    continueBtn.disabled = false;
+    continueBtn.setAttribute('aria-disabled', 'false');
   }
 
   if (daySummarySubtitleEl) {

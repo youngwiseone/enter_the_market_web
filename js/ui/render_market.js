@@ -1,4 +1,5 @@
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import { getRefillableTankState } from '../controllers/watering_infrastructure.js';
 
 const MARKET_SORT_KEYS = Object.freeze({
   NAME: 'name',
@@ -75,6 +76,19 @@ function createGridPriceDeltaBadge(percentDelta, isFading = false) {
   badge.textContent = `${isPositive ? '+' : '-'}${Math.abs(percentDelta * 100).toFixed(0)}%`;
   badge.title = `Market ${isPositive ? 'above' : 'below'} average by ${(Math.abs(percentDelta) * 100).toFixed(0)}%`;
   badge.setAttribute('aria-label', `Market ${isPositive ? 'up' : 'down'} ${Math.abs(percentDelta * 100).toFixed(0)} percent`);
+  return badge;
+}
+
+function createGridTankBadge(currentUnits, capacityUnits, isFading = false) {
+  const current = Math.max(0, Math.floor(Number(currentUnits) || 0));
+  const capacity = Math.max(1, Math.floor(Number(capacityUnits) || 1));
+  const ratio = current / capacity;
+  const toneClass = ratio <= 0 ? 'bad' : (ratio <= 0.25 ? 'neutral' : 'good');
+  const badge = document.createElement('span');
+  badge.className = `grid-cell-price-delta ${toneClass}${isFading ? ' is-fading' : ''}`;
+  badge.textContent = `${current}/${capacity}`;
+  badge.title = `Sprinkler tank ${current}/${capacity}`;
+  badge.setAttribute('aria-label', `Sprinkler tank ${current} of ${capacity}`);
   return badge;
 }
 
@@ -900,12 +914,29 @@ export function renderMarketAction(deps) {
             : 0;
           const fallbackBase = Math.max(0, Number(it.price) || 0);
           const resale = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
-          cell.title = `Sell for $${resale.toFixed(2)}`;
+          const tankState = getRefillableTankState(it, Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[i] : null);
+          cell.title = tankState
+            ? `Sell for $${resale.toFixed(2)} | Tank ${Number(tankState.current || 0)}/${Number(tankState.capacity || 0)}`
+            : `Sell for $${resale.toFixed(2)}`;
         }
         if (gridPriceBadgeDisplayState.visible && isProduceGridItem && growth.isGrown) {
           const priceDeltaBadge = createGridPriceDeltaBadge(gridMarketPercentDelta, !!gridPriceBadgeDisplayState.fading);
           if (priceDeltaBadge) {
             cell.appendChild(priceDeltaBadge);
+            gridPriceBadgeCountRendered += 1;
+          }
+        }
+        if (
+          gridPriceBadgeDisplayState.visible
+          && !isProduceGridItem
+          && String(it?.type || '').trim().toLowerCase() === 'sprinkler'
+          && String(state?.activeTool || '') === 'glove'
+          && getSelectedGridCellIndex() !== null
+        ) {
+          const tankState = getRefillableTankState(it, Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[i] : null);
+          if (tankState) {
+            const tankBadge = createGridTankBadge(tankState.current, tankState.capacity, !!gridPriceBadgeDisplayState.fading);
+            cell.appendChild(tankBadge);
             gridPriceBadgeCountRendered += 1;
           }
         }
@@ -921,7 +952,16 @@ export function renderMarketAction(deps) {
       crackImg.alt = 'Mining progress';
       cell.appendChild(crackImg);
     }
-    if (unlocked && Array.isArray(state.gridWateredDay) && state.gridWateredDay[i] === state.player.day) {
+    const pendingSprinklerVisualTargets = Array.isArray(state?.runtimeFlags?.pendingSprinklerDawnVisualTargetIndices)
+      ? state.runtimeFlags.pendingSprinklerDawnVisualTargetIndices
+      : [];
+    const shouldHideWaterOverlayForPendingSprinklerFx = pendingSprinklerVisualTargets.includes(i);
+    if (
+      unlocked
+      && Array.isArray(state.gridWateredDay)
+      && state.gridWateredDay[i] === state.player.day
+      && !shouldHideWaterOverlayForPendingSprinklerFx
+    ) {
       const waterImg = document.createElement('img');
       waterImg.className = 'grid-overlay';
       waterImg.src = 'resources/tools/water.png';

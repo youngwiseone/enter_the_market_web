@@ -1,4 +1,5 @@
 import { isProduceItem } from '../content/item_types.js';
+import { getRefillableTankState } from './watering_infrastructure.js';
 
 export function getGridIndexFromPointerEventAction(event, getElementFromPoint) {
   if (!(event && typeof event === 'object')) return null;
@@ -227,7 +228,8 @@ export function selectGridCellAction(deps) {
     setSelectedShopItemId,
     setSelectionPulseId,
     updateCursorForTool,
-    renderMarket
+    renderMarket,
+    addMessage
   } = deps;
 
   if (!Array.isArray(state.gridItems) || cellIndex < 0 || cellIndex >= state.gridItems.length) return;
@@ -237,6 +239,48 @@ export function selectGridCellAction(deps) {
   setSelectedGridCellIndex(cellIndex);
   setSelectedShopItemId(null);
   setSelectionPulseId(null);
+  const selectedItemId = state.gridItems[cellIndex];
+  const selectedItem = Array.isArray(state.items) ? state.items.find((it) => it && it.id === selectedItemId) : null;
+  if (selectedItem && !isProduceItem(selectedItem)) {
+    const isSprinkler = String(selectedItem.type || '').trim().toLowerCase() === 'sprinkler';
+    if (!isSprinkler) {
+      updateCursorForTool();
+      renderMarket();
+      return;
+    }
+    const tankState = getRefillableTankState(
+      selectedItem,
+      Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[cellIndex] : null
+    );
+    if (tankState && typeof addMessage === 'function') {
+      const current = Math.max(0, Number(tankState.current || 0));
+      const capacity = Math.max(1, Number(tankState.capacity || 1));
+      if (current <= 0) {
+        addMessage({
+          id: 'progress.sprinkler_out_of_water',
+          meta: {
+            speaker: 'farmer',
+            emotion: 'watering',
+            category: 'progress',
+            priority: 'normal',
+            replaceKey: 'progress:sprinkler-dry'
+          }
+        });
+      } else if (current <= Math.max(1, Math.floor(capacity * 0.25))) {
+        addMessage({
+          id: 'progress.sprinkler_tank_low',
+          vars: { currentUnits: current, capacityUnits: capacity },
+          meta: {
+            speaker: 'farmer',
+            emotion: 'watering',
+            category: 'progress',
+            priority: 'low',
+            replaceKey: 'progress:sprinkler-low'
+          }
+        });
+      }
+    }
+  }
   updateCursorForTool();
   renderMarket();
 }

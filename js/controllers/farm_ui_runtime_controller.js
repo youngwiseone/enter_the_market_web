@@ -222,6 +222,7 @@ export function createFarmUiRuntimeController(deps) {
       isToolUnlocked,
       TOOL_GLOVE,
       selectedShopItemId: selectedShopItemId(),
+      getSelectedGridCellIndex,
       getCursorSeedVisualPath,
       setBodyCursor
     });

@@ -148,7 +148,8 @@ export function initialiseStateAction(deps) {
     gridWateredCount: loadFromStorage('gridWateredCount', null),
     gridMiningHits: loadFromStorage('gridMiningHits', null),
     gridRarity: loadFromStorage('gridRarity', null),
-    gridPurchasePrice: loadFromStorage('gridPurchasePrice', null)
+    gridPurchasePrice: loadFromStorage('gridPurchasePrice', null),
+    gridPlacedMeta: loadFromStorage('gridPlacedMeta', null)
   });
   const savedFarms = loadFromStorage('farms', null);
   const normalizedSavedPrimary = normalizeFarmState(savedFarms?.[FARM_PRIMARY_ID]);

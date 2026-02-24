@@ -1,4 +1,10 @@
-import { isDecorationItem } from '../content/item_types.js';
+import { getItemBehavior, isDecorationItem, isProduceItem } from '../content/item_types.js';
+import {
+  getWateringCanLevel,
+  getWateringCanTilesPerEnergy,
+  refillRefillablePlacedItem,
+  tryApplyGrowthAccelerationBonus
+} from './watering_infrastructure.js';
 
 export function mineGridTileAction(deps) {
   const {
@@ -123,6 +129,7 @@ export function waterGridTileAction(deps) {
   const itemId = Array.isArray(state.gridItems) ? state.gridItems[index] : null;
   const item = itemId ? state.items.find((it) => it.id === itemId) : null;
   if (!item) return false;
+  const itemBehavior = getItemBehavior(item);
   if (isDecorationItem(item)) {
     addMessage({
       id: 'progress.decoration_cannot_be_watered',
@@ -138,6 +145,78 @@ export function waterGridTileAction(deps) {
     const cell = fxTargets ? fxTargets.cell : null;
     if (cell) triggerFxClass(cell, 'fx-wobble');
     return true;
+  }
+  if (itemBehavior.wateringMode === 'refillable' && !isProduceItem(item)) {
+    const refillPreview = refillRefillablePlacedItem({ state, cellIndex: index, item });
+    if (!refillPreview) return false;
+    if (!refillPreview.didRefill) {
+      addMessage({
+        id: 'progress.infrastructure_tank_full',
+        vars: { itemName: item.name, currentUnits: refillPreview.currentUnits, capacityUnits: refillPreview.capacityUnits },
+        meta: {
+          speaker: 'player',
+          emotion: 'watering',
+          category: 'progress',
+          priority: 'normal',
+          replaceKey: 'progress:water'
+        }
+      });
+      const fxTargets = getGridActionFxTargets(index);
+      const cell = fxTargets ? fxTargets.cell : null;
+      if (cell) triggerFxClass(cell, 'fx-wobble');
+      return true;
+    }
+    // Revert preview until energy spend succeeds.
+    if (Array.isArray(state.gridPlacedMeta)) {
+      const meta = state.gridPlacedMeta[index];
+      if (meta && typeof meta === 'object') {
+        meta.tankCurrent = Math.max(0, Number(refillPreview.currentUnits) - Number(refillPreview.addedUnits || 0));
+      }
+    }
+    if (!consumeEnergy(1, `refill ${String(item.name || 'infrastructure').toLowerCase()}`)) return true;
+    registerDayAction();
+    const refillResult = refillRefillablePlacedItem({ state, cellIndex: index, item });
+    if (refillResult && refillResult.didRefill) {
+      awardPlayerXp(xpRewards.water);
+      addMessage({
+        id: 'progress.infrastructure_refilled',
+        vars: {
+          itemName: item.name,
+          addedUnits: refillResult.addedUnits,
+          currentUnits: refillResult.currentUnits,
+          capacityUnits: refillResult.capacityUnits
+        },
+        meta: {
+          speaker: 'player',
+          emotion: 'watering',
+          category: 'progress',
+          priority: 'normal',
+          replaceKey: 'progress:water'
+        }
+      });
+      saveState();
+      renderAll();
+      const center = getTileCenter(index);
+      if (center) {
+        spawnBurst({
+          x: center.x,
+          y: center.y,
+          count: 10,
+          imgList: ['resources/effects/water_drop_01.png', 'resources/effects/water_drop_02.png'],
+          speedRange: [20, 60],
+          sizeRange: [6, 10],
+          gravity: 80,
+          lifeRange: [240, 520]
+        });
+        spawnRing({ x: center.x, y: center.y, radius: 10, color: 'rgba(80,160,255,0.7)', life: 220 });
+        const fxTargets = getGridActionFxTargets(index);
+        const overlay = fxTargets ? fxTargets.waterOverlay : null;
+        if (overlay) triggerFxClass(overlay, 'fx-pop');
+        showXpGainFeedback(xpRewards.water, center);
+      }
+      return true;
+    }
+    return false;
   }
 
   const growth = getPlantGrowthState(item, index);
@@ -180,13 +259,21 @@ export function waterGridTileAction(deps) {
     return true;
   }
 
-  if (!consumeEnergy(1, 'water this tile')) return true;
+  const manualWaterEnergyCost = 1 / Math.max(1, getWateringCanTilesPerEnergy(state));
+  if (!consumeEnergy(manualWaterEnergyCost, 'water this tile')) return true;
   registerDayAction();
 
   state.gridWateredDay[index] = state.player.day;
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
   }
+  tryApplyGrowthAccelerationBonus({
+    farmState: state,
+    cellIndex: index,
+    item,
+    dayNumber: state.player.day,
+    toolLevel: getWateringCanLevel(state)
+  });
   awardPlayerXp(xpRewards.water);
 
   const growDays = Math.max(0, Number(item.growDays) || 0);

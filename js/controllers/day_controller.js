@@ -1,14 +1,25 @@
 import { WEATHER_IDS, rollWeatherId, normalizeWeatherId } from '../sim/weather.js';
+import { isProduceItem } from '../content/item_types.js';
+import { buildItemsByIdMap } from '../content/item_index.js';
+import { applyDawnSprinklersToFarm, refillSprinklersForRainToFull } from './watering_infrastructure.js';
 
 const ROLL_MEAN_REVERSION_DAYS = 3;
 
-function applyRainWateringToFarm(farm, dayNumber) {
+function applyRainWateringToFarm(farm, dayNumber, itemsById) {
   if (!farm || typeof farm !== 'object') return;
   if (!Array.isArray(farm.gridItems) || !Array.isArray(farm.gridWateredDay) || !Array.isArray(farm.gridWateredCount)) {
     return;
   }
   for (let i = 0; i < farm.gridItems.length; i += 1) {
-    if (!farm.gridItems[i]) continue;
+    const itemId = farm.gridItems[i];
+    if (!itemId) continue;
+    const item = itemsById.get(String(itemId));
+    if (!item || !isProduceItem(item)) continue;
+    const growDays = Math.max(0, Number(item.growDays) || 0);
+    const wateredCount = Array.isArray(farm.gridWateredCount)
+      ? Math.max(0, Number(farm.gridWateredCount[i]) || 0)
+      : 0;
+    if (growDays > 0 && wateredCount >= growDays) continue;
     if (farm.gridWateredDay[i] === dayNumber) continue;
     farm.gridWateredDay[i] = dayNumber;
     farm.gridWateredCount[i] = Math.max(0, Number(farm.gridWateredCount[i]) || 0) + 1;
@@ -18,15 +29,29 @@ function applyRainWateringToFarm(farm, dayNumber) {
 function applyDailyWeatherEffects(state, addMessage) {
   const dayNumber = Math.max(1, Number(state.player?.day) || 1);
   const weatherId = normalizeWeatherId(state.weather?.id);
+  const itemsById = buildItemsByIdMap(state.items);
 
-  if (weatherId !== WEATHER_IDS.RAIN) return;
+  if (weatherId !== WEATHER_IDS.RAIN) {
+    return { rainApplied: false, sprinklersRefilled: 0, waterUnitsAdded: 0 };
+  }
+
+  let refillSummary = { sprinklersRefilled: 0, waterUnitsAdded: 0 };
+  if (state.farms && typeof state.farms === 'object') {
+    Object.values(state.farms).forEach((farm) => {
+      const summary = refillSprinklersForRainToFull({ farm, itemsById });
+      refillSummary.sprinklersRefilled += summary.sprinklersRefilled;
+      refillSummary.waterUnitsAdded += summary.waterUnitsAdded;
+    });
+  } else {
+    refillSummary = refillSprinklersForRainToFull({ farm: state, itemsById });
+  }
 
   if (state.farms && typeof state.farms === 'object') {
     Object.values(state.farms).forEach((farm) => {
-      applyRainWateringToFarm(farm, dayNumber);
+      applyRainWateringToFarm(farm, dayNumber, itemsById);
     });
   } else {
-    applyRainWateringToFarm(state, dayNumber);
+    applyRainWateringToFarm(state, dayNumber, itemsById);
   }
 
   addMessage({
@@ -38,6 +63,11 @@ function applyDailyWeatherEffects(state, addMessage) {
       replaceKey: 'weather:today'
     }
   });
+  return {
+    rainApplied: true,
+    sprinklersRefilled: refillSummary.sprinklersRefilled,
+    waterUnitsAdded: refillSummary.waterUnitsAdded
+  };
 }
 
 export function nextDayAction(deps) {
@@ -128,7 +158,102 @@ export function nextDayAction(deps) {
     rolledOnDay: Math.max(1, Number(state.player.day) || 1),
     day: Math.max(1, Number(state.player.day) || 1) + 1
   };
-  applyDailyWeatherEffects(state, addMessage);
+  const itemsById = buildItemsByIdMap(state.items);
+  let dawnSprinklerSummary = {
+    sprinklerCount: 0,
+    activeSprinklerCount: 0,
+    cropsWatered: 0,
+    waterUnitsConsumed: 0,
+    bonusGrowthTriggers: 0,
+    waterUnitsRemaining: 0,
+    events: [],
+    emptyAtDawnCount: 0
+  };
+  const activeFarmRef = state.farms && typeof state.farms === 'object'
+    ? state.farms[state.activeFarmId]
+    : state;
+  let activeFarmSprinklerEvents = [];
+  const weatherEffectsSummary = applyDailyWeatherEffects(state, addMessage);
+  if (state.farms && typeof state.farms === 'object') {
+    Object.values(state.farms).forEach((farm) => {
+      const summary = applyDawnSprinklersToFarm({
+        farm,
+        itemsById,
+        dayNumber: Math.max(1, Number(state.player?.day) || 1)
+      });
+      dawnSprinklerSummary.sprinklerCount += summary.sprinklerCount;
+      dawnSprinklerSummary.activeSprinklerCount += summary.activeSprinklerCount;
+      dawnSprinklerSummary.cropsWatered += summary.cropsWatered;
+      dawnSprinklerSummary.waterUnitsConsumed += summary.waterUnitsConsumed;
+      dawnSprinklerSummary.bonusGrowthTriggers += summary.bonusGrowthTriggers;
+      dawnSprinklerSummary.waterUnitsRemaining += summary.waterUnitsRemaining;
+      dawnSprinklerSummary.events.push(...(Array.isArray(summary.events) ? summary.events : []));
+      dawnSprinklerSummary.emptyAtDawnCount += Math.max(0, Number(summary.emptyAtDawnCount) || 0);
+      if (farm === activeFarmRef && Array.isArray(summary.events)) {
+        activeFarmSprinklerEvents = summary.events.slice();
+      }
+    });
+  } else {
+    dawnSprinklerSummary = applyDawnSprinklersToFarm({
+      farm: state,
+      itemsById,
+      dayNumber: Math.max(1, Number(state.player?.day) || 1)
+    });
+    activeFarmSprinklerEvents = Array.isArray(dawnSprinklerSummary.events) ? dawnSprinklerSummary.events.slice() : [];
+  }
+  if (dawnSprinklerSummary.cropsWatered > 0) {
+    addMessage({
+      id: 'progress.sprinklers_dawn_watered',
+      vars: {
+        sprinklerCount: dawnSprinklerSummary.activeSprinklerCount,
+        cropsWatered: dawnSprinklerSummary.cropsWatered,
+        waterUnitsConsumed: dawnSprinklerSummary.waterUnitsConsumed,
+        bonusText: dawnSprinklerSummary.bonusGrowthTriggers > 0
+          ? `, bonus growth x${dawnSprinklerSummary.bonusGrowthTriggers}`
+          : ''
+      },
+      meta: {
+        speaker: 'farmer',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:sprinklers-dawn'
+      }
+    });
+  }
+  if (weatherEffectsSummary?.rainApplied && weatherEffectsSummary.sprinklersRefilled > 0) {
+    addMessage({
+      id: 'progress.sprinklers_rain_refilled',
+      vars: {
+        sprinklersRefilled: weatherEffectsSummary.sprinklersRefilled,
+        waterUnitsAdded: weatherEffectsSummary.waterUnitsAdded
+      },
+      meta: {
+        speaker: 'farmer',
+        category: 'weather',
+        priority: 'low',
+        replaceKey: 'weather:sprinkler-refill'
+      }
+    });
+  }
+  if (!weatherEffectsSummary?.rainApplied && dawnSprinklerSummary.emptyAtDawnCount > 0) {
+    addMessage({
+      id: 'progress.sprinklers_empty_at_dawn',
+      vars: { sprinklerCount: dawnSprinklerSummary.emptyAtDawnCount },
+      meta: {
+        speaker: 'farmer',
+        category: 'progress',
+        priority: 'low',
+        replaceKey: 'progress:sprinklers-empty-dawn'
+      }
+    });
+  }
+  if (!state.runtimeFlags || typeof state.runtimeFlags !== 'object') {
+    state.runtimeFlags = {};
+  }
+  state.runtimeFlags.pendingSprinklerDawnFxEvents = activeFarmSprinklerEvents.slice();
+  state.runtimeFlags.pendingSprinklerDawnVisualTargetIndices = activeFarmSprinklerEvents
+    .map((event) => Number(event?.targetIndex))
+    .filter((index) => Number.isInteger(index));
 
   state.shop.forEach((entry) => {
     if (!isShopItemUnlocked(entry.itemId)) return;

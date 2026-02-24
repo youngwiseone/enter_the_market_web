@@ -379,7 +379,7 @@
       "type": "sprinkler",
       "table_key": "utility",
       "price": 120,
-      "description": "Place on a farm tile to later water nearby crops automatically. Water to refill (future behavior).",
+      "description": "Waters adjacent crops at dawn and skips grown crops. Refill with the watering can.",
       "image": "items/utility/sprinkler.png",
       "goalLocked": false
     },

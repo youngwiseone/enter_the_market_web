@@ -6,6 +6,7 @@ export function persistResetState(saveFn, state) {
   saveFn('gridMiningHits', state.gridMiningHits);
   saveFn('gridRarity', state.gridRarity);
   saveFn('gridPurchasePrice', state.gridPurchasePrice);
+  saveFn('gridPlacedMeta', state.gridPlacedMeta);
   saveFn('gridUnlocked', state.gridUnlocked);
   saveFn('gridItems', state.gridItems);
   saveFn('activeFarmId', state.activeFarmId);

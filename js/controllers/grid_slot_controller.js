@@ -1,3 +1,6 @@
+import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
+
 export function getGridUnlockCostAction(state) {
   const unlockedCount = Array.isArray(state.gridUnlocked)
     ? state.gridUnlocked.reduce((sum, value) => sum + (value ? 1 : 0), 0)
@@ -78,19 +81,26 @@ export function placeItemOnGridAction(deps) {
   if (Array.isArray(state.gridPlacedMeta)) {
     state.gridPlacedMeta[cellIndex] = isProduceItem(item)
       ? null
-      : { tableKey: getNormalizedItemTableKey(item), itemType: String(item.type || '').trim().toLowerCase() || 'unknown' };
+      : ensureInfrastructureMetaForPlacedItem(item, {
+        tableKey: getNormalizedItemTableKey(item),
+        itemType: String(item.type || '').trim().toLowerCase() || 'unknown'
+      });
   }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
   if (Array.isArray(state.gridPlantedDay)) {
-    state.gridPlantedDay[cellIndex] = state.player.day;
+    state.gridPlantedDay[cellIndex] = isProduceItem(item) ? state.player.day : null;
   }
   if (Array.isArray(state.gridWateredCount)) {
-    const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
-    state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
+    if (isProduceItem(item)) {
+      const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
+      state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
+    } else {
+      state.gridWateredCount[cellIndex] = 0;
+    }
   }
-  if (String(state.weather?.id || '') === 'rain') {
+  if (isProduceItem(item) && String(state.weather?.id || '') === 'rain') {
     if (Array.isArray(state.gridWateredDay)) state.gridWateredDay[cellIndex] = state.player.day;
     if (Array.isArray(state.gridWateredCount)) state.gridWateredCount[cellIndex] = 1;
   }
@@ -170,4 +180,3 @@ export function countReadyToHarvestTilesAction(state, getPlantGrowthState) {
   });
   return count;
 }
-import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';

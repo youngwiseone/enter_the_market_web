@@ -1,4 +1,5 @@
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import { getRefillableTankState, getSprinklerPlacementConfig } from '../controllers/watering_infrastructure.js';
 
 export function getSelectedShopItemInsightDataAction(deps) {
   const {
@@ -18,6 +19,9 @@ export function getSelectedShopItemInsightDataAction(deps) {
   if (!isProduce) {
     const buyPrice = Math.max(0, Number(item.price) || 0);
     const resaleValue = buyPrice * 0.8;
+    const sprinklerConfig = String(item.type || '').trim().toLowerCase() === 'sprinkler'
+      ? getSprinklerPlacementConfig(null)
+      : null;
     return {
       isProduce: false,
       tableKey,
@@ -33,6 +37,9 @@ export function getSelectedShopItemInsightDataAction(deps) {
       guaranteedDelta: resaleValue - buyPrice,
       resaleValue,
       resaleRatePct: 80,
+      sprinklerLevel: sprinklerConfig ? sprinklerConfig.level : null,
+      sprinklerRadius: sprinklerConfig ? sprinklerConfig.radius : null,
+      sprinklerEfficiencyLevel: sprinklerConfig ? sprinklerConfig.efficiencyLevel : null,
       marginPct: buyPrice > 0 ? -20 : 0
     };
   }
@@ -86,6 +93,11 @@ export function getSelectedGridItemInsightDataAction(deps) {
   if (!isProduce) {
     const fallbackBase = Math.max(0, Number(item.price) || 0);
     const sellNow = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
+    const placedMeta = Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[selectedGridCellIndex] : null;
+    const tankState = getRefillableTankState(item, placedMeta);
+    const sprinklerConfig = String(item.type || '').trim().toLowerCase() === 'sprinkler'
+      ? getSprinklerPlacementConfig(placedMeta)
+      : null;
     return {
       cellIndex: selectedGridCellIndex,
       isProduce: false,
@@ -99,7 +111,12 @@ export function getSelectedGridItemInsightDataAction(deps) {
       canSell: true,
       sellNow,
       profitNow: sellNow - buyPrice,
-      resaleRatePct: 80
+      resaleRatePct: 80,
+      tankCurrent: tankState ? tankState.current : null,
+      tankCapacity: tankState ? tankState.capacity : null,
+      sprinklerLevel: sprinklerConfig ? sprinklerConfig.level : null,
+      sprinklerRadius: sprinklerConfig ? sprinklerConfig.radius : null,
+      sprinklerEfficiencyLevel: sprinklerConfig ? sprinklerConfig.efficiencyLevel : null
     };
   }
   if (!shopEntry) return null;

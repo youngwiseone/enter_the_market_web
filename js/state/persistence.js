@@ -42,4 +42,5 @@ export function persistLegacyPrimaryGridState(saveFn, primaryFarm) {
   saveFn('gridMiningHits', primaryFarm.gridMiningHits);
   saveFn('gridRarity', primaryFarm.gridRarity);
   saveFn('gridPurchasePrice', primaryFarm.gridPurchasePrice);
+  saveFn('gridPlacedMeta', primaryFarm.gridPlacedMeta);
 }

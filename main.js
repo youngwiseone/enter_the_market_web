@@ -24,6 +24,7 @@ import { isProduceItem } from './js/content/item_types.js';
 import { buildGoalCelebrationControllerDeps, buildSessionRuntimeDeps } from './js/app/bootstrap/session.js';
 import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bootstrap/farm.js';
 import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
+import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller.js';
 import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js';
 import { nextDayAction } from './js/controllers/day_controller.js';
 import { createDayEconomyController } from './js/controllers/day_economy_controller.js';
@@ -1598,6 +1599,11 @@ const dayMarketRuntimeController = createDayMarketRuntimeController({
   evaluateGoals,
   saveState,
   renderAll,
+  getTileCenter,
+  getGridActionFxTargets: getGridActionFxTargetsDom,
+  spawnBurst,
+  spawnRing,
+  triggerFxClass,
   showDaySummaryModal: sessionRuntimeController.showDaySummaryModal,
   holdingLotThreshold: HOLDING_LOT_THRESHOLD,
   holdBiasQtyRange: HOLD_BIAS_QTY_RANGE,
@@ -1970,6 +1976,15 @@ function setActiveTool(tool) {
 }
 
 function notifyDailyRollClosed() {
+  playQueuedSprinklerDawnFxAction({
+    state,
+    renderMarket,
+    getTileCenter,
+    getGridActionFxTargets: getGridActionFxTargetsDom,
+    triggerFxClass,
+    spawnBurst,
+    spawnRing
+  });
   if (!farmUiRuntimeController || typeof farmUiRuntimeController.refreshTimedGridPriceBadgeVisibilityForCurrentTool !== 'function') {
     return;
   }

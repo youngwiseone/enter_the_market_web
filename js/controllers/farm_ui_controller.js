@@ -1,3 +1,5 @@
+import { getItemBehavior } from '../content/item_types.js';
+
 export function updateFarmToggleButtonAction(deps) {
   const {
     state,
@@ -196,6 +198,7 @@ export function updateCursorForToolAction(deps) {
     isToolUnlocked,
     TOOL_GLOVE,
     selectedShopItemId,
+    getSelectedGridCellIndex,
     getCursorSeedVisualPath,
     setBodyCursor
   } = deps;
@@ -204,7 +207,16 @@ export function updateCursorForToolAction(deps) {
     state.activeTool = TOOL_GLOVE;
   }
   if (state.activeTool === TOOL_WATERING) {
-    setBodyCursor("url('resources/tools/watering_can.png') 12 12, pointer");
+    const selectedGridCellIndex = typeof getSelectedGridCellIndex === 'function' ? getSelectedGridCellIndex() : null;
+    const selectedGridItemId = Number.isInteger(selectedGridCellIndex) && Array.isArray(state.gridItems)
+      ? state.gridItems[selectedGridCellIndex]
+      : null;
+    const selectedGridItem = selectedGridItemId && Array.isArray(state.items)
+      ? state.items.find((it) => it && it.id === selectedGridItemId)
+      : null;
+    const behavior = selectedGridItem ? getItemBehavior(selectedGridItem) : null;
+    const cursorFallback = behavior && behavior.wateringMode === 'refillable' ? 'copy' : 'pointer';
+    setBodyCursor(`url('resources/tools/watering_can.png') 12 12, ${cursorFallback}`);
     return;
   }
   if (state.activeTool === TOOL_PICKAXE) {
