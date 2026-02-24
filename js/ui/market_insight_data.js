@@ -1,3 +1,5 @@
+import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
+
 export function getSelectedShopItemInsightDataAction(deps) {
   const {
     state,
@@ -10,7 +12,31 @@ export function getSelectedShopItemInsightDataAction(deps) {
   if (!selectedShopItemId) return null;
   const item = Array.isArray(state.items) ? state.items.find((it) => it.id === selectedShopItemId) : null;
   const shopEntry = Array.isArray(state.shop) ? state.shop.find((entry) => entry.itemId === selectedShopItemId) : null;
-  if (!item || !shopEntry) return null;
+  if (!item) return null;
+  const isProduce = isProduceItem(item);
+  const tableKey = getNormalizedItemTableKey(item);
+  if (!isProduce) {
+    const buyPrice = Math.max(0, Number(item.price) || 0);
+    const resaleValue = buyPrice * 0.8;
+    return {
+      isProduce: false,
+      tableKey,
+      itemType: String(item.type || '').trim().toLowerCase(),
+      itemName: item.name,
+      description: String(item.description || '').trim(),
+      buyPrice,
+      effectiveCost: buyPrice,
+      freeCount: 0,
+      expectedSale: resaleValue,
+      guaranteedSale: resaleValue,
+      projectedDelta: resaleValue - buyPrice,
+      guaranteedDelta: resaleValue - buyPrice,
+      resaleValue,
+      resaleRatePct: 80,
+      marginPct: buyPrice > 0 ? -20 : 0
+    };
+  }
+  if (!shopEntry) return null;
   const buyPrice = Math.max(0, Number(shopEntry.price) || 0);
   const freeCount = getFreePurchaseCount(selectedShopItemId);
   const effectiveCost = freeCount > 0 ? 0 : buyPrice;
@@ -20,6 +46,8 @@ export function getSelectedShopItemInsightDataAction(deps) {
   const guaranteedDelta = guaranteedSale - effectiveCost;
   const marginPct = effectiveCost > 0 ? ((projectedDelta / effectiveCost) * 100) : 0;
   return {
+    isProduce: true,
+    tableKey,
     itemName: item.name,
     buyPrice,
     effectiveCost,
@@ -48,11 +76,33 @@ export function getSelectedGridItemInsightDataAction(deps) {
   if (!itemId) return null;
   const item = Array.isArray(state.items) ? state.items.find((it) => it.id === itemId) : null;
   const shopEntry = Array.isArray(state.shop) ? state.shop.find((entry) => entry.itemId === itemId) : null;
-  if (!item || !shopEntry) return null;
+  if (!item) return null;
+  const isProduce = isProduceItem(item);
+  const tableKey = getNormalizedItemTableKey(item);
   const growth = getPlantGrowthState(item, selectedGridCellIndex);
   const buyPrice = Array.isArray(state.gridPurchasePrice)
     ? Math.max(0, Number(state.gridPurchasePrice[selectedGridCellIndex]) || 0)
     : 0;
+  if (!isProduce) {
+    const fallbackBase = Math.max(0, Number(item.price) || 0);
+    const sellNow = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
+    return {
+      cellIndex: selectedGridCellIndex,
+      isProduce: false,
+      tableKey,
+      itemType: String(item.type || '').trim().toLowerCase(),
+      itemName: item.name,
+      buyPrice,
+      currentBasePrice: fallbackBase,
+      rarity: 'n/a',
+      growth: { isGrown: true, daysLeft: 0 },
+      canSell: true,
+      sellNow,
+      profitNow: sellNow - buyPrice,
+      resaleRatePct: 80
+    };
+  }
+  if (!shopEntry) return null;
   const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
   const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
   const sellMultiplier = growth.isGrown ? getRarityMultiplier(rarity || 'common') : 0;
@@ -60,6 +110,8 @@ export function getSelectedGridItemInsightDataAction(deps) {
   const profitNow = sellNow - buyPrice;
   return {
     cellIndex: selectedGridCellIndex,
+    isProduce: true,
+    tableKey,
     itemName: item.name,
     buyPrice,
     currentBasePrice,

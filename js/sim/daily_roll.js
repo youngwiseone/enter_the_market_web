@@ -20,7 +20,12 @@ function getDailyRollCountForLevel(levelRaw) {
 
 function getUnlockedRollItems(state, isShopItemUnlocked) {
   if (!Array.isArray(state.items)) return [];
-  return state.items.filter((item) => item && isShopItemUnlocked(item.id));
+  return state.items.filter((item) => {
+    if (!item || !isShopItemUnlocked(item.id)) return false;
+    const itemType = String(item.type || '').trim().toLowerCase();
+    const tableKey = String(item.table_key || '').trim().toLowerCase();
+    return itemType === 'produce' || tableKey === 'produce_market';
+  });
 }
 
 function getRollStoryForItem(itemName, defaultNewsEvents) {

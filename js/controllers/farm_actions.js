@@ -1,3 +1,5 @@
+import { isDecorationItem } from '../content/item_types.js';
+
 export function mineGridTileAction(deps) {
   const {
     state,
@@ -121,6 +123,22 @@ export function waterGridTileAction(deps) {
   const itemId = Array.isArray(state.gridItems) ? state.gridItems[index] : null;
   const item = itemId ? state.items.find((it) => it.id === itemId) : null;
   if (!item) return false;
+  if (isDecorationItem(item)) {
+    addMessage({
+      id: 'progress.decoration_cannot_be_watered',
+      meta: {
+        speaker: 'player',
+        emotion: 'watering',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:water'
+      }
+    });
+    const fxTargets = getGridActionFxTargets(index);
+    const cell = fxTargets ? fxTargets.cell : null;
+    if (cell) triggerFxClass(cell, 'fx-wobble');
+    return true;
+  }
 
   const growth = getPlantGrowthState(item, index);
   if (growth.isGrown) {

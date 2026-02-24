@@ -1,3 +1,10 @@
+function isProduceMarketItem(item) {
+  if (!item || typeof item !== 'object') return false;
+  const itemType = String(item.type || '').trim().toLowerCase();
+  const tableKey = String(item.table_key || '').trim().toLowerCase();
+  return itemType === 'produce' || tableKey === 'produce_market';
+}
+
 export function resetShopEntryToBasePriceAction(state, itemId) {
   if (!Array.isArray(state.shop) || !Array.isArray(state.items)) return;
   const shopEntry = state.shop.find((entry) => entry && entry.itemId === itemId);
@@ -97,7 +104,7 @@ export function getDefaultUnlockedShopItemsAction(items, playerLevelRaw = 1) {
   if (!Array.isArray(items)) return unlocked;
   const playerLevel = Math.max(1, Math.floor(Number(playerLevelRaw) || 1));
   const unlockOrder = items
-    .filter((item) => item && typeof item.id === 'number')
+    .filter((item) => item && typeof item.id === 'number' && isProduceMarketItem(item))
     .slice()
     .sort((a, b) => {
       const aPrice = Math.max(0, Number(a?.price) || 0);
@@ -141,7 +148,7 @@ export function syncGoalLockedShopUnlocksAction(
   }
   const playerLevel = Math.max(1, Math.floor(Number(state.player?.playerLevel) || 1));
   const unlockOrder = state.items
-    .filter((item) => item && typeof item.id === 'number')
+    .filter((item) => item && typeof item.id === 'number' && isProduceMarketItem(item))
     .slice()
     .sort((a, b) => {
       const aPrice = Math.max(0, Number(a?.price) || 0);

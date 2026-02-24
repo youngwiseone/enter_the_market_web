@@ -2,6 +2,7 @@ import {
   consumeSeedBuyStreakMessageId,
   shouldSuppressSeedStandardBuyMessage
 } from './seed_buy_streak_controller.js';
+import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 
 export function purchaseAndPlaceSelectedAction(deps) {
   const {
@@ -37,11 +38,19 @@ export function purchaseAndPlaceSelectedAction(deps) {
     addMessage({ id: 'progress.item_not_available' });
     return;
   }
-  const shopEntry = state.shop.find((entry) => entry.itemId === selectedShopItemId);
   const item = state.items.find((it) => it.id === selectedShopItemId);
-  if (!shopEntry || !item) return;
-  const freeQty = Math.min(getFreePurchaseCount(selectedShopItemId), 1);
-  const totalCost = shopEntry.price * (1 - freeQty);
+  if (!item) return;
+  const isProduce = isProduceItem(item);
+  const tableKey = getNormalizedItemTableKey(item);
+  const shopEntry = Array.isArray(state.shop)
+    ? state.shop.find((entry) => entry.itemId === selectedShopItemId)
+    : null;
+  if (isProduce && !shopEntry) return;
+  const baseBuyPrice = isProduce
+    ? Math.max(0, Number(shopEntry?.price) || 0)
+    : Math.max(0, Number(item.price) || 0);
+  const freeQty = isProduce ? Math.min(getFreePurchaseCount(selectedShopItemId), 1) : 0;
+  const totalCost = baseBuyPrice * (1 - freeQty);
   if (state.player.cash < totalCost) {
     addMessage({
       id: 'progress.insufficient_funds',
@@ -54,7 +63,7 @@ export function purchaseAndPlaceSelectedAction(deps) {
     });
     return;
   }
-  if (!consumeEnergy(1, 'plant a seed')) return;
+  if (!consumeEnergy(1, isProduce ? 'plant a seed' : 'place an item')) return;
   registerDayAction();
   if (state.goalFlags && typeof state.goalFlags === 'object') {
     state.goalFlags[guidedPlantedFlag] = true;
@@ -64,22 +73,39 @@ export function purchaseAndPlaceSelectedAction(deps) {
   state.gridItems[cellIndex] = selectedShopItemId;
   setSelectedGridCellIndex(cellIndex);
   if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cellIndex] = totalCost;
-  if (Array.isArray(state.gridRarity)) state.gridRarity[cellIndex] = null;
-  if (Array.isArray(state.gridPlantedDay)) state.gridPlantedDay[cellIndex] = state.player.day;
-  if (Array.isArray(state.gridWateredCount)) {
-    const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
-    state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
+  if (Array.isArray(state.gridPlacedMeta)) {
+    state.gridPlacedMeta[cellIndex] = isProduce
+      ? null
+      : { tableKey, itemType: String(item.type || '').trim().toLowerCase() || 'unknown' };
   }
-  if (String(state.weather?.id || '') === 'rain') {
+  if (Array.isArray(state.gridRarity)) state.gridRarity[cellIndex] = null;
+  if (Array.isArray(state.gridPlantedDay)) {
+    state.gridPlantedDay[cellIndex] = isProduce ? state.player.day : null;
+  }
+  if (Array.isArray(state.gridWateredCount)) {
+    if (isProduce) {
+      const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[cellIndex] === state.player.day;
+      state.gridWateredCount[cellIndex] = wateredToday ? 1 : 0;
+    } else {
+      state.gridWateredCount[cellIndex] = 0;
+    }
+  }
+  if (isProduce && String(state.weather?.id || '') === 'rain') {
     if (Array.isArray(state.gridWateredDay)) state.gridWateredDay[cellIndex] = state.player.day;
     if (Array.isArray(state.gridWateredCount)) state.gridWateredCount[cellIndex] = 1;
+  } else if (!isProduce && Array.isArray(state.gridWateredDay)) {
+    state.gridWateredDay[cellIndex] = null;
   }
   awardPlayerXp(xpRewards.plant);
   updateNetWorth();
   evaluateGoals();
   saveState();
-  const streakMessageId = consumeSeedBuyStreakMessageId(state.player.day, selectedShopItemId, 1, item);
-  const suppressStandardBuyMessage = shouldSuppressSeedStandardBuyMessage(selectedShopItemId, item);
+  const streakMessageId = isProduce
+    ? consumeSeedBuyStreakMessageId(state.player.day, selectedShopItemId, 1, item)
+    : null;
+  const suppressStandardBuyMessage = isProduce
+    ? shouldSuppressSeedStandardBuyMessage(selectedShopItemId, item)
+    : false;
 
   if (!suppressStandardBuyMessage) {
     if (freeQty > 0) {
@@ -91,18 +117,18 @@ export function purchaseAndPlaceSelectedAction(deps) {
     } else {
       addMessage({
         id: 'commerce.purchased_and_placed',
-        vars: { itemName: item.name, price: shopEntry.price.toFixed(2) },
+        vars: { itemName: item.name, price: baseBuyPrice.toFixed(2) },
         meta: { speaker: 'farmer' }
       });
     }
   }
 
-  if (streakMessageId === 'commerce.buy_streak_seed') {
+  if (isProduce && streakMessageId === 'commerce.buy_streak_seed') {
     addMessage({
       id: 'commerce.buy_streak_seed',
       vars: { itemName: item.name }
     });
-  } else if (streakMessageId === 'commerce.buy_streak_seed_mixed') {
+  } else if (isProduce && streakMessageId === 'commerce.buy_streak_seed_mixed') {
     addMessage({ id: 'commerce.buy_streak_seed_mixed' });
   }
 

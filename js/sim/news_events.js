@@ -1,3 +1,5 @@
+import { isProduceItem } from '../content/item_types.js';
+
 export function generateNewsEventsForState(deps) {
   const {
     state,
@@ -17,7 +19,7 @@ export function generateNewsEventsForState(deps) {
     const baseEvent = pool.splice(templateIndex, 1)[0];
     let selectedItem = null;
     const unlockedItems = Array.isArray(state.items)
-      ? state.items.filter((item) => item && isShopItemUnlocked(item.id))
+      ? state.items.filter((item) => item && isProduceItem(item) && isShopItemUnlocked(item.id))
       : [];
     if (unlockedItems.length > 0) {
       const itemIndex = Math.floor(Math.random() * unlockedItems.length);

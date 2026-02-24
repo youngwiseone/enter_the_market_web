@@ -11,7 +11,10 @@ const GOAL_FILTER_OPTIONS = [
 const MARKET_TABLE_VIEW_STORAGE_KEY = 'etm.market_table_view';
 
 function normalizeMarketTableView(view) {
-  return view === 'cosmetics' ? 'cosmetics' : 'items';
+  if (view === 'cosmetics') return 'cosmetics';
+  if (view === 'utility') return 'utility';
+  if (view === 'decorations') return 'decorations';
+  return 'items';
 }
 
 function readPersistedMarketTableView() {

@@ -2,6 +2,8 @@ export function createGameplayRuntimeController(deps) {
   const {
     state,
     buyItemAction,
+    purchaseFixedPriceItemAction,
+    purchaseDecorationAction,
     sellItemAction,
     purchaseCosmeticAction,
     selectCosmeticAction,
@@ -97,6 +99,34 @@ export function createGameplayRuntimeController(deps) {
       pulseHud,
       getHudCenters,
       spawnFloatingText
+    });
+  }
+
+  function buyFixedPriceItem(itemId) {
+    purchaseFixedPriceItemAction({
+      state,
+      itemId,
+      registerDayAction,
+      updateNetWorth,
+      evaluateGoals,
+      saveState,
+      addMessage,
+      renderAll,
+      pulseHud,
+      getHudCenters,
+      spawnFloatingText
+    });
+  }
+
+  function purchaseDecoration(decorationId) {
+    purchaseDecorationAction({
+      state,
+      decorationId,
+      updateNetWorth,
+      evaluateGoals,
+      saveState,
+      addMessage,
+      renderAll
     });
   }
 
@@ -259,7 +289,9 @@ export function createGameplayRuntimeController(deps) {
 
   return {
     buyItem,
+    buyFixedPriceItem,
     sellItem,
+    purchaseDecoration,
     purchaseCosmetic,
     selectCosmetic,
     applyTheme,

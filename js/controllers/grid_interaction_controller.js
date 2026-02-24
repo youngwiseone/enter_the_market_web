@@ -1,3 +1,5 @@
+import { isProduceItem } from '../content/item_types.js';
+
 export function getGridIndexFromPointerEventAction(event, getElementFromPoint) {
   if (!(event && typeof event === 'object')) return null;
   let targetCell = null;
@@ -110,7 +112,27 @@ export function getGridCellSellSnapshotAction(deps) {
   if (!itemId) return null;
   const item = Array.isArray(state.items) ? state.items.find((it) => it.id === itemId) : null;
   const shopEntry = Array.isArray(state.shop) ? state.shop.find((entry) => entry.itemId === itemId) : null;
-  if (!item || !shopEntry) return null;
+  if (!item) return null;
+  const isProduce = isProduceItem(item);
+  if (!isProduce) {
+    const buyPrice = Array.isArray(state.gridPurchasePrice)
+      ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
+      : 0;
+    const fallbackBase = Math.max(0, Number(item.price) || 0);
+    const basis = buyPrice > 0 ? buyPrice : fallbackBase;
+    const sellNow = basis * 0.8;
+    return {
+      cellIndex,
+      itemId,
+      item,
+      rarity: null,
+      sellNow,
+      buyPrice,
+      profitNow: sellNow - buyPrice,
+      isProduce: false
+    };
+  }
+  if (!shopEntry) return null;
   const growth = getPlantGrowthState(item, cellIndex);
   if (!growth.isGrown) return null;
   const rarity = getGridRarity(cellIndex) || 'common';
@@ -126,7 +148,8 @@ export function getGridCellSellSnapshotAction(deps) {
     rarity,
     sellNow,
     buyPrice,
-    profitNow: sellNow - buyPrice
+    profitNow: sellNow - buyPrice,
+    isProduce: true
   };
 }
 
@@ -181,8 +204,7 @@ export function getBulkSelectedGridInsightDataAction(deps) {
     byItem.set(key, (byItem.get(key) || 0) + 1);
   });
   const itemBreakdown = Array.from(byItem.entries()).map(([itemIdText, qty]) => {
-    const itemId = Number(itemIdText);
-    const item = state.items.find((it) => it.id === itemId);
+    const item = state.items.find((it) => String(it.id) === String(itemIdText));
     return `${item ? item.name : 'Item'} x${qty}`;
   });
   return {

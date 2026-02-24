@@ -26,7 +26,9 @@ export function getCurrentMarketUnlockIdsAction(state, isShopItemUnlocked) {
 }
 
 function getUnlockPrefixForMarketView(viewId) {
-  return viewId === 'cosmetics' ? 'cosmetic:' : 'shop:';
+  if (viewId === 'cosmetics') return 'cosmetic:';
+  if (viewId === 'items' || viewId === 'produce') return 'shop:';
+  return null;
 }
 
 export function markMarketUnlocksSeenAction(seenMarketUnlockIds, getCurrentMarketUnlockIds) {
@@ -36,6 +38,7 @@ export function markMarketUnlocksSeenAction(seenMarketUnlockIds, getCurrentMarke
 
 export function markMarketUnlocksSeenForViewAction(seenMarketUnlockIds, getCurrentMarketUnlockIds, viewId) {
   const prefix = getUnlockPrefixForMarketView(viewId);
+  if (!prefix) return;
   getCurrentMarketUnlockIds().forEach((id) => {
     if (String(id).startsWith(prefix)) {
       seenMarketUnlockIds.add(id);

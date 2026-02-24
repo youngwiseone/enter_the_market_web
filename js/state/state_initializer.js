@@ -110,6 +110,8 @@ export function initialiseStateAction(deps) {
     let rarityChanged = false;
     const normalized = state.items.map((item) => {
       if (!item || typeof item !== 'object') return item;
+      const itemType = String(item.type || '').trim().toLowerCase();
+      if (itemType && itemType !== 'produce') return item;
       const normalizedRarity = normalizeRarity(item.rarity);
       if (item.rarity !== normalizedRarity) {
         rarityChanged = true;
@@ -126,7 +128,6 @@ export function initialiseStateAction(deps) {
   const defaultItem = DEFAULT_DATA.items[0];
   const savedItem = Array.isArray(state.items) ? state.items[0] : null;
   const itemsMatch = Array.isArray(state.items)
-    && state.items.length === DEFAULT_DATA.items.length
     && savedItem
     && savedItem.id === defaultItem.id;
   if (!itemsMatch) {

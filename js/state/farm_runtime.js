@@ -35,6 +35,7 @@ export function applyFarmStateToActiveGridRuntime(state, farmId, config) {
   state.gridMiningHits = farm.gridMiningHits;
   state.gridRarity = farm.gridRarity;
   state.gridPurchasePrice = farm.gridPurchasePrice;
+  state.gridPlacedMeta = farm.gridPlacedMeta;
 }
 
 export function getUnlockedTileCountForFarmRuntime(state, farmId, config) {

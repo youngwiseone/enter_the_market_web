@@ -49,20 +49,32 @@ export async function runSellSequenceAction(deps) {
     const saleValue = Math.max(0, Number(cell.sellNow) || 0);
     const buyPrice = Math.max(0, Number(cell.buyPrice) || 0);
     const profit = saleValue - buyPrice;
+    const itemType = String(item.type || '').trim().toLowerCase();
+    const tableKey = String(item.table_key || '').trim().toLowerCase();
+    const isProduce = cell.isProduce !== undefined
+      ? !!cell.isProduce
+      : (itemType === 'produce' || tableKey === 'produce_market');
     registerSaleEvent(item.name, saleValue, 1);
-    registerItemSalePressure(itemId, 1);
+    if (isProduce) {
+      registerItemSalePressure(itemId, 1);
+    }
     state.player.cash += saleValue;
-    state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
-    if (state.goalFlags && typeof state.goalFlags === 'object') {
+    if (isProduce) {
+      state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
+    }
+    if (isProduce && state.goalFlags && typeof state.goalFlags === 'object') {
       state.goalFlags[guidedHarvestFlag] = true;
     }
-    const harvestKey = String(itemId);
-    state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
+    if (isProduce && state.goalStats && state.goalStats.itemsHarvested) {
+      const harvestKey = String(itemId);
+      state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
+    }
     state.gridItems[cell.cellIndex] = null;
     if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cell.cellIndex] = null;
     if (Array.isArray(state.gridRarity)) state.gridRarity[cell.cellIndex] = null;
     if (Array.isArray(state.gridPlantedDay)) state.gridPlantedDay[cell.cellIndex] = null;
     if (Array.isArray(state.gridWateredCount)) state.gridWateredCount[cell.cellIndex] = 0;
+    if (Array.isArray(state.gridPlacedMeta)) state.gridPlacedMeta[cell.cellIndex] = null;
 
     result.totalSaleValue += saleValue;
     result.totalProfitValue += profit;
@@ -72,9 +84,9 @@ export async function runSellSequenceAction(deps) {
     if (typeof emitSellFx === 'function') {
       emitSellFx({
         center,
-        rarityRaw: cell.rarity,
+        rarityRaw: isProduce ? cell.rarity : null,
         saleValue,
-        xpGain: xpGainPerSale
+        xpGain: isProduce ? xpGainPerSale : 0
       });
     }
 

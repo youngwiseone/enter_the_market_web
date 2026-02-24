@@ -1,4 +1,5 @@
 import { clone } from '../core/storage.js';
+import { normalizeItemTypeAndTableKey } from './item_types.js';
 
 function cleanSpacing(text) {
   return String(text || '')
@@ -41,6 +42,10 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
     assignIfMissing('harvestImage');
     assignIfMissing('rarity');
     assignIfMissing('name');
+    assignIfMissing('description');
+    assignIfMissing('type');
+    assignIfMissing('table_key');
+    assignIfMissing('image');
 
     // Backward compatibility: if old saves only have seedIconImage, promote it.
     if (!nextItem.harvestImage && nextItem.seedIconImage) {
@@ -78,7 +83,43 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
       changed = true;
     }
 
+    const normalizedTypedItem = normalizeItemTypeAndTableKey(nextItem, 'saved state');
+    if (
+      normalizedTypedItem.type !== nextItem.type
+      || normalizedTypedItem.table_key !== nextItem.table_key
+    ) {
+      if (nextItem === item) nextItem = { ...item };
+      nextItem.type = normalizedTypedItem.type;
+      nextItem.table_key = normalizedTypedItem.table_key;
+      changed = true;
+    }
+    if (
+      String(nextItem.type || '').toLowerCase() === 'produce'
+      && typeof nextItem.harvestImage === 'string'
+      && /^items\/[^/]+\.png$/i.test(nextItem.harvestImage.trim())
+    ) {
+      if (nextItem === item) nextItem = { ...item };
+      nextItem.harvestImage = nextItem.harvestImage.replace(/^items\//i, 'items/produce/');
+      changed = true;
+    }
+
     return nextItem;
+  });
+  const hasStableId = (item) => {
+    if (!item || typeof item !== 'object') return false;
+    const idType = typeof item.id;
+    return idType === 'number' || idType === 'string';
+  };
+  const existingIds = new Set(
+    mergedItems
+      .filter((item) => hasStableId(item))
+      .map((item) => item.id)
+  );
+  defaultItems.forEach((defaultItem) => {
+    if (!hasStableId(defaultItem)) return;
+    if (existingIds.has(defaultItem.id)) return;
+    mergedItems.push(clone(defaultItem));
+    changed = true;
   });
   return { items: mergedItems, changed };
 }
@@ -116,6 +157,10 @@ export function mergeStoreCosmeticsWithDefaults(store, defaultStore) {
     changed = true;
   }
   const nextStore = { ...store, cosmetics: mergedCosmetics };
+  if (Object.prototype.hasOwnProperty.call(nextStore, 'decorations')) {
+    delete nextStore.decorations;
+    changed = true;
+  }
   if (Object.prototype.hasOwnProperty.call(nextStore, 'crafting')) {
     delete nextStore.crafting;
     changed = true;

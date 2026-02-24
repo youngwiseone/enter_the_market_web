@@ -75,6 +75,11 @@ export function placeItemOnGridAction(deps) {
   if (Array.isArray(state.gridPurchasePrice)) {
     state.gridPurchasePrice[cellIndex] = perUnitCost;
   }
+  if (Array.isArray(state.gridPlacedMeta)) {
+    state.gridPlacedMeta[cellIndex] = isProduceItem(item)
+      ? null
+      : { tableKey: getNormalizedItemTableKey(item), itemType: String(item.type || '').trim().toLowerCase() || 'unknown' };
+  }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
@@ -134,6 +139,9 @@ export function removeItemFromGridAction(deps) {
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
+  if (Array.isArray(state.gridPlacedMeta)) {
+    state.gridPlacedMeta[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
   }
@@ -155,9 +163,11 @@ export function countReadyToHarvestTilesAction(state, getPlantGrowthState) {
     if (!itemId) return;
     const item = state.items.find((it) => it.id === itemId);
     if (!item) return;
+    if (!isProduceItem(item)) return;
     if (getPlantGrowthState(item, index).isGrown) {
       count += 1;
     }
   });
   return count;
 }
+import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';

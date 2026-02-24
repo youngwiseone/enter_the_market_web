@@ -1,3 +1,5 @@
+import { isProduceItem } from '../content/item_types.js';
+
 const ECONOMY_ALERT_THRESHOLD = 0.15;
 
 export function createDayEconomyController(deps) {
@@ -140,7 +142,7 @@ export function createDayEconomyController(deps) {
 
   function getUnlockedRollItems() {
     if (!Array.isArray(state.items)) return [];
-    return state.items.filter((item) => item && isShopItemUnlocked(item.id));
+    return state.items.filter((item) => item && isProduceItem(item) && isShopItemUnlocked(item.id));
   }
 
   function generateDailyTip() {

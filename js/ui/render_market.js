@@ -1,3 +1,5 @@
+import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
+
 const MARKET_SORT_KEYS = Object.freeze({
   NAME: 'name',
   PRICE: 'price',
@@ -90,10 +92,24 @@ function createMarketTableSwitcher({
   const views = [
     {
       id: 'items',
-      label: 'Market',
+      label: 'Produce',
       disabled: false,
-      title: 'View seed market',
+      title: 'View produce market',
       badgeCount: Math.max(0, Number(badgeCounts?.market) || 0)
+    },
+    {
+      id: 'utility',
+      label: 'Utility',
+      disabled: false,
+      title: 'View utility items',
+      badgeCount: Math.max(0, Number(badgeCounts?.utility) || 0)
+    },
+    {
+      id: 'decorations',
+      label: 'Decor',
+      disabled: false,
+      title: 'View decorations',
+      badgeCount: Math.max(0, Number(badgeCounts?.decorations) || 0)
     },
     {
       id: 'cosmetics',
@@ -170,6 +186,21 @@ function createMarketTableSwitcher({
   });
 
   return switcher;
+}
+
+function getItemTableKey(item) {
+  return getNormalizedItemTableKey(item);
+}
+
+function isProduceMarketItem(item) {
+  return isProduceTypedItem(item);
+}
+
+function getDisplayItemIconPath(item, resolveResourcePath, getHarvestImagePath) {
+  if (!item || typeof item !== 'object') return '';
+  if (typeof item.image === 'string' && item.image) return resolveResourcePath(item.image);
+  if (typeof getHarvestImagePath === 'function') return getHarvestImagePath(item);
+  return '';
 }
 
 function compareCosmeticsRows(left, right, sortKey, sortDirection) {
@@ -291,6 +322,203 @@ function renderCosmeticsMarketTable(tableHost, state, purchaseCosmetic, selectCo
   tableHost.appendChild(table);
 }
 
+function renderUtilityMarketTable(tableHost, deps) {
+  const {
+    state,
+    resolveResourcePath,
+    getHarvestImagePath,
+    getSelectedShopItemId,
+    getSelectionPulseId,
+    setSelectionPulseId,
+    selectShopItem
+  } = deps;
+  const hint = document.createElement('div');
+  hint.className = 'market-subtable-note';
+  hint.textContent = 'Select then place on grid. Utility items use fixed prices (no market roll). Resale is 80%.';
+  tableHost.appendChild(hint);
+
+  const utilities = Array.isArray(state.items)
+    ? state.items
+      .filter((item) => item && getItemTableKey(item) === 'utility')
+      .slice()
+      .sort((a, b) => {
+        const priceDiff = (Number(a?.price) || 0) - (Number(b?.price) || 0);
+        if (priceDiff !== 0) return priceDiff;
+        return String(a?.name || '').localeCompare(String(b?.name || ''));
+      })
+    : [];
+
+  const table = document.createElement('table');
+  table.className = 'zebra-table';
+  const headerRow = document.createElement('tr');
+  ['Img', 'Name', 'Type', 'Price', 'Select'].forEach((label) => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  utilities.forEach((item) => {
+    const row = document.createElement('tr');
+    row.classList.add('market-row');
+    row.style.cursor = 'pointer';
+
+    const imgCell = document.createElement('td');
+    const img = document.createElement('img');
+    const imagePath = getDisplayItemIconPath(item, resolveResourcePath, getHarvestImagePath);
+    if (imagePath) img.src = imagePath;
+    else img.style.visibility = 'hidden';
+    img.alt = String(item.name || 'Item');
+    img.width = 32;
+    img.height = 32;
+    imgCell.appendChild(img);
+    row.appendChild(imgCell);
+
+    const nameCell = document.createElement('td');
+    nameCell.textContent = String(item.name || '');
+    row.appendChild(nameCell);
+
+    const typeCell = document.createElement('td');
+    typeCell.textContent = String(item.type || '');
+    row.appendChild(typeCell);
+
+    const priceCell = document.createElement('td');
+    priceCell.textContent = `$${(Math.max(0, Number(item.price) || 0)).toFixed(2)}`;
+    row.appendChild(priceCell);
+
+    const actionCell = document.createElement('td');
+    const selectBtn = document.createElement('button');
+    selectBtn.type = 'button';
+    selectBtn.className = 'button';
+    const isSelected = typeof getSelectedShopItemId === 'function' && getSelectedShopItemId() === item.id;
+    selectBtn.textContent = isSelected ? 'Selected' : 'Select';
+    selectBtn.disabled = !!isSelected;
+    selectBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (isSelected) return;
+      if (typeof selectShopItem === 'function') selectShopItem(item.id);
+    });
+    actionCell.appendChild(selectBtn);
+    row.appendChild(actionCell);
+    if (isSelected) row.classList.add('market-row-selected');
+    if (typeof getSelectionPulseId === 'function' && getSelectionPulseId() === item.id) {
+      row.classList.add('market-row-pulse');
+      row.addEventListener('animationend', () => row.classList.remove('market-row-pulse'), { once: true });
+    }
+    row.addEventListener('click', () => {
+      if (typeof selectShopItem === 'function') selectShopItem(item.id);
+    });
+
+    table.appendChild(row);
+  });
+
+  if (utilities.length === 0) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 5;
+    cell.textContent = 'No utility items available yet.';
+    row.appendChild(cell);
+    table.appendChild(row);
+  }
+
+  tableHost.appendChild(table);
+}
+
+function renderDecorationsTable(tableHost, deps) {
+  const {
+    state,
+    resolveResourcePath,
+    getSelectedShopItemId,
+    getSelectionPulseId,
+    selectShopItem
+  } = deps;
+  const hint = document.createElement('div');
+  hint.className = 'market-subtable-note';
+  hint.textContent = 'Select then place on grid. Decorations use fixed prices. Resale is 80%.';
+  tableHost.appendChild(hint);
+
+  const decorations = Array.isArray(state?.items)
+    ? state.items.filter((item) => item && getItemTableKey(item) === 'decorations').slice()
+    : [];
+  decorations.sort((a, b) => {
+    const priceDiff = (Number(a?.price) || 0) - (Number(b?.price) || 0);
+    if (priceDiff !== 0) return priceDiff;
+    return String(a?.name || '').localeCompare(String(b?.name || ''));
+  });
+
+  const table = document.createElement('table');
+  table.className = 'zebra-table';
+  const headerRow = document.createElement('tr');
+  ['Img', 'Name', 'Price', 'Select'].forEach((label) => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  decorations.forEach((decoration) => {
+    const row = document.createElement('tr');
+    row.classList.add('market-row');
+    row.style.cursor = 'pointer';
+    const isSelected = typeof getSelectedShopItemId === 'function' && getSelectedShopItemId() === decoration.id;
+    if (isSelected) row.classList.add('market-row-selected');
+
+    const imgCell = document.createElement('td');
+    const img = document.createElement('img');
+    const imagePath = decoration?.image ? resolveResourcePath(decoration.image) : '';
+    if (imagePath) img.src = imagePath;
+    else img.style.visibility = 'hidden';
+    img.alt = String(decoration?.name || 'Decoration');
+    img.width = 32;
+    img.height = 32;
+    imgCell.appendChild(img);
+    row.appendChild(imgCell);
+
+    const nameCell = document.createElement('td');
+    nameCell.textContent = String(decoration?.name || '');
+    row.appendChild(nameCell);
+
+    const priceCell = document.createElement('td');
+    priceCell.textContent = `$${(Math.max(0, Number(decoration?.price) || 0)).toFixed(2)}`;
+    row.appendChild(priceCell);
+
+    const actionCell = document.createElement('td');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'button';
+    btn.textContent = isSelected ? 'Selected' : 'Select';
+    btn.disabled = !!isSelected;
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (isSelected) return;
+      if (typeof selectShopItem === 'function') selectShopItem(decoration.id);
+    });
+    actionCell.appendChild(btn);
+    row.appendChild(actionCell);
+    if (typeof getSelectionPulseId === 'function' && getSelectionPulseId() === decoration.id) {
+      row.classList.add('market-row-pulse');
+      row.addEventListener('animationend', () => row.classList.remove('market-row-pulse'), { once: true });
+    }
+    row.addEventListener('click', () => {
+      if (typeof selectShopItem === 'function') selectShopItem(decoration.id);
+    });
+    table.appendChild(row);
+  });
+
+  if (decorations.length === 0) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 4;
+    cell.textContent = 'No decorations available yet.';
+    row.appendChild(cell);
+    table.appendChild(row);
+  }
+
+  tableHost.appendChild(table);
+}
+
 export function renderMarketAction(deps) {
   const {
     state,
@@ -325,8 +553,11 @@ export function renderMarketAction(deps) {
     renderSelectedItemInsight,
     renderGuidancePanel,
     purchaseCosmetic,
+    purchaseDecoration,
+    buyFixedPriceItem,
     selectCosmetic,
     isStoreTabUnlocked,
+    resolveResourcePath,
     getCurrentMarketTableView,
     setCurrentMarketTableView,
     markMarketUnlocksSeenForView,
@@ -396,7 +627,7 @@ export function renderMarketAction(deps) {
   }
   const marketUnlockBadgeCounts = typeof getNewMarketUnlockCounts === 'function'
     ? getNewMarketUnlockCounts()
-    : { market: 0, cosmetics: 0, total: 0 };
+    : { market: 0, utility: 0, decorations: 0, cosmetics: 0, total: 0 };
 
   const tableHost = document.createElement('div');
   tableHost.id = MARKET_SUBTAB_PANEL_ID;
@@ -419,7 +650,29 @@ export function renderMarketAction(deps) {
 
   if (activeMarketTableView === 'cosmetics') {
     renderCosmeticsMarketTable(tableHost, state, purchaseCosmetic, selectCosmetic, () => renderMarketAction(deps));
+  } else if (activeMarketTableView === 'utility') {
+    renderUtilityMarketTable(tableHost, {
+      state,
+      resolveResourcePath,
+      getHarvestImagePath,
+      getSelectedShopItemId,
+      getSelectionPulseId,
+      setSelectionPulseId,
+      selectShopItem
+    });
+  } else if (activeMarketTableView === 'decorations') {
+    renderDecorationsTable(tableHost, {
+      state,
+      resolveResourcePath,
+      getSelectedShopItemId,
+      getSelectionPulseId,
+      selectShopItem
+    });
   } else {
+    const produceHint = document.createElement('div');
+    produceHint.className = 'market-subtable-note';
+    produceHint.textContent = 'Select then place on grid. Produce uses market pricing (changes daily).';
+    tableHost.appendChild(produceHint);
     const table = document.createElement('table');
     table.className = 'zebra-table';
     const headerRow = document.createElement('tr');
@@ -458,7 +711,7 @@ export function renderMarketAction(deps) {
     state.shop.forEach((entry) => {
       if (!isShopItemUnlocked(entry.itemId)) return;
       const item = state.items.find((it) => it.id === entry.itemId);
-      if (!item) return;
+      if (!item || !isProduceMarketItem(item)) return;
       marketRows.push({ entry, item });
     });
 
@@ -589,20 +842,23 @@ export function renderMarketAction(deps) {
       if (it) {
         const shopEntry = state.shop.find((entry) => entry.itemId === itmId);
         const gridMarketPercentDelta = shopEntry ? getAverageDelta(shopEntry) : Number.NaN;
-        const growth = getPlantGrowthState(it, i);
-        const growDays = typeof it.growDays === 'number' ? it.growDays : 0;
+        const itemType = String(it.type || '').trim().toLowerCase();
+        const tableKey = String(it.table_key || '').trim().toLowerCase();
+        const isProduceGridItem = itemType === 'produce' || tableKey === 'produce_market';
+        const growth = isProduceGridItem ? getPlantGrowthState(it, i) : { isGrown: true, stageIndex: 1, daysLeft: 0 };
+        const growDays = isProduceGridItem && typeof it.growDays === 'number' ? it.growDays : 0;
         const img = document.createElement('img');
         img.width = 24;
         img.height = 24;
-        const gridImagePath = growth.isGrown
-          ? getHarvestImagePath(it)
-          : getPlantStageImagePath(it, growth.stageIndex);
+        const gridImagePath = isProduceGridItem
+          ? (growth.isGrown ? getHarvestImagePath(it) : getPlantStageImagePath(it, growth.stageIndex))
+          : getDisplayItemIconPath(it, resolveResourcePath, getHarvestImagePath);
         if (gridImagePath) {
           img.src = gridImagePath;
         }
         img.alt = it.name;
         cell.appendChild(img);
-        if (growth.isGrown) {
+        if (isProduceGridItem && growth.isGrown) {
           const hadRarity = !!getGridRarity(i);
           const rarity = assignGridRarity(i);
           if (!hadRarity) {
@@ -636,10 +892,17 @@ export function renderMarketAction(deps) {
           const multiplier = getRarityMultiplier(rarity);
           const sellPrice = shopEntry ? shopEntry.price * multiplier * getActiveFarmSellMultiplier() : 0;
           cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
-        } else if (growDays > 0) {
+        } else if (isProduceGridItem && growDays > 0) {
           cell.title = `Grows in ${growth.daysLeft} day${growth.daysLeft === 1 ? '' : 's'}`;
+        } else {
+          const buyPrice = Array.isArray(state.gridPurchasePrice)
+            ? Math.max(0, Number(state.gridPurchasePrice[i]) || 0)
+            : 0;
+          const fallbackBase = Math.max(0, Number(it.price) || 0);
+          const resale = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
+          cell.title = `Sell for $${resale.toFixed(2)}`;
         }
-        if (gridPriceBadgeDisplayState.visible && growth.isGrown) {
+        if (gridPriceBadgeDisplayState.visible && isProduceGridItem && growth.isGrown) {
           const priceDeltaBadge = createGridPriceDeltaBadge(gridMarketPercentDelta, !!gridPriceBadgeDisplayState.fading);
           if (priceDeltaBadge) {
             cell.appendChild(priceDeltaBadge);

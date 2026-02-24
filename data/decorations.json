@@ -1,0 +1,15 @@
+{
+  "decorations": [
+    {
+      "id": "decoration-rock",
+      "name": "Rock",
+      "price": 35,
+      "table_key": "decorations",
+      "decoration_type": "rock",
+      "placement_layer": "ground_overlay",
+      "description": "A simple decorative rock for styling your farm.",
+      "image": "items/decoration/rock.png",
+      "unlocked": false
+    }
+  ]
+}

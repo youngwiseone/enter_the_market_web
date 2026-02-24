@@ -1,5 +1,6 @@
 import { emitSellFxAction } from './sell_fx_controller.js';
 import { runSellSequenceAction } from './sell_sequence_controller.js';
+import { isProduceItem } from '../content/item_types.js';
 
 export async function sellSelectedGridItemAction(deps) {
   const {
@@ -102,7 +103,12 @@ export async function sellBulkSelectedGridItemsAction(deps) {
     if (!harvestedCount) {
       return;
     }
-    awardPlayerXp(xpRewards.harvest * harvestedCount);
+    const produceSoldCount = Array.isArray(bulkInsight?.cells)
+      ? bulkInsight.cells.reduce((sum, cell) => sum + (cell?.isProduce ? 1 : 0), 0)
+      : harvestedCount;
+    if (produceSoldCount > 0) {
+      awardPlayerXp(xpRewards.harvest * produceSoldCount);
+    }
     if (typeof pulseHud === 'function') {
       pulseHud(true);
     }
@@ -112,8 +118,11 @@ export async function sellBulkSelectedGridItemsAction(deps) {
     evaluateGoals();
     saveState();
     const summaryText = Array.from(summaryByItem.entries()).map(([name, qty]) => `${name} x${qty}`).join(', ');
+    const hasNonProduce = Array.isArray(bulkInsight?.cells)
+      ? bulkInsight.cells.some((cell) => cell && cell.isProduce === false)
+      : false;
     addMessage({
-      id: 'progress.sold_selected_crops',
+      id: hasNonProduce ? 'progress.sold_selected_items' : 'progress.sold_selected_crops',
       vars: {
         harvestedCount,
         suffix: harvestedCount === 1 ? '' : 's',
@@ -168,7 +177,8 @@ export async function harvestPlantAction(deps) {
   if (!itemId) return;
   const item = state.items.find((it) => it.id === itemId);
   if (!item) return;
-  if (!getPlantGrowthState(item, cellIndex).isGrown) {
+  const isProduce = isProduceItem(item);
+  if (isProduce && !getPlantGrowthState(item, cellIndex).isGrown) {
     addMessage({ id: 'progress.plant_still_growing' });
     return;
   }
@@ -177,23 +187,33 @@ export async function harvestPlantAction(deps) {
   }
   registerDayAction();
   const shopEntry = state.shop.find((entry) => entry.itemId === itemId);
-  const basePrice = shopEntry ? shopEntry.price : 0;
+  const basePrice = isProduce
+    ? (shopEntry ? shopEntry.price : 0)
+    : Math.max(0, Number(item.price) || 0);
   const buyPrice = Array.isArray(state.gridPurchasePrice)
     ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
     : 0;
-  const rarity = getGridRarity(cellIndex) || assignGridRarity(cellIndex);
-  const multiplier = getRarityMultiplier(rarity);
-  const saleValue = basePrice * multiplier * getActiveFarmSellMultiplier();
+  const rarity = isProduce ? (getGridRarity(cellIndex) || assignGridRarity(cellIndex)) : null;
+  const multiplier = isProduce ? getRarityMultiplier(rarity) : 0.8;
+  const saleValue = isProduce
+    ? (basePrice * multiplier * getActiveFarmSellMultiplier())
+    : ((buyPrice > 0 ? buyPrice : basePrice) * 0.8);
   const realizedProfit = saleValue - buyPrice;
   registerSaleEvent(item.name, saleValue, 1);
-  registerItemSalePressure(itemId, 1);
+  if (isProduce) {
+    registerItemSalePressure(itemId, 1);
+  }
   state.player.cash += saleValue;
-  state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
-  if (state.goalFlags && typeof state.goalFlags === 'object') {
+  if (isProduce) {
+    state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
+  }
+  if (isProduce && state.goalFlags && typeof state.goalFlags === 'object') {
     state.goalFlags[guidedHarvestFlag] = true;
   }
-  const harvestKey = String(itemId);
-  state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
+  if (isProduce) {
+    const harvestKey = String(itemId);
+    state.goalStats.itemsHarvested[harvestKey] = (state.goalStats.itemsHarvested[harvestKey] || 0) + 1;
+  }
   state.gridItems[cellIndex] = null;
   if (Array.isArray(state.gridPurchasePrice)) {
     state.gridPurchasePrice[cellIndex] = null;
@@ -201,26 +221,43 @@ export async function harvestPlantAction(deps) {
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
   }
+  if (Array.isArray(state.gridPlacedMeta)) {
+    state.gridPlacedMeta[cellIndex] = null;
+  }
   if (Array.isArray(state.gridPlantedDay)) {
     state.gridPlantedDay[cellIndex] = null;
   }
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[cellIndex] = 0;
   }
-  awardPlayerXp(xpRewards.harvest);
+  if (isProduce) {
+    awardPlayerXp(xpRewards.harvest);
+  }
   updateNetWorth();
   evaluateGoals();
   saveState();
-  addMessage({
-    id: 'progress.harvested_item_profit',
-    vars: {
-      itemName: item.name,
-      saleValue: saleValue.toFixed(2),
-      profitSign: realizedProfit >= 0 ? '+' : '',
-      profitValue: realizedProfit.toFixed(2)
-    },
-    meta: { speaker: 'player', emotion: 'money' }
-  });
+  if (isProduce) {
+    addMessage({
+      id: 'progress.harvested_item_profit',
+      vars: {
+        itemName: item.name,
+        saleValue: saleValue.toFixed(2),
+        profitSign: realizedProfit >= 0 ? '+' : '',
+        profitValue: realizedProfit.toFixed(2)
+      },
+      meta: { speaker: 'player', emotion: 'money' }
+    });
+  } else {
+    addMessage({
+      id: 'commerce.sold_item',
+      vars: {
+        quantity: 1,
+        itemName: item.name,
+        saleValue: saleValue.toFixed(2)
+      },
+      meta: { speaker: 'player', emotion: 'money' }
+    });
+  }
   if (getSelectedGridCellIndex() === cellIndex) {
     setSelectedGridCellIndex(null);
   }
@@ -229,9 +266,9 @@ export async function harvestPlantAction(deps) {
   if (center) {
     emitSellFxAction({
       center,
-      rarityRaw: rarity,
+      rarityRaw: isProduce ? rarity : null,
       saleValue,
-      xpGain: xpRewards.harvest,
+      xpGain: isProduce ? xpRewards.harvest : 0,
       spawnBurst,
       spawnRing,
       spawnFloatingText,

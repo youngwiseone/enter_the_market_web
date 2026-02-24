@@ -649,6 +649,16 @@
       "template": "Sold {harvestedCount} selected crop{suffix} for ${totalSaleValue} (profit {profitSign}${totalProfitValue}). {summaryText}"
     },
     {
+      "id": "progress.sold_selected_items",
+      "type": "farm",
+      "icon": "coin",
+      "speaker": "player",
+      "emotion": "money",
+      "category": "progress",
+      "priority": "normal",
+      "template": "Sold {harvestedCount} selected item{suffix} for ${totalSaleValue} (profit {profitSign}${totalProfitValue}). {summaryText}"
+    },
+    {
       "id": "progress.harvested_item_profit",
       "type": "farm",
       "icon": "coin",
@@ -819,6 +829,18 @@
       "replaceKey": "progress:water",
       "replaceScope": "day",
       "template": "This plant is already grown. Harvest it instead."
+    },
+    {
+      "id": "progress.decoration_cannot_be_watered",
+      "type": "farm",
+      "icon": "watering",
+      "speaker": "player",
+      "emotion": "watering",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:water",
+      "replaceScope": "day",
+      "template": "Decorations do not need water."
     },
     {
       "id": "progress.already_watered_today",

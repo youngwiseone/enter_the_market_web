@@ -7,7 +7,8 @@ export function createEmptyFarmStateForGrid(gridCellCount) {
     gridWateredCount: Array(gridCellCount).fill(0),
     gridMiningHits: Array(gridCellCount).fill(0),
     gridRarity: Array(gridCellCount).fill(null),
-    gridPurchasePrice: Array(gridCellCount).fill(null)
+    gridPurchasePrice: Array(gridCellCount).fill(null),
+    gridPlacedMeta: Array(gridCellCount).fill(null)
   };
 }
 
@@ -37,7 +38,8 @@ export function normalizeFarmStateForGrid(rawFarm, gridCellCount) {
     gridMiningHits: normalizeFarmArray(rawFarm.gridMiningHits, 0, gridCellCount).map((value) => Math.max(0, Number(value) || 0)),
     gridRarity: normalizeFarmArray(rawFarm.gridRarity, null, gridCellCount),
     gridPurchasePrice: normalizeFarmArray(rawFarm.gridPurchasePrice, null, gridCellCount)
-      .map((value) => (value === null ? null : Math.max(0, Number(value) || 0)))
+      .map((value) => (value === null ? null : Math.max(0, Number(value) || 0))),
+    gridPlacedMeta: normalizeFarmArray(rawFarm.gridPlacedMeta, null, gridCellCount)
   };
 }
 
@@ -50,5 +52,6 @@ export function isFarmStateShapeValidForGrid(farm, gridCellCount) {
     && Array.isArray(farm.gridWateredCount) && farm.gridWateredCount.length === gridCellCount
     && Array.isArray(farm.gridMiningHits) && farm.gridMiningHits.length === gridCellCount
     && Array.isArray(farm.gridRarity) && farm.gridRarity.length === gridCellCount
-    && Array.isArray(farm.gridPurchasePrice) && farm.gridPurchasePrice.length === gridCellCount;
+    && Array.isArray(farm.gridPurchasePrice) && farm.gridPurchasePrice.length === gridCellCount
+    && Array.isArray(farm.gridPlacedMeta) && farm.gridPlacedMeta.length === gridCellCount;
 }

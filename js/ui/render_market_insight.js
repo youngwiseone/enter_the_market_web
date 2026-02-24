@@ -118,7 +118,10 @@ export function renderSelectedItemInsightAction(deps) {
     panel.innerHTML = '';
 
     if (bulkInsight && bulkInsight.count > 0) {
-      panel.appendChild(createInsightHeader(`${bulkInsight.count} selected crops`, clearCurrentInfoSelection));
+      const hasNonProduce = Array.isArray(bulkInsight.cells)
+        ? bulkInsight.cells.some((cell) => cell && cell.isProduce === false)
+        : false;
+      panel.appendChild(createInsightHeader(`${bulkInsight.count} selected ${hasNonProduce ? 'items' : 'crops'}`, clearCurrentInfoSelection));
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = [
@@ -164,11 +167,16 @@ export function renderSelectedItemInsightAction(deps) {
       panel.appendChild(createInsightHeader(`${gridInsight.itemName} selected tile`, clearCurrentInfoSelection));
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
-      const rows = [
+      const rows = gridInsight.isProduce ? [
         ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
         ['Market Base', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
         ['Sell Now', gridInsight.canSell ? `$${gridInsight.sellNow.toFixed(2)}` : 'Not ready', gridInsight.canSell ? '' : 'bad'],
         ['Profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : '']
+      ] : [
+        ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
+        ['Base Price', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
+        ['Resale (80%)', `$${gridInsight.sellNow.toFixed(2)}`, ''],
+        ['Profit', `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}`, gridInsight.profitNow >= 0 ? 'good' : 'bad']
       ];
       rows.forEach(([label, value, tone]) => {
         const metric = document.createElement('div');
@@ -188,17 +196,25 @@ export function renderSelectedItemInsightAction(deps) {
       const chipRow = document.createElement('div');
       chipRow.className = 'market-insight-row';
       const rarityChip = document.createElement('span');
-      const rarityLabel = String(gridInsight.rarity || 'unknown');
-      const rarityClass = rarityLabel === 'unknown' ? '' : ` rarity-${rarityLabel}`;
-      rarityChip.className = `insight-chip insight-rarity-chip${rarityClass}`;
-      rarityChip.textContent = `Rarity: ${rarityLabel === 'unknown' ? 'Unknown' : (rarityLabel.charAt(0).toUpperCase() + rarityLabel.slice(1))}`;
+      if (gridInsight.isProduce) {
+        const rarityLabel = String(gridInsight.rarity || 'unknown');
+        const rarityClass = rarityLabel === 'unknown' ? '' : ` rarity-${rarityLabel}`;
+        rarityChip.className = `insight-chip insight-rarity-chip${rarityClass}`;
+        rarityChip.textContent = `Rarity: ${rarityLabel === 'unknown' ? 'Unknown' : (rarityLabel.charAt(0).toUpperCase() + rarityLabel.slice(1))}`;
+      } else {
+        const typeLabel = String(gridInsight.itemType || gridInsight.tableKey || 'item');
+        rarityChip.className = 'insight-chip';
+        rarityChip.textContent = `Type: ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}`;
+      }
       chipRow.appendChild(rarityChip);
 
       const stageChip = document.createElement('span');
       stageChip.className = `insight-chip${gridInsight.canSell ? ' good' : ''}`;
-      stageChip.textContent = gridInsight.canSell
+      stageChip.textContent = gridInsight.isProduce
+        ? (gridInsight.canSell
         ? 'Ready to sell'
-        : `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`;
+        : `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`)
+        : `Resale: ${gridInsight.resaleRatePct || 80}%`;
       chipRow.appendChild(stageChip);
 
       const sellButton = document.createElement('button');
@@ -223,6 +239,54 @@ export function renderSelectedItemInsightAction(deps) {
       empty.className = 'market-insight-empty';
       empty.textContent = 'Select an item in Market or Farm to preview info.';
       panel.appendChild(empty);
+      return;
+    }
+
+    if (!shopInsight.isProduce) {
+      panel.appendChild(createInsightHeader(`${shopInsight.itemName} usage`, clearCurrentInfoSelection));
+      const metricGrid = document.createElement('div');
+      metricGrid.className = 'market-insight-grid';
+      const rows = [
+        ['Buy Price', `$${shopInsight.buyPrice.toFixed(2)}`, ''],
+        ['Resale (80%)', `$${shopInsight.resaleValue.toFixed(2)}`, ''],
+        ['Net on Sell', `${shopInsight.projectedDelta >= 0 ? '+' : ''}$${shopInsight.projectedDelta.toFixed(2)}`, shopInsight.projectedDelta >= 0 ? 'good' : 'bad'],
+        ['Placement', 'Select then place on grid', '']
+      ];
+      rows.forEach(([label, value, tone]) => {
+        const metric = document.createElement('div');
+        metric.className = 'market-insight-metric';
+        const labelEl = document.createElement('span');
+        labelEl.className = 'metric-label';
+        labelEl.textContent = label;
+        const valueEl = document.createElement('span');
+        valueEl.className = `metric-value${tone ? ` ${tone}` : ''}`;
+        valueEl.textContent = value;
+        metric.appendChild(labelEl);
+        metric.appendChild(valueEl);
+        metricGrid.appendChild(metric);
+      });
+      panel.appendChild(metricGrid);
+      const chipRow = document.createElement('div');
+      chipRow.className = 'market-insight-row';
+      const typeChip = document.createElement('span');
+      typeChip.className = 'insight-chip';
+      const typeLabel = String(shopInsight.itemType || shopInsight.tableKey || 'item');
+      typeChip.textContent = `Type: ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}`;
+      chipRow.appendChild(typeChip);
+      const resaleChip = document.createElement('span');
+      resaleChip.className = 'insight-chip';
+      resaleChip.textContent = `Resale rate: ${shopInsight.resaleRatePct || 80}%`;
+      chipRow.appendChild(resaleChip);
+      panel.appendChild(chipRow);
+      if (shopInsight.description) {
+        const descRow = document.createElement('div');
+        descRow.className = 'market-insight-row';
+        const descChip = document.createElement('span');
+        descChip.className = 'insight-chip';
+        descChip.textContent = shopInsight.description;
+        descRow.appendChild(descChip);
+        panel.appendChild(descRow);
+      }
       return;
     }
 

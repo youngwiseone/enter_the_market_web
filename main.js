@@ -20,6 +20,7 @@
 // Core
 import { clone, loadFromStorage, saveToStorage } from './js/core/storage.js';
 import { runAppBootstrap } from './js/app/bootstrap.js';
+import { isProduceItem } from './js/content/item_types.js';
 import { buildGoalCelebrationControllerDeps, buildSessionRuntimeDeps } from './js/app/bootstrap/session.js';
 import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bootstrap/farm.js';
 import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
@@ -121,6 +122,10 @@ import {
   syncGoalLockedShopUnlocksAction
 } from './js/controllers/shop_market_controller.js';
 import { buyItemAction, sellItemAction } from './js/controllers/shop_controller.js';
+import {
+  purchaseDecorationAction,
+  purchaseFixedPriceItemAction
+} from './js/controllers/fixed_price_store_controller.js';
 import {
   purchaseCosmeticAction,
   selectCosmeticAction
@@ -582,6 +587,8 @@ function isToolUnlocked(tool) {
 }
 
 function isShopItemUnlocked(itemId) {
+  const item = Array.isArray(state.items) ? state.items.find((it) => it && it.id === itemId) : null;
+  if (item && !isProduceItem(item)) return true;
   return !!(state.unlockedShopItems && state.unlockedShopItems[itemId]);
 }
 
@@ -1007,8 +1014,11 @@ function renderMarket() {
         : { visible: false, fading: false }
     ),
     purchaseCosmetic,
+    purchaseDecoration,
+    buyFixedPriceItem,
     selectCosmetic,
     isStoreTabUnlocked,
+    resolveResourcePath,
     getCurrentMarketTableView: () => (
       uiRuntimeController && typeof uiRuntimeController.getCurrentMarketTableView === 'function'
         ? uiRuntimeController.getCurrentMarketTableView()
@@ -1439,6 +1449,8 @@ function consumeEnergy(amount, reason) {
 const gameplayRuntimeController = createGameplayRuntimeController({
   state,
   buyItemAction,
+  purchaseFixedPriceItemAction,
+  purchaseDecorationAction,
   sellItemAction,
   purchaseCosmeticAction,
   selectCosmeticAction,
@@ -1515,6 +1527,10 @@ const gameplayRuntimeController = createGameplayRuntimeController({
  */
 function buyItem(itemId, quantity) {
   gameplayRuntimeController.buyItem(itemId, quantity);
+}
+
+function buyFixedPriceItem(itemId) {
+  gameplayRuntimeController.buyFixedPriceItem(itemId);
 }
 
 function sellItem(itemId, quantity) {
@@ -1652,6 +1668,10 @@ function nextDay() {
  */
 function purchaseCosmetic(itemId) {
   gameplayRuntimeController.purchaseCosmetic(itemId);
+}
+
+function purchaseDecoration(decorationId) {
+  gameplayRuntimeController.purchaseDecoration(decorationId);
 }
 
 /**

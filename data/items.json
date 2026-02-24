@@ -13,304 +13,405 @@
         "plants/pumpkin_plant5.png",
         "plants/pumpkin_plant6.png"
       ],
-      "harvestImage": "items/pumpkin.png",
+      "harvestImage": "items/produce/pumpkin.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 2,
       "name": "Tomato",
       "price": 2,
       "rarity": "common",
-      "harvestImage": "items/tomato.png",
+      "harvestImage": "items/produce/tomato.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 3,
       "name": "Corn",
       "price": 8,
       "rarity": "common",
-      "harvestImage": "items/corn.png",
+      "harvestImage": "items/produce/corn.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 4,
       "name": "Carrot",
       "price": 1,
       "rarity": "common",
-      "harvestImage": "items/carrot.png",
+      "harvestImage": "items/produce/carrot.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 5,
       "name": "Potato",
       "price": 3,
       "rarity": "common",
-      "harvestImage": "items/potato.png",
+      "harvestImage": "items/produce/potato.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 6,
       "name": "Onion",
       "price": 2,
       "rarity": "common",
-      "harvestImage": "items/onion.png",
+      "harvestImage": "items/produce/onion.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 7,
       "name": "Cabbage",
       "price": 9,
       "rarity": "common",
-      "harvestImage": "items/cabbage.png",
+      "harvestImage": "items/produce/cabbage.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 8,
       "name": "Broccoli",
       "price": 34,
       "rarity": "common",
-      "harvestImage": "items/broccoli.png",
+      "harvestImage": "items/produce/broccoli.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 9,
       "name": "Cucumber",
       "price": 10,
       "rarity": "common",
-      "harvestImage": "items/cucumber.png",
+      "harvestImage": "items/produce/cucumber.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 10,
       "name": "Zucchini",
       "price": 11,
       "rarity": "common",
-      "harvestImage": "items/zucchini.png",
+      "harvestImage": "items/produce/zucchini.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 11,
       "name": "Eggplant",
       "price": 20,
       "rarity": "common",
-      "harvestImage": "items/eggplant.png",
+      "harvestImage": "items/produce/eggplant.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 12,
       "name": "Garlic",
       "price": 4,
       "rarity": "common",
-      "harvestImage": "items/garlic.png",
+      "harvestImage": "items/produce/garlic.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 13,
       "name": "Lettuce",
       "price": 22,
       "rarity": "common",
-      "harvestImage": "items/lettuce.png",
+      "harvestImage": "items/produce/lettuce.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 14,
       "name": "Spinach",
       "price": 5,
       "rarity": "common",
-      "harvestImage": "items/spinach.png",
+      "harvestImage": "items/produce/spinach.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 15,
       "name": "Radish",
       "price": 3,
       "rarity": "common",
-      "harvestImage": "items/radish.png",
+      "harvestImage": "items/produce/radish.png",
       "growDays": 6,
-      "plantStages": 6
+      "plantStages": 6,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 16,
       "name": "Green Pepper",
       "price": 24,
       "rarity": "common",
-      "harvestImage": "items/green_pepper.png",
+      "harvestImage": "items/produce/green_pepper.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 17,
       "name": "Beetroot",
       "price": 12,
       "rarity": "common",
-      "harvestImage": "items/beetroot.png",
+      "harvestImage": "items/produce/beetroot.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 18,
       "name": "Pea",
       "price": 38,
       "rarity": "common",
-      "harvestImage": "items/pea.png",
+      "harvestImage": "items/produce/pea.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 19,
       "name": "Spring Onion",
       "price": 42,
       "rarity": "common",
-      "harvestImage": "items/spring_onion.png",
+      "harvestImage": "items/produce/spring_onion.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 20,
       "name": "Red Onion",
       "price": 46,
       "rarity": "common",
-      "harvestImage": "items/red_onion.png",
+      "harvestImage": "items/produce/red_onion.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 21,
       "name": "Turnip",
       "price": 50,
       "rarity": "common",
-      "harvestImage": "items/turnip.png",
+      "harvestImage": "items/produce/turnip.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 22,
       "name": "Capsicum",
       "price": 55,
       "rarity": "common",
-      "harvestImage": "items/capsicum.png",
+      "harvestImage": "items/produce/capsicum.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 23,
       "name": "Chilli",
       "price": 60,
       "rarity": "common",
-      "harvestImage": "items/chilli.png",
+      "harvestImage": "items/produce/chilli.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 24,
       "name": "Celery",
       "price": 66,
       "rarity": "common",
-      "harvestImage": "items/celery.png",
+      "harvestImage": "items/produce/celery.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 25,
       "name": "Squash",
       "price": 72,
       "rarity": "common",
-      "harvestImage": "items/squash.png",
+      "harvestImage": "items/produce/squash.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 26,
       "name": "Kumara",
       "price": 79,
       "rarity": "common",
-      "harvestImage": "items/kumara.png",
+      "harvestImage": "items/produce/kumara.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 27,
       "name": "Red Cabbage",
       "price": 87,
       "rarity": "common",
-      "harvestImage": "items/red_cabbage.png",
+      "harvestImage": "items/produce/red_cabbage.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 28,
       "name": "Leek",
       "price": 96,
       "rarity": "common",
-      "harvestImage": "items/leek.png",
+      "harvestImage": "items/produce/leek.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 29,
       "name": "Taro",
       "price": 106,
       "rarity": "common",
-      "harvestImage": "items/taro.png",
+      "harvestImage": "items/produce/taro.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 30,
       "name": "Asparagus",
       "price": 118,
       "rarity": "common",
-      "harvestImage": "items/asparagus.png",
+      "harvestImage": "items/produce/asparagus.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
     },
     {
       "id": 31,
       "name": "Artichoke",
       "price": 132,
       "rarity": "common",
-      "harvestImage": "items/artichoke.png",
+      "harvestImage": "items/produce/artichoke.png",
       "growDays": 6,
       "plantStages": 6,
-      "goalLocked": true
+      "goalLocked": true,
+      "type": "produce",
+      "table_key": "produce_market"
+    },
+    {
+      "id": 32,
+      "name": "Sprinkler",
+      "type": "sprinkler",
+      "table_key": "utility",
+      "price": 120,
+      "description": "Place on a farm tile to later water nearby crops automatically. Water to refill (future behavior).",
+      "image": "items/utility/sprinkler.png",
+      "goalLocked": false
+    },
+    {
+      "id": 33,
+      "name": "Water Retention Fertiliser",
+      "type": "fertiliser",
+      "table_key": "utility",
+      "price": 45,
+      "description": "Place on a tile to improve water retention for crops planted there (future behavior).",
+      "image": "items/utility/fertiliser_water.png",
+      "goalLocked": false
+    },
+    {
+      "id": 34,
+      "name": "Speed Grow Fertiliser",
+      "type": "fertiliser",
+      "table_key": "utility",
+      "price": 55,
+      "description": "Place on a tile to help crops planted there grow faster (future behavior).",
+      "image": "items/utility/fertiliser_grow.png",
+      "goalLocked": false
+    },
+    {
+      "id": 35,
+      "name": "Quality Fertiliser",
+      "type": "fertiliser",
+      "table_key": "utility",
+      "price": 65,
+      "description": "Place on a tile to improve crop quality/rarity chances (future behavior).",
+      "image": "items/utility/fertiliser_quality.png",
+      "goalLocked": false
     }
   ]
 }
-
