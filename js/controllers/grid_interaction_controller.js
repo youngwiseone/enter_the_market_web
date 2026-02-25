@@ -1,5 +1,6 @@
 import { isProduceItem } from '../content/item_types.js';
 import { getRefillableTankState } from './watering_infrastructure.js';
+import { isFertiliserItem } from './fertiliser_controller.js';
 
 export function getGridIndexFromPointerEventAction(event, getElementFromPoint) {
   if (!(event && typeof event === 'object')) return null;
@@ -74,6 +75,15 @@ export function applyGridActionForIndexAction(deps) {
   }
 
   if (state.gridItems[index]) {
+    if (selectedShopItemId) {
+      const selectedShopItem = Array.isArray(state.items)
+        ? state.items.find((it) => it && it.id === selectedShopItemId)
+        : null;
+      if (isFertiliserItem(selectedShopItem)) {
+        purchaseAndPlaceSelected(index);
+        return true;
+      }
+    }
     if (isDragMode && !selectedShopItemId && state.activeTool === TOOL_GLOVE) {
       if (addGridCellToBulkSelection(index)) {
         return true;

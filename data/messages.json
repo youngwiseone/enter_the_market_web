@@ -951,6 +951,66 @@
       "template": "Already watered today. {itemName} progress: {wateredDays}/{growDays} days ({daysLeft} left)."
     },
     {
+      "id": "progress.fertiliser_only_on_plants",
+      "type": "farm",
+      "icon": "warning",
+      "speaker": "player",
+      "emotion": "wrong",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "Can only fertilise plants already placed"
+    },
+    {
+      "id": "progress.fertiliser_speed_maxed",
+      "type": "farm",
+      "icon": "sprout",
+      "speaker": "player",
+      "emotion": "neutral",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "Plant grows tomorrow!"
+    },
+    {
+      "id": "progress.fertiliser_water_retention_maxed",
+      "type": "farm",
+      "icon": "watering",
+      "speaker": "player",
+      "emotion": "watering",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "That plant will stay watered long enough already."
+    },
+    {
+      "id": "progress.fertiliser_quality_maxed",
+      "type": "farm",
+      "icon": "sparkle",
+      "speaker": "player",
+      "emotion": "excited",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "Already max rarity!"
+    },
+    {
+      "id": "progress.fertiliser_applied",
+      "type": "farm",
+      "icon": "sprout",
+      "speaker": "player",
+      "emotion": "neutral",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "Applied {fertiliserName} to {plantName} (x{stackCount})."
+    },
+    {
       "id": "progress.watering_progress",
       "type": "farm",
       "icon": "watering",

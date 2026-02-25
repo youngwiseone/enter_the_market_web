@@ -4,6 +4,13 @@ import {
 } from './seed_buy_streak_controller.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
+import {
+  canApplyFertiliserToPlant,
+  getFertiliserTypeKeyForItem,
+  isFertiliserItem,
+  withAppliedPlantFertiliserMeta
+} from './fertiliser_controller.js';
+import { RARITY_ROLLS } from '../sim/rarity.js';
 
 export function purchaseAndPlaceSelectedAction(deps) {
   const {
@@ -41,6 +48,92 @@ export function purchaseAndPlaceSelectedAction(deps) {
   }
   const item = state.items.find((it) => it.id === selectedShopItemId);
   if (!item) return;
+  const isFertiliser = isFertiliserItem(item);
+  const triggerInvalidFertiliserTargetFx = () => {
+    const fxTargets = typeof getGridActionFxTargets === 'function' ? getGridActionFxTargets(cellIndex) : null;
+    const cell = fxTargets ? fxTargets.cell : null;
+    if (cell && typeof triggerFxClass === 'function') {
+      triggerFxClass(cell, 'fx-shake');
+    }
+  };
+
+  if (isFertiliser) {
+    const targetItemId = Array.isArray(state.gridItems) ? state.gridItems[cellIndex] : null;
+    const targetItem = targetItemId ? state.items.find((it) => it.id === targetItemId) : null;
+    const validation = canApplyFertiliserToPlant({
+      state,
+      cellIndex,
+      fertiliserItem: item,
+      targetItem,
+      rarityRolls: RARITY_ROLLS
+    });
+    if (!validation.ok) {
+      addMessage({
+        id: validation.messageId || 'progress.fertiliser_only_on_plants',
+        meta: {
+          speaker: 'player',
+          emotion: 'wrong',
+          category: 'progress',
+          priority: 'normal',
+          replaceKey: 'progress:fertiliser'
+        }
+      });
+      triggerInvalidFertiliserTargetFx();
+      return;
+    }
+
+    const baseBuyPrice = Math.max(0, Number(item.price) || 0);
+    if (state.player.cash < baseBuyPrice) {
+      addMessage({
+        id: 'progress.insufficient_funds',
+        meta: {
+          speaker: 'player',
+          emotion: 'wrong',
+          category: 'progress',
+          priority: 'high'
+        }
+      });
+      return;
+    }
+    if (!consumeEnergy(1, 'apply fertiliser')) return;
+    registerDayAction();
+    state.player.cash -= baseBuyPrice;
+    setSelectedGridCellIndex(cellIndex);
+    if (Array.isArray(state.gridPlacedMeta)) {
+      state.gridPlacedMeta[cellIndex] = withAppliedPlantFertiliserMeta(
+        state.gridPlacedMeta[cellIndex],
+        validation.fertiliserTypeKey || getFertiliserTypeKeyForItem(item)
+      );
+    }
+    awardPlayerXp(xpRewards.plant);
+    updateNetWorth();
+    evaluateGoals();
+    saveState();
+    addMessage({
+      id: 'progress.fertiliser_applied',
+      vars: {
+        fertiliserName: item.name || 'Fertiliser',
+        plantName: targetItem?.name || 'plant',
+        stackCount: Number(validation.nextStackCount || 1)
+      },
+      meta: {
+        speaker: 'player',
+        emotion: 'neutral',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:fertiliser'
+      }
+    });
+    renderAll();
+    const center = getTileCenter(cellIndex);
+    if (center) {
+      const fxTargets = getGridActionFxTargets(cellIndex);
+      const cell = fxTargets ? fxTargets.cell : null;
+      if (cell) triggerFxClass(cell, 'fx-pop');
+      showXpGainFeedback(xpRewards.plant, center);
+    }
+    return;
+  }
   const isProduce = isProduceItem(item);
   const tableKey = getNormalizedItemTableKey(item);
   const shopEntry = Array.isArray(state.shop)

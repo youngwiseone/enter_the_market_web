@@ -1,5 +1,11 @@
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
+import {
+  canApplyFertiliserToPlant,
+  isFertiliserItem,
+  withAppliedPlantFertiliserMeta
+} from './fertiliser_controller.js';
+import { RARITY_ROLLS } from '../sim/rarity.js';
 
 export function getGridUnlockCostAction(state) {
   const unlockedCount = Array.isArray(state.gridUnlocked)
@@ -64,9 +70,74 @@ export function placeItemOnGridAction(deps) {
     triggerFxClass,
     showXpGainFeedback
   } = deps;
-  if (!state.gridUnlocked[cellIndex] || state.gridItems[cellIndex]) return;
+  if (!state.gridUnlocked[cellIndex]) return;
   const item = state.items.find((it) => it.id === itemId);
   if (!item) return;
+  const isFertiliser = isFertiliserItem(item);
+  const triggerInvalidFertiliserTargetFx = () => {
+    const fxTargets = typeof getGridActionFxTargets === 'function' ? getGridActionFxTargets(cellIndex) : null;
+    const cell = fxTargets ? fxTargets.cell : null;
+    if (cell && typeof triggerFxClass === 'function') triggerFxClass(cell, 'fx-shake');
+  };
+  if (isFertiliser) {
+    const targetItemId = state.gridItems[cellIndex];
+    const targetItem = targetItemId ? state.items.find((it) => it.id === targetItemId) : null;
+    const validation = canApplyFertiliserToPlant({
+      state,
+      cellIndex,
+      fertiliserItem: item,
+      targetItem,
+      rarityRolls: RARITY_ROLLS
+    });
+    if (!validation.ok) {
+      addMessage({
+        id: validation.messageId || 'progress.fertiliser_only_on_plants',
+        meta: {
+          speaker: 'player',
+          emotion: 'wrong',
+          category: 'progress',
+          priority: 'normal',
+          replaceKey: 'progress:fertiliser'
+        }
+      });
+      triggerInvalidFertiliserTargetFx();
+      return;
+    }
+    if (!consumeEnergy(1, 'apply fertiliser')) return;
+    registerDayAction();
+    if (Array.isArray(state.gridPlacedMeta)) {
+      state.gridPlacedMeta[cellIndex] = withAppliedPlantFertiliserMeta(
+        state.gridPlacedMeta[cellIndex],
+        validation.fertiliserTypeKey
+      );
+    }
+    awardPlayerXp(xpRewards.plant);
+    saveState();
+    addMessage({
+      id: 'progress.fertiliser_applied',
+      vars: {
+        fertiliserName: item.name || 'Fertiliser',
+        plantName: targetItem?.name || 'plant',
+        stackCount: Number(validation.nextStackCount || 1)
+      },
+      meta: {
+        speaker: 'player',
+        emotion: 'neutral',
+        category: 'progress',
+        priority: 'normal',
+        replaceKey: 'progress:fertiliser'
+      }
+    });
+    renderAll();
+    const center = getTileCenter(cellIndex);
+    if (!center) return;
+    const fxTargets = getGridActionFxTargets(cellIndex);
+    const cell = fxTargets ? fxTargets.cell : null;
+    if (cell) triggerFxClass(cell, 'fx-pop');
+    showXpGainFeedback(xpRewards.plant, center);
+    return;
+  }
+  if (state.gridItems[cellIndex]) return;
   if (!consumeEnergy(1, 'plant a seed')) return;
   registerDayAction();
 

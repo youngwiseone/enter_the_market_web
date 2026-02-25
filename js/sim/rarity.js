@@ -24,14 +24,15 @@ export function normalizeRarity(value) {
   return RARITY_TYPES.includes(trimmed) ? trimmed : 'common';
 }
 
-export function rollRarity() {
-  const totalWeight = RARITY_ROLLS.reduce((sum, entry) => sum + entry.weight, 0);
+export function rollRarity(customRolls = null) {
+  const rolls = Array.isArray(customRolls) && customRolls.length ? customRolls : RARITY_ROLLS;
+  const totalWeight = rolls.reduce((sum, entry) => sum + (Math.max(0, Number(entry?.weight) || 0)), 0);
   if (totalWeight <= 0) return 'common';
   let roll = Math.random() * totalWeight;
-  for (const entry of RARITY_ROLLS) {
-    roll -= entry.weight;
+  for (const entry of rolls) {
+    roll -= Math.max(0, Number(entry?.weight) || 0);
     if (roll <= 0) {
-      return entry.rarity;
+      return normalizeRarity(entry?.rarity);
     }
   }
   return 'common';

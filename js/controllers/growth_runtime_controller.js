@@ -1,3 +1,10 @@
+import {
+  getPlantGrowthProgressWithFertiliser,
+  getPlantFertiliserStacks,
+  transformRarityWeightsForQualityFertiliser
+} from './fertiliser_controller.js';
+import { RARITY_ROLLS } from '../sim/rarity.js';
+
 export function createGrowthRuntimeController(deps) {
   const {
     state,
@@ -10,21 +17,16 @@ export function createGrowthRuntimeController(deps) {
     saveState
   } = deps;
 
-  function getEffectiveWateredCount(index) {
-    const wateredCount = Array.isArray(state.gridWateredCount) ? (state.gridWateredCount[index] || 0) : 0;
-    const wateredToday = Array.isArray(state.gridWateredDay) && state.gridWateredDay[index] === state.player.day;
-    return Math.max(0, wateredCount - (wateredToday ? 1 : 0));
-  }
-
   function getPlantGrowthState(item, index) {
     const stageCount = Math.max(1, Number(item?.plantStages) || 1);
-    const growDays = Math.max(0, Number(item?.growDays) || 0);
+    const progress = getPlantGrowthProgressWithFertiliser(state, item, index);
+    const growDays = Math.max(0, Number(progress.effectiveGrowDays) || 0);
     if (growDays <= 0) {
       return { stageIndex: stageCount, isGrown: true, daysLeft: 0 };
     }
-    const effectiveWateredCount = getEffectiveWateredCount(index);
-    const isGrown = effectiveWateredCount >= growDays;
-    const daysLeft = Math.max(0, growDays - effectiveWateredCount);
+    const effectiveWateredCount = Math.max(0, Number(progress.effectiveWateredCount) || 0);
+    const isGrown = !!progress.isGrown;
+    const daysLeft = Math.max(0, Number(progress.daysLeft) || 0);
     let stageIndex = 1;
     if (stageCount > 1 && !isGrown) {
       const progress = Math.max(0, Math.min(0.9999, effectiveWateredCount / growDays));
@@ -46,7 +48,13 @@ export function createGrowthRuntimeController(deps) {
     if (!Array.isArray(state.gridRarity)) return null;
     const existing = getGridRarity(index);
     if (existing) return existing;
-    const rolled = rollRarity();
+    const itemId = Array.isArray(state.gridItems) ? state.gridItems[index] : null;
+    const item = itemId ? state.items.find((it) => it.id === itemId) : null;
+    const qualityStacks = item ? getPlantFertiliserStacks(state, index).quality : 0;
+    const rarityRolls = qualityStacks > 0
+      ? transformRarityWeightsForQualityFertiliser(RARITY_ROLLS, qualityStacks)
+      : RARITY_ROLLS;
+    const rolled = rollRarity(rarityRolls);
     state.gridRarity[index] = rolled;
     if (typeof saveState === 'function') {
       // Persist full farm state so rarity cannot be rerolled via page refresh.

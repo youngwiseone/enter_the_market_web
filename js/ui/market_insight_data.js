@@ -1,5 +1,7 @@
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { getRefillableTankState, getSprinklerPlacementConfig } from '../controllers/watering_infrastructure.js';
+import { getPlantFertiliserEffectsSummary } from '../controllers/fertiliser_controller.js';
+import { RARITY_ROLLS } from '../sim/rarity.js';
 
 export function getSelectedShopItemInsightDataAction(deps) {
   const {
@@ -125,6 +127,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
   const sellMultiplier = growth.isGrown ? getRarityMultiplier(rarity || 'common') : 0;
   const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier * getActiveFarmSellMultiplier()) : 0;
   const profitNow = sellNow - buyPrice;
+  const fertiliserSummary = getPlantFertiliserEffectsSummary(state, item, selectedGridCellIndex, RARITY_ROLLS);
   return {
     cellIndex: selectedGridCellIndex,
     isProduce: true,
@@ -136,6 +139,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
     growth,
     canSell: growth.isGrown,
     sellNow,
-    profitNow
+    profitNow,
+    fertiliser: fertiliserSummary
   };
 }

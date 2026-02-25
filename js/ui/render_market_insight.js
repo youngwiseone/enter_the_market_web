@@ -216,6 +216,40 @@ export function renderSelectedItemInsightAction(deps) {
         : `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`)
         : `Resale: ${gridInsight.resaleRatePct || 80}%`;
       chipRow.appendChild(stageChip);
+      if (gridInsight.isProduce && gridInsight.fertiliser?.hasAny) {
+        const stacks = gridInsight.fertiliser.stacks || {};
+        const stackParts = [];
+        if (Number(stacks.waterRetention) > 0) stackParts.push(`Water Retention x${Number(stacks.waterRetention)}`);
+        if (Number(stacks.speedGrow) > 0) stackParts.push(`Speed Grow x${Number(stacks.speedGrow)}`);
+        if (Number(stacks.quality) > 0) stackParts.push(`Quality x${Number(stacks.quality)}`);
+        if (stackParts.length) {
+          const fertChip = document.createElement('span');
+          fertChip.className = 'insight-chip';
+          fertChip.textContent = `Fertiliser: ${stackParts.join(', ')}`;
+          chipRow.appendChild(fertChip);
+        }
+        if (Number(gridInsight.fertiliser.waterRetentionDays) > 0) {
+          const waterChip = document.createElement('span');
+          waterChip.className = 'insight-chip';
+          waterChip.textContent = `Stays watered: +${Number(gridInsight.fertiliser.waterRetentionDays)} day${Number(gridInsight.fertiliser.waterRetentionDays) === 1 ? '' : 's'}`;
+          chipRow.appendChild(waterChip);
+        }
+        if (Number(gridInsight.fertiliser.speedGrowDays) > 0) {
+          const speedChip = document.createElement('span');
+          speedChip.className = 'insight-chip';
+          speedChip.textContent = `Growth reduction: -${Number(gridInsight.fertiliser.speedGrowDays)} day${Number(gridInsight.fertiliser.speedGrowDays) === 1 ? '' : 's'}`;
+          chipRow.appendChild(speedChip);
+        }
+        if (Number(gridInsight.fertiliser.qualityStacks) > 0) {
+          const qualityChip = document.createElement('span');
+          qualityChip.className = 'insight-chip';
+          const mythicPct = Number(gridInsight.fertiliser.qualityMythicPercent);
+          qualityChip.textContent = Number.isFinite(mythicPct)
+            ? `Quality: Mythic ${mythicPct.toFixed(0)}%`
+            : `Quality: +${Number(gridInsight.fertiliser.qualityStacks) * 5}% upward shift`;
+          chipRow.appendChild(qualityChip);
+        }
+      }
       if (!gridInsight.isProduce && gridInsight.tankCapacity !== null) {
         const tankChip = document.createElement('span');
         tankChip.className = 'insight-chip';
@@ -272,7 +306,7 @@ export function renderSelectedItemInsightAction(deps) {
         ['Buy Price', `$${shopInsight.buyPrice.toFixed(2)}`, ''],
         ['Resale (80%)', `$${shopInsight.resaleValue.toFixed(2)}`, ''],
         ['Net on Sell', `${shopInsight.projectedDelta >= 0 ? '+' : ''}$${shopInsight.projectedDelta.toFixed(2)}`, shopInsight.projectedDelta >= 0 ? 'good' : 'bad'],
-        ['Placement', 'Select then place on grid', '']
+        ['Placement', String(shopInsight.itemType || '') === 'fertiliser' ? 'Apply to planted crops' : 'Select then place on grid', '']
       ];
       rows.forEach(([label, value, tone]) => {
         const metric = document.createElement('div');
