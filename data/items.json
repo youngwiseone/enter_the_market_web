@@ -378,7 +378,7 @@
       "name": "Sprinkler",
       "type": "sprinkler",
       "table_key": "utility",
-      "price": 120,
+      "price": 100,
       "description": "Waters adjacent crops at dawn and skips grown crops. Refill with the watering can.",
       "image": "items/utility/sprinkler.png",
       "goalLocked": false
@@ -388,7 +388,7 @@
       "name": "Water Retention Fertiliser",
       "type": "fertiliser",
       "table_key": "utility",
-      "price": 45,
+      "price": 10,
       "description": "Place on a tile to improve water retention for crops planted there (future behavior).",
       "image": "items/utility/fertiliser_water.png",
       "goalLocked": false
@@ -398,7 +398,7 @@
       "name": "Speed Grow Fertiliser",
       "type": "fertiliser",
       "table_key": "utility",
-      "price": 55,
+      "price": 12,
       "description": "Place on a tile to help crops planted there grow faster (future behavior).",
       "image": "items/utility/fertiliser_grow.png",
       "goalLocked": false
@@ -408,7 +408,7 @@
       "name": "Quality Fertiliser",
       "type": "fertiliser",
       "table_key": "utility",
-      "price": 65,
+      "price": 15,
       "description": "Place on a tile to improve crop quality/rarity chances (future behavior).",
       "image": "items/utility/fertiliser_quality.png",
       "goalLocked": false

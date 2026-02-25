@@ -1,7 +1,15 @@
+function getUtilityUnlockLevelForItem(item) {
+  const itemType = String(item?.type || '').trim().toLowerCase();
+  if (itemType === 'fertiliser') return 10;
+  if (itemType === 'sprinkler') return 20;
+  return null;
+}
+
 export function purchaseFixedPriceItemAction(deps) {
   const {
     state,
     itemId,
+    isShopItemUnlocked,
     registerDayAction,
     updateNetWorth,
     evaluateGoals,
@@ -15,6 +23,17 @@ export function purchaseFixedPriceItemAction(deps) {
 
   const item = Array.isArray(state.items) ? state.items.find((it) => it && it.id === itemId) : null;
   if (!item) return;
+  if (typeof isShopItemUnlocked === 'function' && !isShopItemUnlocked(itemId)) {
+    const unlockLevel = getUtilityUnlockLevelForItem(item);
+    addMessage(unlockLevel
+      ? {
+        id: 'progress.utility_unlocks_at_level',
+        vars: { itemName: item.name || 'Utility', level: unlockLevel },
+        meta: { speaker: 'merchant', priority: 'normal' }
+      }
+      : { id: 'progress.item_not_available', meta: { speaker: 'merchant', priority: 'normal' } });
+    return;
+  }
   const price = Math.max(0, Number(item.price) || 0);
   if (state.player.cash < price) {
     addMessage({ id: 'progress.insufficient_funds', meta: { speaker: 'merchant', priority: 'normal' } });
@@ -83,4 +102,3 @@ export function purchaseDecorationAction(deps) {
   });
   renderAll();
 }
-

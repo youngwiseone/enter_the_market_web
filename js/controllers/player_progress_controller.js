@@ -120,14 +120,18 @@ export function enqueueLevelUpCelebrationAction(
   changeText,
   showNextGoalCelebration,
   unlockedItem,
-  rollCelebrationText = ''
+  rollCelebrationText = '',
+  unlockedSummaryText = '',
+  unlockItems = []
 ) {
   if (!Array.isArray(state.goalCelebrationQueue)) {
     state.goalCelebrationQueue = [];
   }
-  const unlockedText = unlockedItem && unlockedItem.name
-    ? ` | Unlocked item: ${unlockedItem.name}`
-    : '';
+  const unlockedText = unlockedSummaryText
+    ? ` | ${unlockedSummaryText}`
+    : (unlockedItem && unlockedItem.name
+      ? ` | Unlocked item: ${unlockedItem.name}`
+      : '');
   state.goalCelebrationQueue.push({
     id: `level-up-${level}-${Date.now()}`,
     title: 'Level Up',
@@ -135,7 +139,18 @@ export function enqueueLevelUpCelebrationAction(
     imageSrc: unlockedItem?.imageSrc || 'resources/profiles/player_level_up.png',
     imageAlt: unlockedItem?.imageAlt || 'Level up',
     seedPacketImageSrc: unlockedItem?.seedPacketImageSrc || '',
-    seedOverlayIconImageSrc: unlockedItem?.seedOverlayIconImageSrc || ''
+    seedOverlayIconImageSrc: unlockedItem?.seedOverlayIconImageSrc || '',
+    unlockItems: Array.isArray(unlockItems)
+      ? unlockItems
+        .filter((entry) => entry && (entry.seedPacketImageSrc || entry.seedOverlayIconImageSrc || entry.imageSrc))
+        .map((entry) => ({
+          name: entry.name || '',
+          imageAlt: entry.imageAlt || entry.name || 'Unlocked item',
+          seedPacketImageSrc: entry.seedPacketImageSrc || '',
+          seedOverlayIconImageSrc: entry.seedOverlayIconImageSrc || '',
+          imageSrc: entry.imageSrc || ''
+        }))
+      : []
   });
   showNextGoalCelebration();
 }
@@ -150,6 +165,7 @@ export function awardPlayerXpAction(amount, options, deps) {
     formatEnergyValue,
     addMessage,
     unlockShopItemForLevel,
+    getLevelUnlockedUtilityItems,
     enqueueLevelUpCelebration,
     showXpGainFeedback
   } = deps;
@@ -178,11 +194,28 @@ export function awardPlayerXpAction(amount, options, deps) {
       ? `Max energy increased to ${formatEnergyValue(currentEnergyMax)}. Energy fully refilled.`
       : `Energy fully refilled to ${formatEnergyValue(currentEnergyMax)}.`;
     const unlockedItem = unlockShopItemForLevel(state.player.playerLevel);
+    const utilityUnlocks = typeof getLevelUnlockedUtilityItems === 'function'
+      ? getLevelUnlockedUtilityItems(state.player.playerLevel)
+      : [];
+    const allLevelUnlocks = [
+      ...(unlockedItem ? [unlockedItem] : []),
+      ...(Array.isArray(utilityUnlocks) ? utilityUnlocks : [])
+    ];
+    const unlockNames = allLevelUnlocks
+      .map((entry) => String(entry?.name || '').trim())
+      .filter(Boolean);
+    const unlockedText = unlockNames.length
+      ? ` Unlocked ${unlockNames.length === 1 ? 'item' : 'items'}: ${unlockNames.join(', ')}.`
+      : '';
+    const celebrationUnlockedSummaryText = unlockNames.length
+      ? `Unlocked ${unlockNames.length === 1 ? 'item' : 'items'}: ${unlockNames.join(', ')}`
+      : '';
+    const celebrationPrimaryUnlock = unlockedItem || (utilityUnlocks[0] || null);
     addMessage({
       id: 'progress.level_up',
       vars: {
         level: state.player.playerLevel,
-        unlockedText: unlockedItem && unlockedItem.name ? ` Unlocked item: ${unlockedItem.name}.` : '',
+        unlockedText,
         rollUnlockText,
         changeText
       },
@@ -193,7 +226,14 @@ export function awardPlayerXpAction(amount, options, deps) {
         priority: 'high'
       }
     });
-    enqueueLevelUpCelebration(state.player.playerLevel, changeText, unlockedItem, rollCelebrationText);
+    enqueueLevelUpCelebration(
+      state.player.playerLevel,
+      changeText,
+      celebrationPrimaryUnlock,
+      rollCelebrationText,
+      celebrationUnlockedSummaryText,
+      allLevelUnlocks
+    );
   }
 
   if (state.player.playerLevel >= playerLevelCap) {

@@ -46,6 +46,18 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
     assignIfMissing('type');
     assignIfMissing('table_key');
     assignIfMissing('image');
+    // Prices are canonical content data (shop economy uses state.shop for produce,
+    // but utility/fixed-price purchases read item.price directly). Sync saved items
+    // to current content pricing so balance updates apply to existing saves.
+    if (Number.isFinite(Number(defaultItem.price))) {
+      const normalizedCurrentPrice = Math.max(0, Number(nextItem.price) || 0);
+      const normalizedDefaultPrice = Math.max(0, Number(defaultItem.price) || 0);
+      if (Math.abs(normalizedCurrentPrice - normalizedDefaultPrice) > 0.0001) {
+        if (nextItem === item) nextItem = { ...item };
+        nextItem.price = normalizedDefaultPrice;
+        changed = true;
+      }
+    }
 
     // Backward compatibility: if old saves only have seedIconImage, promote it.
     if (!nextItem.harvestImage && nextItem.seedIconImage) {

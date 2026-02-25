@@ -106,6 +106,7 @@ export function createGameplayRuntimeController(deps) {
     purchaseFixedPriceItemAction({
       state,
       itemId,
+      isShopItemUnlocked,
       registerDayAction,
       updateNetWorth,
       evaluateGoals,

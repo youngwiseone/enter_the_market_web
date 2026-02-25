@@ -95,6 +95,7 @@ function createGridTankBadge(currentUnits, capacityUnits, isFading = false) {
 function createMarketTableSwitcher({
   activeView,
   canShowCosmetics,
+  canShowUtility = true,
   onSelectView,
   badgeCounts
 }) {
@@ -114,8 +115,8 @@ function createMarketTableSwitcher({
     {
       id: 'utility',
       label: 'Utility',
-      disabled: false,
-      title: 'View utility items',
+      disabled: !canShowUtility,
+      title: canShowUtility ? 'View utility items' : 'Unlocks later as you level up',
       badgeCount: Math.max(0, Number(badgeCounts?.utility) || 0)
     },
     {
@@ -339,6 +340,7 @@ function renderCosmeticsMarketTable(tableHost, state, purchaseCosmetic, selectCo
 function renderUtilityMarketTable(tableHost, deps) {
   const {
     state,
+    isShopItemUnlocked,
     resolveResourcePath,
     getHarvestImagePath,
     getSelectedShopItemId,
@@ -348,12 +350,12 @@ function renderUtilityMarketTable(tableHost, deps) {
   } = deps;
   const hint = document.createElement('div');
   hint.className = 'market-subtable-note';
-  hint.textContent = 'Select then place on grid. Utility items use fixed prices (no market roll). Resale is 80%.';
+  hint.textContent = 'Utilities use fixed prices (no market roll). Fertilisers apply to planted crops; sprinklers place on grid. Resale is 80%.';
   tableHost.appendChild(hint);
 
   const utilities = Array.isArray(state.items)
     ? state.items
-      .filter((item) => item && getItemTableKey(item) === 'utility')
+      .filter((item) => item && getItemTableKey(item) === 'utility' && (!isShopItemUnlocked || isShopItemUnlocked(item.id)))
       .slice()
       .sort((a, b) => {
         const priceDiff = (Number(a?.price) || 0) - (Number(b?.price) || 0);
@@ -623,10 +625,19 @@ export function renderMarketAction(deps) {
   if (gridEl) gridEl.innerHTML = '';
 
   const canShowCosmetics = typeof isStoreTabUnlocked === 'function' ? !!isStoreTabUnlocked() : true;
+  const hasUnlockedUtilityItems = Array.isArray(state.items)
+    ? state.items.some((item) => item && getItemTableKey(item) === 'utility' && isShopItemUnlocked(item.id))
+    : false;
   let activeMarketTableView = typeof getCurrentMarketTableView === 'function'
     ? getCurrentMarketTableView()
     : 'items';
   if (!canShowCosmetics && activeMarketTableView === 'cosmetics') {
+    activeMarketTableView = 'items';
+    if (typeof setCurrentMarketTableView === 'function') {
+      setCurrentMarketTableView('items');
+    }
+  }
+  if (!hasUnlockedUtilityItems && activeMarketTableView === 'utility') {
     activeMarketTableView = 'items';
     if (typeof setCurrentMarketTableView === 'function') {
       setCurrentMarketTableView('items');
@@ -651,6 +662,7 @@ export function renderMarketAction(deps) {
     tableContainer.appendChild(createMarketTableSwitcher({
       activeView: activeMarketTableView,
       canShowCosmetics,
+      canShowUtility: hasUnlockedUtilityItems,
       badgeCounts: marketUnlockBadgeCounts,
       onSelectView: (nextView) => {
         if (typeof setCurrentMarketTableView === 'function') {
@@ -667,6 +679,7 @@ export function renderMarketAction(deps) {
   } else if (activeMarketTableView === 'utility') {
     renderUtilityMarketTable(tableHost, {
       state,
+      isShopItemUnlocked,
       resolveResourcePath,
       getHarvestImagePath,
       getSelectedShopItemId,

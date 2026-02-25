@@ -226,6 +226,84 @@ export function createGoalCelebrationController(deps) {
     }
   }
 
+  function getGoalCelebrationUnlockIconsRow() {
+    const panel = document.getElementById('goal-celebration-panel');
+    if (!panel) return null;
+    let row = document.getElementById('goal-celebration-unlock-icons-row');
+    if (row) return row;
+    row = document.createElement('div');
+    row.id = 'goal-celebration-unlock-icons-row';
+    row.className = 'goal-celebration-unlock-icons-row';
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.justifyContent = 'center';
+    row.style.flexWrap = 'wrap';
+    row.style.margin = '8px 0 6px';
+    const continueBtn = document.getElementById('goal-celebration-continue');
+    if (continueBtn && continueBtn.parentElement === panel) {
+      panel.insertBefore(row, continueBtn);
+    } else {
+      panel.appendChild(row);
+    }
+    return row;
+  }
+
+  function renderUnlockIconsRow(unlockItems) {
+    const row = getGoalCelebrationUnlockIconsRow();
+    if (!row) return;
+    row.innerHTML = '';
+    const items = Array.isArray(unlockItems) ? unlockItems.filter(Boolean).slice(0, 6) : [];
+    if (!items.length) {
+      row.hidden = true;
+      row.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    items.forEach((entry) => {
+      const wrap = document.createElement('div');
+      wrap.style.position = 'relative';
+      wrap.style.width = '42px';
+      wrap.style.height = '42px';
+      wrap.style.display = 'inline-flex';
+      wrap.style.alignItems = 'center';
+      wrap.style.justifyContent = 'center';
+      wrap.style.borderRadius = '8px';
+      wrap.style.background = 'rgba(255,255,255,0.08)';
+      wrap.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.14)';
+      wrap.title = entry.name || entry.imageAlt || 'Unlocked item';
+
+      if (entry.seedPacketImageSrc && entry.seedOverlayIconImageSrc) {
+        const packet = document.createElement('img');
+        packet.src = entry.seedPacketImageSrc;
+        packet.alt = '';
+        packet.setAttribute('aria-hidden', 'true');
+        packet.style.width = '36px';
+        packet.style.height = '36px';
+        packet.style.imageRendering = 'pixelated';
+        wrap.appendChild(packet);
+
+        const icon = document.createElement('img');
+        icon.src = entry.seedOverlayIconImageSrc;
+        icon.alt = entry.imageAlt || entry.name || 'Unlocked item';
+        icon.style.position = 'absolute';
+        icon.style.width = '18px';
+        icon.style.height = '18px';
+        icon.style.imageRendering = 'pixelated';
+        wrap.appendChild(icon);
+      } else {
+        const img = document.createElement('img');
+        img.src = entry.imageSrc || '';
+        img.alt = entry.imageAlt || entry.name || 'Unlocked item';
+        img.style.width = '30px';
+        img.style.height = '30px';
+        img.style.objectFit = 'contain';
+        wrap.appendChild(img);
+      }
+      row.appendChild(wrap);
+    });
+    row.hidden = false;
+    row.setAttribute('aria-hidden', 'false');
+  }
+
   function showNextGoalCelebration() {
     if (getActiveGoalCelebration()) return;
     const queue = getGoalCelebrationQueue();
@@ -242,6 +320,8 @@ export function createGoalCelebrationController(deps) {
     const seedCompositeEl = document.getElementById('goal-celebration-seed-composite');
     const seedPacketImageEl = document.getElementById('goal-celebration-seed-packet');
     const seedOverlayIconImageEl = document.getElementById('goal-celebration-seed-icon');
+    const unlockItems = Array.isArray(next.unlockItems) ? next.unlockItems : [];
+    const hasMultiUnlockIcons = unlockItems.length > 1;
     const hasSeedUnlockImages = !!(next.seedPacketImageSrc && next.seedOverlayIconImageSrc);
     if (titleEl) titleEl.textContent = next.title;
     if (unlockEl) unlockEl.textContent = next.rewardText;
@@ -256,8 +336,8 @@ export function createGoalCelebrationController(deps) {
       imageEl.hidden = true;
     }
     if (seedCompositeEl) {
-      seedCompositeEl.hidden = !hasSeedUnlockImages;
-      seedCompositeEl.setAttribute('aria-hidden', hasSeedUnlockImages ? 'false' : 'true');
+      seedCompositeEl.hidden = !hasSeedUnlockImages || hasMultiUnlockIcons;
+      seedCompositeEl.setAttribute('aria-hidden', (!hasSeedUnlockImages || hasMultiUnlockIcons) ? 'true' : 'false');
     }
     if (seedPacketImageEl && hasSeedUnlockImages) {
       seedPacketImageEl.src = next.seedPacketImageSrc;
@@ -267,6 +347,7 @@ export function createGoalCelebrationController(deps) {
       seedOverlayIconImageEl.src = next.seedOverlayIconImageSrc;
       seedOverlayIconImageEl.alt = `${next.imageAlt || 'Unlocked item'} icon`;
     }
+    renderUnlockIconsRow(unlockItems);
 
     setGoalCelebrationOpen(true);
     startGoalCelebrationSparkles();

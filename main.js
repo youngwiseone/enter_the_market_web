@@ -556,7 +556,7 @@ function syncGoalLockedShopUnlocks() {
 function unlockShopItemForLevel(level) {
   const unlockOrder = Array.isArray(state.items)
     ? state.items
-      .filter((item) => item && typeof item.id === 'number')
+      .filter((item) => item && typeof item.id === 'number' && isProduceItem(item))
       .slice()
       .sort((a, b) => {
         const aPrice = Math.max(0, Number(a?.price) || 0);
@@ -583,13 +583,52 @@ function unlockShopItemForLevel(level) {
   };
 }
 
+function getUtilityUnlockLevelForItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  const itemType = String(item.type || '').trim().toLowerCase();
+  if (itemType === 'fertiliser') return 10;
+  if (itemType === 'sprinkler') return 20;
+  return null;
+}
+
+function getLevelUnlockedUtilityItems(level) {
+  const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
+  if (!Array.isArray(state.items)) return [];
+  return state.items
+    .filter((item) => {
+      if (!item || typeof item.id !== 'number') return false;
+      const unlockLevel = getUtilityUnlockLevelForItem(item);
+      return Number.isInteger(unlockLevel) && unlockLevel === targetLevel;
+    })
+    .sort((a, b) => {
+      const aPrice = Math.max(0, Number(a?.price) || 0);
+      const bPrice = Math.max(0, Number(b?.price) || 0);
+      if (aPrice !== bPrice) return aPrice - bPrice;
+      return (Number(a?.id) || 0) - (Number(b?.id) || 0);
+    })
+    .map((item) => ({
+      id: item.id,
+      name: item.name || `Item ${item.id}`,
+      imageSrc: getShopSeedVisualPath(item) || 'resources/profiles/player_level_up.png',
+      imageAlt: item.name || `Item ${item.id}`,
+      ...getLevelUpUnlockSeedImagePayload(item)
+    }));
+}
+
 function isToolUnlocked(tool) {
   return isToolUnlockedAction(state, tool, TOOL_GLOVE);
 }
 
 function isShopItemUnlocked(itemId) {
   const item = Array.isArray(state.items) ? state.items.find((it) => it && it.id === itemId) : null;
-  if (item && !isProduceItem(item)) return true;
+  if (item && !isProduceItem(item)) {
+    const utilityUnlockLevel = getUtilityUnlockLevelForItem(item);
+    if (Number.isInteger(utilityUnlockLevel)) {
+      const playerLevel = Math.max(1, Math.floor(Number(state.player?.playerLevel) || 1));
+      return playerLevel >= utilityUnlockLevel;
+    }
+    return true;
+  }
   return !!(state.unlockedShopItems && state.unlockedShopItems[itemId]);
 }
 
@@ -652,14 +691,16 @@ function ensurePlayerProgressState() {
   );
 }
 
-function enqueueLevelUpCelebration(level, changeText, unlockedItem = null, rollCelebrationText = '') {
+function enqueueLevelUpCelebration(level, changeText, unlockedItem = null, rollCelebrationText = '', unlockedSummaryText = '', unlockItems = []) {
   enqueueLevelUpCelebrationAction(
     state,
     level,
     changeText,
     sessionRuntimeController.showNextGoalCelebration,
     unlockedItem,
-    rollCelebrationText
+    rollCelebrationText,
+    unlockedSummaryText,
+    unlockItems
   );
 }
 
@@ -673,6 +714,7 @@ function awardPlayerXp(amount, options = {}) {
     formatEnergyValue,
     addMessage,
     unlockShopItemForLevel,
+    getLevelUnlockedUtilityItems,
     enqueueLevelUpCelebration,
     showXpGainFeedback
   });

@@ -277,3 +277,158 @@ Keep player-style wording aligned with existing messaging tone.
 - Quality redistribution split for the shifted `5%` (e.g. proportional vs fixed shares across higher tiers).
 - Whether fertiliser can be applied to fully grown crops before harvest (recommended: yes, but confirm quality timing vs rarity assignment).
 - Whether fertiliser can be applied to non-produce placed items (recommended: no, show warning).
+
+## Progression / Pricing Proposal (Utilities)
+
+## Goal
+
+Reduce early-game menu overload by delaying utility unlocks, while making fertiliser affordable enough to encourage experimentation and stacking.
+
+## Current Utility Prices (for reference)
+
+- Sprinkler: `$120`
+- Water Retention Fertiliser: `$45`
+- Speed Grow Fertiliser: `$55`
+- Quality Fertiliser: `$65`
+
+## Recommended Unlock Schedule (My Recommendation)
+
+### Level 10: Unlock all fertilisers
+
+Reasoning:
+
+- By level 10, players have learned the core loop (mine -> plant -> water -> harvest -> sell).
+- Fertilisers add tactical choices, but still require manual play.
+- Unlocking all 3 together keeps the utility section simple (one clear "new utilities" moment) instead of drip-feeding similar items.
+
+### Level 20: Unlock sprinkler
+
+Reasoning:
+
+- Sprinkler introduces automation and changes the daily rhythm more than fertilisers do.
+- Delaying it keeps early and mid-early gameplay focused on manual watering.
+- Level 20 feels like a strong milestone for first automation.
+
+## Alternative Unlock Schedules (Optional)
+
+### Option A (staggered fertilisers)
+
+- Level 8: Water Retention Fertiliser
+- Level 10: Speed Grow Fertiliser
+- Level 12: Quality Fertiliser
+- Level 20: Sprinkler
+
+Tradeoff:
+
+- Better per-item introduction pacing
+- More menu churn / unlock notifications
+
+### Option B (everything together)
+
+- Level 10: All utilities (fertilisers + sprinkler)
+
+Tradeoff:
+
+- Simplest unlock logic and messaging
+- Higher risk of early automation reducing manual loop learning
+
+## Recommended Prices (My Recommendation)
+
+### Fertilisers (cheap, stackable, low-friction)
+
+Recommended prices:
+
+- Water Retention Fertiliser: `$10`
+- Speed Grow Fertiliser: `$12`
+- Quality Fertiliser: `$15`
+
+Reasoning:
+
+- Matches the intended design: small buffs that stack.
+- Encourages experimentation without punishing mistakes.
+- Keeps Quality slightly higher because its upside can become strong with stacking.
+
+### Sprinkler (premium automation utility)
+
+Recommended price:
+
+- Sprinkler: `$100` (acceptable range `$90-$110`)
+
+Reasoning:
+
+- Still feels like a meaningful milestone purchase.
+- Slightly cheaper than `$120` improves accessibility if it unlocks at level 20.
+- Preserves a strong price gap vs consumable fertilisers.
+
+## What I Would Implement (Recommended)
+
+1. Unlock all 3 fertilisers at player level `10`.
+2. Unlock sprinkler at player level `20`.
+3. Set fertiliser prices to:
+   - Water Retention `$10`
+   - Speed Grow `$12`
+   - Quality `$15`
+4. Set sprinkler price to `$100`.
+
+## Balance Watchouts (Post-Implementation)
+
+- Quality fertiliser may become too efficient on high-value crops if too cheap.
+- If needed later, keep Quality at the top of the band (`$15`) or increase slightly (`$18-$20`) without changing the other two.
+- Existing fertiliser caps and energy costs already help prevent runaway scaling.
+
+## Likely Implementation Touchpoints (Later)
+
+- `data/items.json` (utility prices)
+- Utility unlock logic (player-level gating), likely in shop/runtime wiring:
+  - `main.js`
+  - `js/controllers/shop_market_controller.js`
+  - `js/controllers/fixed_price_store_controller.js`
+  - existing unlock checks tied to `playerLevel` / `goalLocked`
+- `js/ui/render_market.js` (verify utility rows hide/disable cleanly before unlock)
+
+## Validation Checklist (When Implementing Progression/Pricing)
+
+1. New game: fertilisers and sprinkler are hidden/locked early.
+2. Level 10: all fertilisers unlock together.
+3. Level 20: sprinkler unlocks.
+4. Utility prices show updated values.
+5. Utility purchases still use fixed-price behavior.
+6. Existing saves above level thresholds unlock correctly after load.
+
+## UX Addition Recommendation (Level-Up Messaging)
+
+When utilities unlock via level milestones, include the unlocks in the level-up message/celebration so players immediately understand what changed.
+
+### Recommended behavior
+
+- If a level-up unlocks fertilisers or sprinkler, append an unlock summary to the level-up text.
+- Prefer specific item names over generic wording.
+- If multiple utilities unlock at once (e.g. all fertilisers at level 10), show all of them in one grouped message.
+
+### Example copy (recommended style)
+
+- Level 10:
+  - `Level up! Reached Level 10. Unlocked utilities: Water Retention Fertiliser, Speed Grow Fertiliser, Quality Fertiliser.`
+- Level 20:
+  - `Level up! Reached Level 20. Unlocked utility: Sprinkler.`
+
+### Icon / visual suggestion (recommended)
+
+- Yes, include icons if possible (similar to seed unlock presentation).
+- Show a compact row of item icons in the level-up/celebration UI for newly unlocked utilities.
+- If icon-row support is too much for first pass:
+  - include text first (must-have)
+  - add icons/chips as a follow-up enhancement
+
+### Likely implementation touchpoints
+
+- level-up message composition (currently `progress.level_up`)
+- level-up celebration modal payload/UI (if unlock icons are rendered there)
+- item lookup helpers for unlocked item names + image paths
+
+### Validation checklist (add-on)
+
+1. Level 10 level-up text explicitly mentions all 3 fertilisers.
+2. Level 20 level-up text explicitly mentions sprinkler.
+3. If icons are implemented, correct utility icons display in the level-up UI.
+4. No duplicate unlock text appears on later levels once already unlocked.

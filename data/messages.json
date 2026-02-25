@@ -273,6 +273,16 @@
       "template": "This item is not available yet."
     },
     {
+      "id": "progress.utility_unlocks_at_level",
+      "type": "progress",
+      "icon": "market",
+      "speaker": "merchant",
+      "emotion": "neutral",
+      "category": "progress",
+      "priority": "normal",
+      "template": "{itemName} unlocks at Level {level}."
+    },
+    {
       "id": "progress.insufficient_funds",
       "type": "warning",
       "icon": "warning",
