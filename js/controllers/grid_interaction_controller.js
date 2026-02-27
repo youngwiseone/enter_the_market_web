@@ -1,6 +1,17 @@
-import { isProduceItem } from '../content/item_types.js';
+import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { getRefillableTankState } from './watering_infrastructure.js';
 import { isFertiliserItem } from './fertiliser_controller.js';
+
+function getBulkSelectionGroupKey(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return '';
+  const item = snapshot.item;
+  if (item && typeof item === 'object') {
+    const tableKey = getNormalizedItemTableKey(item);
+    if (tableKey) return tableKey;
+  }
+  if (snapshot.isProduce) return 'produce_market';
+  return 'utility';
+}
 
 export function getGridIndexFromPointerEventAction(event, getElementFromPoint) {
   if (!(event && typeof event === 'object')) return null;
@@ -175,6 +186,15 @@ export function addGridCellToBulkSelectionAction(deps) {
 
   const snapshot = getGridCellSellSnapshot(cellIndex);
   if (!snapshot) return false;
+  const nextGroupKey = getBulkSelectionGroupKey(snapshot);
+  let activeGroupKey = '';
+  selectedGridCellIndices.forEach((index) => {
+    if (activeGroupKey) return;
+    const selectedSnapshot = getGridCellSellSnapshot(index);
+    const selectedGroupKey = getBulkSelectionGroupKey(selectedSnapshot);
+    if (selectedGroupKey) activeGroupKey = selectedGroupKey;
+  });
+  if (activeGroupKey && nextGroupKey && activeGroupKey !== nextGroupKey) return false;
   if (selectedGridCellIndices.has(cellIndex)) return false;
   selectedGridCellIndices.add(cellIndex);
   setSelectedGridCellIndex(null);

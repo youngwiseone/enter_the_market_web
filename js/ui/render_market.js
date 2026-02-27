@@ -367,7 +367,7 @@ function renderUtilityMarketTable(tableHost, deps) {
   const table = document.createElement('table');
   table.className = 'zebra-table';
   const headerRow = document.createElement('tr');
-  ['Img', 'Name', 'Type', 'Price', 'Select'].forEach((label) => {
+  ['Img', 'Name', 'Type', 'Price'].forEach((label) => {
     const th = document.createElement('th');
     th.textContent = label;
     headerRow.appendChild(th);
@@ -402,21 +402,7 @@ function renderUtilityMarketTable(tableHost, deps) {
     priceCell.textContent = `$${(Math.max(0, Number(item.price) || 0)).toFixed(2)}`;
     row.appendChild(priceCell);
 
-    const actionCell = document.createElement('td');
-    const selectBtn = document.createElement('button');
-    selectBtn.type = 'button';
-    selectBtn.className = 'button';
     const isSelected = typeof getSelectedShopItemId === 'function' && getSelectedShopItemId() === item.id;
-    selectBtn.textContent = isSelected ? 'Selected' : 'Select';
-    selectBtn.disabled = !!isSelected;
-    selectBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (isSelected) return;
-      if (typeof selectShopItem === 'function') selectShopItem(item.id);
-    });
-    actionCell.appendChild(selectBtn);
-    row.appendChild(actionCell);
     if (isSelected) row.classList.add('market-row-selected');
     if (typeof getSelectionPulseId === 'function' && getSelectionPulseId() === item.id) {
       row.classList.add('market-row-pulse');
@@ -432,7 +418,7 @@ function renderUtilityMarketTable(tableHost, deps) {
   if (utilities.length === 0) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 5;
+    cell.colSpan = 4;
     cell.textContent = 'No utility items available yet.';
     row.appendChild(cell);
     table.appendChild(row);
@@ -466,7 +452,7 @@ function renderDecorationsTable(tableHost, deps) {
   const table = document.createElement('table');
   table.className = 'zebra-table';
   const headerRow = document.createElement('tr');
-  ['Img', 'Name', 'Price', 'Select'].forEach((label) => {
+  ['Img', 'Name', 'Price'].forEach((label) => {
     const th = document.createElement('th');
     th.textContent = label;
     headerRow.appendChild(th);
@@ -499,20 +485,6 @@ function renderDecorationsTable(tableHost, deps) {
     priceCell.textContent = `$${(Math.max(0, Number(decoration?.price) || 0)).toFixed(2)}`;
     row.appendChild(priceCell);
 
-    const actionCell = document.createElement('td');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'button';
-    btn.textContent = isSelected ? 'Selected' : 'Select';
-    btn.disabled = !!isSelected;
-    btn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (isSelected) return;
-      if (typeof selectShopItem === 'function') selectShopItem(decoration.id);
-    });
-    actionCell.appendChild(btn);
-    row.appendChild(actionCell);
     if (typeof getSelectionPulseId === 'function' && getSelectionPulseId() === decoration.id) {
       row.classList.add('market-row-pulse');
       row.addEventListener('animationend', () => row.classList.remove('market-row-pulse'), { once: true });
@@ -526,7 +498,7 @@ function renderDecorationsTable(tableHost, deps) {
   if (decorations.length === 0) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 4;
+    cell.colSpan = 3;
     cell.textContent = 'No decorations available yet.';
     row.appendChild(cell);
     table.appendChild(row);
