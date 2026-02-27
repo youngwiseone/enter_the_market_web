@@ -346,6 +346,7 @@ export function selectShopItemAction(deps) {
     getFreePurchaseCount,
     updateCursorForTool,
     renderMarket,
+    renderHUD,
     guidedSelectedFlag
   } = deps;
 
@@ -357,6 +358,7 @@ export function selectShopItemAction(deps) {
     setSelectedShopItemId(null);
     updateCursorForTool();
     renderMarket();
+    if (typeof renderHUD === 'function') renderHUD();
     return;
   }
   clearGridSelection();
@@ -386,6 +388,7 @@ export function selectShopItemAction(deps) {
   }
   updateCursorForTool();
   renderMarket();
+  if (typeof renderHUD === 'function') renderHUD();
 }
 
 export function clearShopSelectionAction(deps) {
@@ -394,11 +397,13 @@ export function clearShopSelectionAction(deps) {
     setSelectedShopItemId,
     setSelectionPulseId,
     updateCursorForTool,
-    renderMarket
+    renderMarket,
+    renderHUD
   } = deps;
   if (!getSelectedShopItemId()) return;
   setSelectedShopItemId(null);
   setSelectionPulseId(null);
   updateCursorForTool();
   renderMarket();
+  if (typeof renderHUD === 'function') renderHUD();
 }

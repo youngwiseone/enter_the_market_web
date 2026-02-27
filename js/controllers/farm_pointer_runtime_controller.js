@@ -38,6 +38,7 @@ export function createFarmPointerRuntimeController(deps) {
     getRarityMultiplier,
     getActiveFarmSellMultiplier,
     renderMarket,
+    renderHUD,
     updateCursorForTool,
     isShopItemUnlocked,
     setActiveTool,
@@ -186,6 +187,7 @@ export function createFarmPointerRuntimeController(deps) {
       getFreePurchaseCount,
       updateCursorForTool,
       renderMarket,
+      renderHUD,
       guidedSelectedFlag: GUIDED_FLAGS.selected
     });
   }
@@ -196,7 +198,8 @@ export function createFarmPointerRuntimeController(deps) {
       setSelectedShopItemId,
       setSelectionPulseId,
       updateCursorForTool,
-      renderMarket
+      renderMarket,
+      renderHUD
     });
   }
 

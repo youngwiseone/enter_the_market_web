@@ -165,7 +165,9 @@ export function purchaseAndPlaceSelectedAction(deps) {
   if (freeQty > 0) consumeFreePurchases(selectedShopItemId, 1);
   state.player.cash -= totalCost;
   state.gridItems[cellIndex] = selectedShopItemId;
-  setSelectedGridCellIndex(cellIndex);
+  // Keep farm placement in buy-flow mode instead of auto-selecting the placed tile.
+  // This prevents mobile sell/grow action takeover after a purchase placement.
+  setSelectedGridCellIndex(null);
   if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cellIndex] = totalCost;
   if (Array.isArray(state.gridPlacedMeta)) {
     state.gridPlacedMeta[cellIndex] = isProduce

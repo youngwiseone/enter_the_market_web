@@ -979,7 +979,13 @@ function renderHUD() {
     state,
     ensurePlayerProgressState,
     updateNetWorth,
-    renderPlayerLevelStatus
+    renderPlayerLevelStatus,
+    getSelectedShopItemId: () => selectedShopItemId,
+    getItemCurrentPrice,
+    resolveResourcePath,
+    getHarvestImagePath,
+    clearShopSelection,
+    nextDay
   });
 }
 
@@ -1883,6 +1889,7 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFar
   getRarityMultiplier,
   getActiveFarmSellMultiplier,
   renderMarket,
+  renderHUD,
   updateCursorForTool,
   isShopItemUnlocked,
   setActiveTool,

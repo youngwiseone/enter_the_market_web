@@ -1,3 +1,119 @@
+function getBuyModeItem(state, selectedShopItemId) {
+  if (!selectedShopItemId || !Array.isArray(state?.items)) return null;
+  return state.items.find((item) => item && item.id === selectedShopItemId) || null;
+}
+
+function getBuyModePriceLabel(item, selectedShopItemId, getItemCurrentPrice) {
+  if (!item) return '$0.00';
+  const itemType = String(item.type || '').trim().toLowerCase();
+  const usesMarketPricing = itemType === 'produce';
+  const priceValue = usesMarketPricing && typeof getItemCurrentPrice === 'function'
+    ? Math.max(0, Number(getItemCurrentPrice(selectedShopItemId)) || 0)
+    : Math.max(0, Number(item.price) || 0);
+  return `$${priceValue.toFixed(2)}`;
+}
+
+function getBuyModeItemImagePath(item, resolveResourcePath, getHarvestImagePath) {
+  if (!item || typeof item !== 'object') return '';
+  if (typeof getHarvestImagePath === 'function') {
+    const harvestPath = getHarvestImagePath(item);
+    if (harvestPath) return harvestPath;
+  }
+  if (typeof item.image === 'string' && item.image) {
+    return typeof resolveResourcePath === 'function' ? resolveResourcePath(item.image) : item.image;
+  }
+  return '';
+}
+
+function setMobileRestButtonState(deps, selectedItem, priceText) {
+  const {
+    clearShopSelection,
+    nextDay
+  } = deps;
+  const restButton = document.getElementById('next-day');
+  if (!restButton) return;
+  const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
+  const farmPanel = document.getElementById('farm-panel');
+  const isFarmVisible = !!(farmPanel && window.getComputedStyle(farmPanel).display !== 'none');
+
+  if (selectedItem && isMobileLayout && isFarmVisible) {
+    const itemName = String(selectedItem.name || 'item');
+    restButton.textContent = `Buy ${itemName} (${priceText}) - tap to cancel`;
+    restButton.title = 'Tap to cancel selected item';
+    restButton.onclick = (event) => {
+      if (event) event.preventDefault();
+      if (typeof clearShopSelection === 'function') clearShopSelection();
+    };
+    restButton.dataset.buyModeOverride = 'true';
+    return;
+  }
+
+  if (restButton.dataset.buyModeOverride === 'true') {
+    restButton.textContent = 'Rest';
+    restButton.title = 'Rest';
+    restButton.onclick = typeof nextDay === 'function' ? nextDay : null;
+    delete restButton.dataset.buyModeOverride;
+  }
+}
+
+function renderBuyModeHudAction(deps) {
+  const {
+    state,
+    getSelectedShopItemId,
+    getItemCurrentPrice,
+    resolveResourcePath,
+    getHarvestImagePath,
+    clearShopSelection,
+    nextDay
+  } = deps;
+
+  const selectedShopItemId = typeof getSelectedShopItemId === 'function' ? getSelectedShopItemId() : null;
+  const selectedItem = getBuyModeItem(state, selectedShopItemId);
+  const profile = document.getElementById('chat-profile');
+
+  if (!selectedItem) {
+    setMobileRestButtonState({ clearShopSelection, nextDay }, null, '$0.00');
+    if (profile) {
+      profile.classList.remove('buy-mode-avatar');
+      if (profile.dataset.buyModeOriginalSrc) {
+        profile.src = profile.dataset.buyModeOriginalSrc;
+        profile.alt = profile.dataset.buyModeOriginalAlt || 'profile';
+        delete profile.dataset.buyModeOriginalSrc;
+        delete profile.dataset.buyModeOriginalAlt;
+      }
+    }
+    return;
+  }
+
+  const itemName = String(selectedItem.name || 'item');
+  const priceText = getBuyModePriceLabel(selectedItem, selectedShopItemId, getItemCurrentPrice);
+  const iconPath = getBuyModeItemImagePath(
+    selectedItem,
+    resolveResourcePath,
+    getHarvestImagePath
+  );
+  setMobileRestButtonState({ clearShopSelection, nextDay }, selectedItem, priceText);
+
+  if (!profile) return;
+  if (!iconPath) {
+    profile.classList.remove('buy-mode-avatar');
+    if (profile.dataset.buyModeOriginalSrc) {
+      profile.src = profile.dataset.buyModeOriginalSrc;
+      profile.alt = profile.dataset.buyModeOriginalAlt || 'profile';
+      delete profile.dataset.buyModeOriginalSrc;
+      delete profile.dataset.buyModeOriginalAlt;
+    }
+    return;
+  }
+  if (!profile.dataset.buyModeOriginalSrc) {
+    profile.dataset.buyModeOriginalSrc = profile.getAttribute('src') || '';
+    profile.dataset.buyModeOriginalAlt = profile.getAttribute('alt') || '';
+  }
+  profile.src = iconPath;
+  profile.alt = `${itemName} selected`;
+  profile.classList.add('buy-mode-avatar');
+}
+
 export function renderPlayerLevelStatusAction(deps) {
   const {
     state,
@@ -124,5 +240,6 @@ export function renderHUDAction(deps) {
   netElems.forEach((el) => {
     el.textContent = `Net Worth: $${netWorth.toFixed(2)}`;
   });
+  renderBuyModeHudAction(deps);
   renderPlayerLevelStatus();
 }
