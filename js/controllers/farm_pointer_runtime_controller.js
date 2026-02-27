@@ -146,11 +146,14 @@ export function createFarmPointerRuntimeController(deps) {
       farmPointerState,
       applyGridActionForIndex,
       stopFarmPointerInteraction,
-      shouldPromoteStartToBulk: (cellIndex) => (
-        state.activeTool === TOOL_GLOVE
-        && !getSelectedShopItemId()
-        && !!getGridCellSellSnapshot(cellIndex)
-      )
+      shouldPromoteStartToBulk: (cellIndex, currentIndex) => {
+        if (state.activeTool !== TOOL_GLOVE || getSelectedShopItemId()) return false;
+        if (!getGridCellSellSnapshot(cellIndex)) return false;
+        // Bulk promotion only makes sense when dragging onto another selectable tile.
+        // This preserves click->release->click-empty move intent.
+        if (!getGridCellSellSnapshot(currentIndex)) return false;
+        return true;
+      }
     });
     if (installed) {
       farmPointerHandlersInstalled = true;

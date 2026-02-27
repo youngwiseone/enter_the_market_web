@@ -54,8 +54,9 @@ export function installFarmPointerHandlersAction(deps) {
     if (
       !farmPointerState.didPromoteStartToBulk
       && Number.isInteger(farmPointerState.startIndex)
+      && index !== farmPointerState.startIndex
       && typeof shouldPromoteStartToBulk === 'function'
-      && shouldPromoteStartToBulk(farmPointerState.startIndex)
+      && shouldPromoteStartToBulk(farmPointerState.startIndex, index)
     ) {
       // First move turns the starting tapped cell into bulk selection.
       applyGridActionForIndex(farmPointerState.startIndex, { mode: 'drag' });
