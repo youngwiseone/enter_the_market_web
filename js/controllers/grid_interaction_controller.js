@@ -1,4 +1,9 @@
-import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import {
+  isProduceItem,
+  isUtilityItem,
+  isDecorationItem,
+  getNormalizedItemTableKey
+} from '../content/item_types.js';
 import { getRefillableTankState } from './watering_infrastructure.js';
 import { isFertiliserItem } from './fertiliser_controller.js';
 
@@ -137,7 +142,10 @@ export function applyGridActionForIndexAction(deps) {
       ? state.items.find((it) => it && it.id === sourceItemId)
       : null;
     if (sourceItem) {
-      const canMove = !isProduceItem(sourceItem) || !!getPlantGrowthState(sourceItem, selectedGridCellIndex)?.isGrown;
+      const isProduce = isProduceItem(sourceItem);
+      const canMove = isUtilityItem(sourceItem)
+        || isDecorationItem(sourceItem)
+        || (isProduce && !!getPlantGrowthState(sourceItem, selectedGridCellIndex)?.isGrown);
       if (canMove) {
         const moveFxDurationMs = typeof playGridItemMoveFx === 'function'
           ? Math.max(0, Number(playGridItemMoveFx({ fromIndex: selectedGridCellIndex, toIndex: index })) || 0)
