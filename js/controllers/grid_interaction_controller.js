@@ -69,6 +69,9 @@ export function applyGridActionForIndexAction(deps) {
   if (index < 0 || index >= state.gridUnlocked.length || index >= state.gridItems.length) return false;
 
   const unlockedNow = !!state.gridUnlocked[index];
+  const selectedGridCellIndex = typeof getSelectedGridCellIndex === 'function'
+    ? getSelectedGridCellIndex()
+    : null;
   if (state.activeTool === TOOL_PICKAXE) {
     if (!unlockedNow) {
       const didMessage = mineGridTile(index);
@@ -109,6 +112,11 @@ export function applyGridActionForIndexAction(deps) {
       }
     }
     if (isDragMode && !selectedShopItemId && state.activeTool === TOOL_GLOVE) {
+      // Preserve move intent: if the drag event is still on the selected source cell,
+      // do not auto-convert to bulk selection.
+      if (selectedGridCellIndex === index) {
+        return false;
+      }
       if (addGridCellToBulkSelection(index)) {
         return true;
       }
@@ -126,9 +134,6 @@ export function applyGridActionForIndexAction(deps) {
     return true;
   }
 
-  const selectedGridCellIndex = typeof getSelectedGridCellIndex === 'function'
-    ? getSelectedGridCellIndex()
-    : null;
   if (
     state.activeTool === TOOL_GLOVE
     && Number.isInteger(selectedGridCellIndex)
