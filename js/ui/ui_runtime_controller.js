@@ -102,6 +102,8 @@ export function createUiRuntimeController(deps) {
       getGoalConditions: deps.getGoalConditions,
       getGoalMetricValue: deps.getGoalMetricValue,
       doesConditionMeet: deps.doesConditionMeet,
+      getTotalPlaytimeMs: deps.getTotalPlaytimeMs,
+      formatPlaytime: deps.formatPlaytime,
       rerender: renderGoals
     });
   }

@@ -24,6 +24,8 @@ export function persistResetState(saveFn, state) {
   saveFn('dailyMarketRollHistory', state.dailyMarketRollHistory);
   saveFn('lastRollFatiguePercent', state.lastRollFatiguePercent);
   saveFn('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
+  saveFn('totalItemsSold', state.totalItemsSold);
+  saveFn('totalPlaytimeMs', state.totalPlaytimeMs);
   saveFn('lastPriceMovesByItem', state.lastPriceMovesByItem);
   saveFn('daySalesCount', state.daySalesCount);
   saveFn('daySalesTotal', state.daySalesTotal);

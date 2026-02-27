@@ -18,6 +18,8 @@ export function persistFullState(saveFn, state) {
   saveFn('dailyMarketRollHistory', state.dailyMarketRollHistory);
   saveFn('lastRollFatiguePercent', state.lastRollFatiguePercent);
   saveFn('lastRollImpactMultiplier', state.lastRollImpactMultiplier);
+  saveFn('totalItemsSold', state.totalItemsSold);
+  saveFn('totalPlaytimeMs', state.totalPlaytimeMs);
   saveFn('lastPriceMovesByItem', state.lastPriceMovesByItem);
   saveFn('dayStartSnapshot', state.dayStartSnapshot);
   saveFn('weather', state.weather);

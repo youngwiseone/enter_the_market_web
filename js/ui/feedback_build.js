@@ -1,4 +1,16 @@
-export function startPlaytimeTrackingAction(playtestStats) {
+export function startPlaytimeTrackingAction(playtestStats, options = {}) {
+  const onPersistSessionMs = typeof options.onPersistSessionMs === 'function'
+    ? options.onPersistSessionMs
+    : null;
+  let didPersistSessionPlaytime = false;
+
+  const persistSessionPlaytime = () => {
+    if (didPersistSessionPlaytime || !onPersistSessionMs) return;
+    const totalSessionMs = getActivePlaytimeMsAction(playtestStats);
+    onPersistSessionMs(totalSessionMs);
+    didPersistSessionPlaytime = true;
+  };
+
   playtestStats.lastActiveAt = document.hidden ? null : performance.now();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -12,6 +24,8 @@ export function startPlaytimeTrackingAction(playtestStats) {
       playtestStats.lastActiveAt = performance.now();
     }
   });
+  window.addEventListener('pagehide', persistSessionPlaytime, { once: true });
+  window.addEventListener('beforeunload', persistSessionPlaytime, { once: true });
 }
 
 export function getActivePlaytimeMsAction(playtestStats) {

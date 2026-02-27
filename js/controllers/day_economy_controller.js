@@ -21,6 +21,7 @@ export function createDayEconomyController(deps) {
     const safeQty = Math.max(1, Number(quantity) || 1);
     state.daySalesCount = Math.max(0, Number(state.daySalesCount) || 0) + safeQty;
     state.daySalesTotal = Math.max(0, Number(state.daySalesTotal) || 0) + safeValue;
+    state.totalItemsSold = Math.max(0, Number(state.totalItemsSold) || 0) + safeQty;
     const currentTop = state.dayTopSale && typeof state.dayTopSale === 'object'
       ? (Number(state.dayTopSale.value) || 0)
       : 0;

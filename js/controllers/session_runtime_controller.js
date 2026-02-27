@@ -35,11 +35,22 @@ export function createSessionRuntimeController(deps) {
   let dailyRollSkipRequested = false;
 
   function startPlaytimeTracking() {
-    startPlaytimeTrackingAction(playtestStats);
+    startPlaytimeTrackingAction(playtestStats, {
+      onPersistSessionMs: (sessionMs) => {
+        if (typeof deps.onPersistSessionPlaytimeMs === 'function') {
+          deps.onPersistSessionPlaytimeMs(sessionMs);
+        }
+      }
+    });
   }
 
   function getActivePlaytimeMs() {
-    return getActivePlaytimeMsAction(playtestStats);
+    return getTotalPlaytimeMs();
+  }
+
+  function getTotalPlaytimeMs() {
+    const persistedBase = Math.max(0, Number(state.totalPlaytimeMs) || 0);
+    return persistedBase + getActivePlaytimeMsAction(playtestStats);
   }
 
   function formatPlaytime(ms) {
@@ -190,6 +201,8 @@ export function createSessionRuntimeController(deps) {
   return {
     startPlaytimeTracking,
     getActivePlaytimeMs,
+    getTotalPlaytimeMs,
+    formatPlaytime,
     buildFeedbackString,
     setFeedbackModalOpen,
     copyFeedbackText,

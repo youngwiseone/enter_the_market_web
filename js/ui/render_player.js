@@ -220,7 +220,8 @@ export function renderHUDAction(deps) {
   const cashElems = document.querySelectorAll('#hud-cash');
   const storageElem = document.getElementById('hud-storage');
   const netElems = document.querySelectorAll('#hud-networth');
-  const { day, cash, netWorth } = state.player;
+  const { day, cash } = state.player;
+  const totalItemsSold = Math.max(0, Number(state.totalItemsSold) || 0);
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const dow = daysOfWeek[(day - 1) % 7];
   const weatherId = String(state.weather?.id || '');
@@ -238,7 +239,7 @@ export function renderHUDAction(deps) {
     storageElem.textContent = 'Storage: Unlimited';
   }
   netElems.forEach((el) => {
-    el.textContent = `Net Worth: $${netWorth.toFixed(2)}`;
+    el.textContent = `Items Sold: ${totalItemsSold.toLocaleString('en-US')}`;
   });
   renderBuyModeHudAction(deps);
   renderPlayerLevelStatus();

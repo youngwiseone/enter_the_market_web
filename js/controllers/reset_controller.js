@@ -58,6 +58,8 @@ export async function resetGameAction(deps) {
   state.lastPriceMovesByItem = {};
   state.daySalesCount = 0;
   state.daySalesTotal = 0;
+  state.totalItemsSold = 0;
+  state.totalPlaytimeMs = 0;
   state.dayTopSale = null;
   state.daySummaryHistory = [];
   state.pendingDaySummary = null;

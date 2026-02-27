@@ -129,6 +129,8 @@ export function renderGoalsPanel(deps) {
     getGoalConditions,
     getGoalMetricValue,
     doesConditionMeet,
+    getTotalPlaytimeMs,
+    formatPlaytime,
     rerender
   } = deps;
 
@@ -139,6 +141,17 @@ export function renderGoalsPanel(deps) {
   title.className = 'panel-title';
   title.textContent = 'Goals';
   container.appendChild(title);
+
+  const playtimeRow = document.createElement('div');
+  playtimeRow.style.margin = '4px 0 6px';
+  const totalPlaytimeMs = typeof getTotalPlaytimeMs === 'function'
+    ? Math.max(0, Number(getTotalPlaytimeMs()) || 0)
+    : 0;
+  const playtimeText = typeof formatPlaytime === 'function'
+    ? formatPlaytime(totalPlaytimeMs)
+    : `${Math.max(0, Math.floor(totalPlaytimeMs / 1000))}s`;
+  playtimeRow.textContent = `Total Playtime: ${playtimeText}`;
+  container.appendChild(playtimeRow);
 
   const filterBar = document.createElement('div');
   filterBar.style.display = 'flex';

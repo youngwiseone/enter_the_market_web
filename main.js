@@ -357,6 +357,8 @@ let state = {
   activeGoalCelebration: null,
   daySalesCount: 0,
   daySalesTotal: 0,
+  totalItemsSold: 0,
+  totalPlaytimeMs: 0,
   dayTopSale: null,
   dayItemSales: null,
   marketPressureByItem: null,
@@ -493,7 +495,12 @@ const sessionRuntimeController = createSessionRuntimeController(buildSessionRunt
   getHarvestImagePath,
   moveFocusOutsideModal,
   isReduceMotion: () => fxController.isReduceMotion(),
-  onDailyRollClosed: () => notifyDailyRollClosed()
+  onDailyRollClosed: () => notifyDailyRollClosed(),
+  onPersistSessionPlaytimeMs: (sessionMs) => {
+    const safeSessionMs = Math.max(0, Number(sessionMs) || 0);
+    state.totalPlaytimeMs = Math.max(0, Number(state.totalPlaytimeMs) || 0) + safeSessionMs;
+    saveToStorage('totalPlaytimeMs', state.totalPlaytimeMs);
+  }
 }));
 
 function getPlantGrowthState(item, index) {
@@ -1135,7 +1142,9 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   isShopItemUnlocked,
   doesGoalMeetCondition,
   renderHUD,
-  updateTimeOfDayMood
+  updateTimeOfDayMood,
+  getTotalPlaytimeMs: () => sessionRuntimeController.getTotalPlaytimeMs(),
+  formatPlaytime: (ms) => sessionRuntimeController.formatPlaytime(ms)
 }));
 
 function getGoalProgress(goal) {

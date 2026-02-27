@@ -58,6 +58,8 @@ export function initialiseStateAction(deps) {
   state.dailyMarketRollHistory = loadFromStorage('dailyMarketRollHistory', null) ?? [];
   state.lastRollFatiguePercent = Math.max(0, Number(loadFromStorage('lastRollFatiguePercent', null) ?? 0) || 0);
   state.lastRollImpactMultiplier = Math.max(0, Number(loadFromStorage('lastRollImpactMultiplier', null) ?? 1) || 1);
+  state.totalItemsSold = Math.max(0, Number(loadFromStorage('totalItemsSold', null) ?? 0) || 0);
+  state.totalPlaytimeMs = Math.max(0, Number(loadFromStorage('totalPlaytimeMs', null) ?? 0) || 0);
   const loadedLastPriceMovesByItem = loadFromStorage('lastPriceMovesByItem', null);
   state.lastPriceMovesByItem = (loadedLastPriceMovesByItem && typeof loadedLastPriceMovesByItem === 'object')
     ? loadedLastPriceMovesByItem
