@@ -1144,7 +1144,14 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   renderHUD,
   updateTimeOfDayMood,
   getTotalPlaytimeMs: () => sessionRuntimeController.getTotalPlaytimeMs(),
-  formatPlaytime: (ms) => sessionRuntimeController.formatPlaytime(ms)
+  formatPlaytime: (ms) => sessionRuntimeController.formatPlaytime(ms),
+  getAlwaysShowGridItemInfo: () => !!state?.player?.alwaysShowGridItemInfo,
+  setAlwaysShowGridItemInfo: (enabled) => {
+    if (!state.player || typeof state.player !== 'object') state.player = {};
+    state.player.alwaysShowGridItemInfo = !!enabled;
+    saveState();
+    renderMarket();
+  }
 }));
 
 function getGoalProgress(goal) {
@@ -1246,6 +1253,10 @@ function showXpGainFeedback(xpGain, center, delayMs = 0) {
 
 function playDayTransition() {
   fxController.playDayTransition();
+}
+
+function playGridItemMoveFx(options) {
+  return fxController.playGridItemMove(options);
 }
 
 const profileChatController = createProfileChatController();
@@ -1903,7 +1914,9 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFar
   isShopItemUnlocked,
   setActiveTool,
   getFreePurchaseCount,
-  GUIDED_FLAGS
+  GUIDED_FLAGS,
+  saveState,
+  playGridItemMoveFx
 }));
 
 function applyGridActionForIndex(index, options = {}) {

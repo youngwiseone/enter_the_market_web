@@ -46,7 +46,15 @@ export function applyGridActionForIndexAction(deps) {
     selectGridCell,
     purchaseAndPlaceSelected,
     addMessage,
-    setChatProfile
+    setChatProfile,
+    getSelectedGridCellIndex,
+    setSelectedGridCellIndex,
+    selectedGridCellIndices,
+    getPlantGrowthState,
+    updateCursorForTool,
+    saveState,
+    renderMarket,
+    playGridItemMoveFx
   } = deps;
 
   if (isFarmActionBlocked()) return false;
@@ -111,6 +119,76 @@ export function applyGridActionForIndexAction(deps) {
   if (selectedShopItemId) {
     purchaseAndPlaceSelected(index);
     return true;
+  }
+
+  const selectedGridCellIndex = typeof getSelectedGridCellIndex === 'function'
+    ? getSelectedGridCellIndex()
+    : null;
+  if (
+    state.activeTool === TOOL_GLOVE
+    && Number.isInteger(selectedGridCellIndex)
+    && selectedGridCellIndex >= 0
+    && selectedGridCellIndex < state.gridItems.length
+    && selectedGridCellIndex !== index
+    && state.gridItems[selectedGridCellIndex]
+  ) {
+    const sourceItemId = state.gridItems[selectedGridCellIndex];
+    const sourceItem = Array.isArray(state.items)
+      ? state.items.find((it) => it && it.id === sourceItemId)
+      : null;
+    if (sourceItem) {
+      const canMove = !isProduceItem(sourceItem) || !!getPlantGrowthState(sourceItem, selectedGridCellIndex)?.isGrown;
+      if (canMove) {
+        const moveFxDurationMs = typeof playGridItemMoveFx === 'function'
+          ? Math.max(0, Number(playGridItemMoveFx({ fromIndex: selectedGridCellIndex, toIndex: index })) || 0)
+          : 0;
+        const movedFields = [
+          'gridItems',
+          'gridPlantedDay',
+          'gridWateredDay',
+          'gridWateredCount',
+          'gridRarity',
+          'gridPurchasePrice',
+          'gridPlacedMeta'
+        ];
+        movedFields.forEach((fieldName) => {
+          if (!Array.isArray(state[fieldName])) return;
+          state[fieldName][index] = state[fieldName][selectedGridCellIndex];
+          state[fieldName][selectedGridCellIndex] = null;
+        });
+        if (!state.runtimeFlags || typeof state.runtimeFlags !== 'object') {
+          state.runtimeFlags = {};
+        }
+        if (moveFxDurationMs > 0) {
+          state.runtimeFlags.gridItemMoveVisual = {
+            fromIndex: selectedGridCellIndex,
+            toIndex: index,
+            hideUntilMs: Date.now() + moveFxDurationMs
+          };
+        } else {
+          state.runtimeFlags.gridItemMoveVisual = null;
+        }
+        setSelectedGridCellIndex(null);
+        if (selectedGridCellIndices && typeof selectedGridCellIndices.clear === 'function') {
+          selectedGridCellIndices.clear();
+        }
+        if (typeof updateCursorForTool === 'function') updateCursorForTool();
+        if (typeof saveState === 'function') saveState();
+        if (typeof renderMarket === 'function') renderMarket();
+        if (moveFxDurationMs > 0 && typeof renderMarket === 'function') {
+          window.setTimeout(() => {
+            const runtimeFlags = (state.runtimeFlags && typeof state.runtimeFlags === 'object')
+              ? state.runtimeFlags
+              : null;
+            if (runtimeFlags?.gridItemMoveVisual) {
+              runtimeFlags.gridItemMoveVisual = null;
+            }
+            renderMarket();
+          }, Math.max(80, moveFxDurationMs + 34));
+        }
+        return true;
+      }
+    }
   }
 
   if (mode !== 'drag') {

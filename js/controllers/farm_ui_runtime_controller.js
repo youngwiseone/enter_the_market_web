@@ -87,6 +87,10 @@ export function createFarmUiRuntimeController(deps) {
   }
 
   function getGridPriceBadgeDisplayStateFn() {
+    const alwaysShowGridItemInfo = !!state?.player?.alwaysShowGridItemInfo;
+    if (alwaysShowGridItemInfo) {
+      return { visible: true, fading: false };
+    }
     const tool = state.activeTool;
     if (tool === TOOL_GLOVE && hasGridSelection()) {
       return { visible: true, fading: false };

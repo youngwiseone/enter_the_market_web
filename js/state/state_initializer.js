@@ -92,6 +92,7 @@ export function initialiseStateAction(deps) {
   hydrateDaySalesState(state, loadFromStorage);
   state.newsHistory = loadFromStorage('newsHistory', null) ?? clone(DEFAULT_DATA.newsHistory);
   ensurePlayerProgressState();
+  state.player.alwaysShowGridItemInfo = !!state.player.alwaysShowGridItemInfo;
 
   const itemMergeResult = mergeItemAssetsWithDefaults(state.items, DEFAULT_DATA.items);
   if (itemMergeResult.changed) {

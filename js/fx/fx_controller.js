@@ -510,6 +510,61 @@ export function createFxController(deps) {
     wipe.addEventListener('animationend', () => wipe.remove(), { once: true });
   }
 
+  function playGridItemMove({ fromIndex, toIndex, durationMs = 260 }) {
+    if (fxState.reduceMotion) return 0;
+    const fromCell = document.querySelector(`#grid .grid-cell[data-index="${Number(fromIndex)}"]`);
+    const toCell = document.querySelector(`#grid .grid-cell[data-index="${Number(toIndex)}"]`);
+    if (!(fromCell instanceof Element) || !(toCell instanceof Element)) return 0;
+    const fromRect = fromCell.getBoundingClientRect();
+    const toRect = toCell.getBoundingClientRect();
+    if (fromRect.width <= 0 || fromRect.height <= 0 || toRect.width <= 0 || toRect.height <= 0) return 0;
+    const sourceVisual = getGridCellVisual(fromCell);
+    const sourcePath = sourceVisual?.currentSrc || sourceVisual?.src || '';
+
+    const sprite = document.createElement(sourcePath ? 'img' : 'div');
+    if (sourcePath) {
+      sprite.src = sourcePath;
+      sprite.alt = '';
+    } else {
+      sprite.style.background = 'rgba(255, 255, 255, 0.82)';
+      sprite.style.border = '1px solid rgba(0, 0, 0, 0.25)';
+      sprite.style.borderRadius = '4px';
+    }
+
+    const startX = fromRect.left + (fromRect.width / 2);
+    const startY = fromRect.top + (fromRect.height / 2);
+    const endX = toRect.left + (toRect.width / 2);
+    const endY = toRect.top + (toRect.height / 2);
+    const travelX = Math.round(endX - startX);
+    const travelY = Math.round(endY - startY);
+    const liftY = Math.max(10, Math.min(22, Math.round(Math.hypot(travelX, travelY) * 0.08)));
+    const size = Math.max(20, Math.min(42, Math.round(Math.min(fromRect.width, fromRect.height) * 0.9)));
+    const safeDurationMs = Math.max(140, Math.floor(Number(durationMs) || 260));
+
+    Object.assign(sprite.style, {
+      position: 'fixed',
+      left: `${startX}px`,
+      top: `${startY}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'translate(-50%, -50%) translate(0px, 0px) scale(1)',
+      transformOrigin: 'center',
+      opacity: '0.98',
+      pointerEvents: 'none',
+      zIndex: '9999',
+      transition: `transform ${safeDurationMs}ms cubic-bezier(0.2, 0.82, 0.24, 1), opacity ${safeDurationMs}ms ease-out`
+    });
+    document.body.appendChild(sprite);
+    window.requestAnimationFrame(() => {
+      sprite.style.transform = `translate(-50%, -50%) translate(${travelX}px, ${travelY - liftY}px) scale(0.92)`;
+      sprite.style.opacity = '0.12';
+    });
+    window.setTimeout(() => {
+      sprite.remove();
+    }, safeDurationMs + 24);
+    return safeDurationMs;
+  }
+
   return {
     initFxLayer,
     resizeFxCanvas,
@@ -526,6 +581,7 @@ export function createFxController(deps) {
     pulseHud,
     spawnFloatingText,
     showXpGainFeedback,
-    playDayTransition
+    playDayTransition,
+    playGridItemMove
   };
 }

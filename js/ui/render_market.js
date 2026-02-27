@@ -818,6 +818,25 @@ export function renderMarketAction(deps) {
   lastDesiredGridPriceBadgeVisible = !!desiredGridPriceBadgeDisplayState.visible;
   lastGridPriceBadgeVisible = !!gridPriceBadgeDisplayState.visible;
   let gridPriceBadgeCountRendered = 0;
+  const alwaysShowGridItemInfo = !!state?.player?.alwaysShowGridItemInfo;
+  const gridItemMoveVisual = (runtimeFlags && typeof runtimeFlags.gridItemMoveVisual === 'object')
+    ? runtimeFlags.gridItemMoveVisual
+    : null;
+  let moveHiddenFromIndex = -1;
+  let moveHiddenToIndex = -1;
+  if (gridItemMoveVisual) {
+    const hideUntilMs = Math.max(0, Number(gridItemMoveVisual.hideUntilMs) || 0);
+    if (hideUntilMs > nowMs) {
+      moveHiddenFromIndex = Number.isInteger(Number(gridItemMoveVisual.fromIndex))
+        ? Number(gridItemMoveVisual.fromIndex)
+        : -1;
+      moveHiddenToIndex = Number.isInteger(Number(gridItemMoveVisual.toIndex))
+        ? Number(gridItemMoveVisual.toIndex)
+        : -1;
+    } else if (runtimeFlags) {
+      runtimeFlags.gridItemMoveVisual = null;
+    }
+  }
 
   for (let i = 0; i < GRID_CELL_COUNT; i++) {
     const cell = document.createElement('div');
@@ -835,7 +854,8 @@ export function renderMarketAction(deps) {
       cell.classList.add('revealed');
     }
 
-    if (state.gridUnlocked && state.gridUnlocked[i] && state.gridItems && state.gridItems[i]) {
+    const hideItemVisualForMove = i === moveHiddenFromIndex || i === moveHiddenToIndex;
+    if (!hideItemVisualForMove && state.gridUnlocked && state.gridUnlocked[i] && state.gridItems && state.gridItems[i]) {
       const itmId = state.gridItems[i];
       const it = state.items.find((itm) => itm.id === itmId);
       if (it) {
@@ -915,8 +935,13 @@ export function renderMarketAction(deps) {
           gridPriceBadgeDisplayState.visible
           && !isProduceGridItem
           && String(it?.type || '').trim().toLowerCase() === 'sprinkler'
-          && String(state?.activeTool || '') === 'glove'
-          && getSelectedGridCellIndex() !== null
+          && (
+            alwaysShowGridItemInfo
+            || (
+              String(state?.activeTool || '') === 'glove'
+              && getSelectedGridCellIndex() !== null
+            )
+          )
         ) {
           const tankState = getRefillableTankState(it, Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[i] : null);
           if (tankState) {

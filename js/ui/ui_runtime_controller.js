@@ -104,6 +104,8 @@ export function createUiRuntimeController(deps) {
       doesConditionMeet: deps.doesConditionMeet,
       getTotalPlaytimeMs: deps.getTotalPlaytimeMs,
       formatPlaytime: deps.formatPlaytime,
+      getAlwaysShowGridItemInfo: deps.getAlwaysShowGridItemInfo,
+      setAlwaysShowGridItemInfo: deps.setAlwaysShowGridItemInfo,
       rerender: renderGoals
     });
   }

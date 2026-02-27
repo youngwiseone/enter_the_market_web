@@ -15,6 +15,7 @@ export const DEFAULT_DATA = {
     playerLevel: 1,
     playerXp: 0
     ,
+    alwaysShowGridItemInfo: false,
     // Tracks whether the welcome message has been shown on first load
     welcomeShown: false
   },

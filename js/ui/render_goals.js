@@ -131,16 +131,46 @@ export function renderGoalsPanel(deps) {
     doesConditionMeet,
     getTotalPlaytimeMs,
     formatPlaytime,
+    getAlwaysShowGridItemInfo,
+    setAlwaysShowGridItemInfo,
     rerender
   } = deps;
 
   const container = document.getElementById('goals-content');
   if (!container) return;
   container.innerHTML = '';
-  const title = document.createElement('div');
-  title.className = 'panel-title';
-  title.textContent = 'Goals';
-  container.appendChild(title);
+  const optionsTitle = document.createElement('div');
+  optionsTitle.className = 'panel-title';
+  optionsTitle.textContent = 'Options';
+  container.appendChild(optionsTitle);
+
+  const optionsRow = document.createElement('div');
+  optionsRow.style.margin = '4px 0 8px';
+  const itemInfoToggle = document.createElement('button');
+  itemInfoToggle.type = 'button';
+  itemInfoToggle.className = 'button';
+  const alwaysOn = typeof getAlwaysShowGridItemInfo === 'function'
+    ? !!getAlwaysShowGridItemInfo()
+    : false;
+  itemInfoToggle.textContent = alwaysOn
+    ? 'Item Info: Always On'
+    : 'Item Info: Default';
+  itemInfoToggle.title = alwaysOn
+    ? 'Always show crop % and sprinkler tank info on grid items.'
+    : 'Use default behavior (timed fade, plus selection/roll context).';
+  itemInfoToggle.setAttribute('aria-pressed', alwaysOn ? 'true' : 'false');
+  itemInfoToggle.onclick = () => {
+    if (typeof setAlwaysShowGridItemInfo !== 'function') return;
+    setAlwaysShowGridItemInfo(!alwaysOn);
+    rerender();
+  };
+  optionsRow.appendChild(itemInfoToggle);
+  container.appendChild(optionsRow);
+
+  const goalsTitle = document.createElement('div');
+  goalsTitle.className = 'panel-title';
+  goalsTitle.textContent = 'Goals';
+  container.appendChild(goalsTitle);
 
   const playtimeRow = document.createElement('div');
   playtimeRow.style.margin = '4px 0 6px';

@@ -43,7 +43,9 @@ export function createFarmPointerRuntimeController(deps) {
     isShopItemUnlocked,
     setActiveTool,
     getFreePurchaseCount,
-    GUIDED_FLAGS
+    GUIDED_FLAGS,
+    saveState,
+    playGridItemMoveFx
   } = deps;
 
   const farmPointerState = {
@@ -80,7 +82,15 @@ export function createFarmPointerRuntimeController(deps) {
         selectGridCell,
         purchaseAndPlaceSelected,
         addMessage,
-        setChatProfile
+        setChatProfile,
+        getSelectedGridCellIndex,
+        setSelectedGridCellIndex,
+        selectedGridCellIndices,
+        getPlantGrowthState,
+        updateCursorForTool,
+        saveState,
+        renderMarket,
+        playGridItemMoveFx
       });
     } finally {
       trackActionDuration('applyGridActionForIndex', performance.now() - perfStart);
