@@ -151,7 +151,10 @@ export function refillRefillablePlacedItem({
       capacityUnits: capacity
     };
   }
-  const addedUnits = Math.max(1, Math.min(capacity - current, getInfrastructureRefillUnitsPerUse(state)));
+  const isSprinkler = String(item?.type || '').trim().toLowerCase() === 'sprinkler';
+  const addedUnits = isSprinkler
+    ? Math.max(1, capacity - current)
+    : Math.max(1, Math.min(capacity - current, getInfrastructureRefillUnitsPerUse(state)));
   const nextCurrent = Math.min(capacity, current + addedUnits);
   meta.tankCurrent = nextCurrent;
   state.gridPlacedMeta[cellIndex] = meta;
@@ -208,7 +211,7 @@ export function applyDawnSprinklersToFarm({
     const cfg = getSprinklerPlacementConfig(meta);
     let tankCurrent = Math.max(0, Math.min(cfg.capacity, Number(meta.tankCurrent) || 0));
     const neighbors = getSprinklerTargetOrderIndices(i, farm.gridItems, cfg.radius);
-    let hasEligibleDryCrop = false;
+    const eligibleTargets = [];
     for (let n = 0; n < neighbors.length; n += 1) {
       const targetIndex = neighbors[n];
       const targetItemId = farm.gridItems[targetIndex];
@@ -217,45 +220,47 @@ export function applyDawnSprinklersToFarm({
       if (!targetItem || !isProduceItem(targetItem)) continue;
       if (farm.gridWateredDay[targetIndex] === dayNumber) continue;
       if (isCropGrownForDawn(farm, targetIndex, targetItem)) continue;
-      hasEligibleDryCrop = true;
-      break;
+      eligibleTargets.push({
+        targetIndex,
+        targetItem
+      });
     }
-    if (hasEligibleDryCrop && tankCurrent < cfg.waterPerCrop) {
+    const hasEligibleDryCrop = eligibleTargets.length > 0;
+    if (hasEligibleDryCrop && tankCurrent <= 0) {
       summary.emptyAtDawnCount += 1;
     }
     let sprinklerWateredAny = false;
-    for (let n = 0; n < neighbors.length; n += 1) {
-      const targetIndex = neighbors[n];
-      if (tankCurrent < cfg.waterPerCrop) break;
-      const targetItemId = farm.gridItems[targetIndex];
-      if (!targetItemId) continue;
-      const targetItem = itemsById.get(String(targetItemId));
-      if (!targetItem || !isProduceItem(targetItem)) continue;
-      if (farm.gridWateredDay[targetIndex] === dayNumber) continue;
-      if (isCropGrownForDawn(farm, targetIndex, targetItem)) continue;
-
-      farm.gridWateredDay[targetIndex] = dayNumber;
-      farm.gridWateredCount[targetIndex] = Math.max(0, Number(farm.gridWateredCount[targetIndex]) || 0) + 1;
-      tankCurrent -= cfg.waterPerCrop;
-      summary.waterUnitsConsumed += cfg.waterPerCrop;
-      summary.cropsWatered += 1;
-      sprinklerWateredAny = true;
-      summary.events.push({
-        sprinklerIndex: i,
-        targetIndex,
-        waterUsed: cfg.waterPerCrop
-      });
-
-      if (tryApplyGrowthAccelerationBonus({
-        farmState: farm,
-        cellIndex: targetIndex,
-        item: targetItem,
-        dayNumber,
-        toolLevel: cfg.level,
-        random
-      })) {
-        summary.bonusGrowthTriggers += 1;
+    if (hasEligibleDryCrop && tankCurrent > 0) {
+      for (let n = 0; n < eligibleTargets.length; n += 1) {
+        const { targetIndex, targetItem } = eligibleTargets[n];
+        if (farm.gridWateredDay[targetIndex] === dayNumber) continue;
+        if (isCropGrownForDawn(farm, targetIndex, targetItem)) continue;
+  
+        farm.gridWateredDay[targetIndex] = dayNumber;
+        farm.gridWateredCount[targetIndex] = Math.max(0, Number(farm.gridWateredCount[targetIndex]) || 0) + 1;
+        summary.cropsWatered += 1;
+        sprinklerWateredAny = true;
+        summary.events.push({
+          sprinklerIndex: i,
+          targetIndex,
+          waterUsed: 1
+        });
+  
+        if (tryApplyGrowthAccelerationBonus({
+          farmState: farm,
+          cellIndex: targetIndex,
+          item: targetItem,
+          dayNumber,
+          toolLevel: cfg.level,
+          random
+        })) {
+          summary.bonusGrowthTriggers += 1;
+        }
       }
+    }
+    if (sprinklerWateredAny) {
+      tankCurrent = Math.max(0, tankCurrent - 1);
+      summary.waterUnitsConsumed += 1;
     }
     meta.tankCurrent = Math.max(0, Math.min(cfg.capacity, tankCurrent));
     meta.lastSprinklerActivationDay = dayNumber;

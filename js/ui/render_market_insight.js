@@ -253,12 +253,12 @@ export function renderSelectedItemInsightAction(deps) {
       if (!gridInsight.isProduce && gridInsight.tankCapacity !== null) {
         const tankChip = document.createElement('span');
         tankChip.className = 'insight-chip';
-        tankChip.textContent = `Tank: ${Number(gridInsight.tankCurrent || 0)}/${Number(gridInsight.tankCapacity || 0)}`;
+        tankChip.textContent = `Tank days: ${Number(gridInsight.tankCurrent || 0)}/${Number(gridInsight.tankCapacity || 0)}`;
         chipRow.appendChild(tankChip);
         if (String(gridInsight.itemType || '') === 'sprinkler') {
           const dawnChip = document.createElement('span');
           dawnChip.className = 'insight-chip';
-          dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops)';
+          dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops, uses 1 day when active)';
           chipRow.appendChild(dawnChip);
         }
         if (
@@ -336,7 +336,7 @@ export function renderSelectedItemInsightAction(deps) {
       if (String(shopInsight.itemType || '') === 'sprinkler') {
         const dawnChip = document.createElement('span');
         dawnChip.className = 'insight-chip';
-        dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops)';
+        dawnChip.textContent = 'Waters at dawn (adjacent, skips grown crops, uses 1 day when active)';
         chipRow.appendChild(dawnChip);
       }
       if (

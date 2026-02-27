@@ -13,6 +13,7 @@ export const PROFILE_IMAGES = {
   farmer: {
     neutral: 'resources/profiles/farmer_chad.png',
     excited: 'resources/profiles/farmer_chad.png',
+    watering: 'resources/profiles/farmer_chad.png',
     produce: 'resources/profiles/farmer_chad_produce.png'
   },
   merchant: {

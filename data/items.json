@@ -379,7 +379,7 @@
       "type": "sprinkler",
       "table_key": "utility",
       "price": 100,
-      "description": "Waters adjacent crops at dawn and skips grown crops. Refill with the watering can.",
+      "description": "Waters adjacent crops at dawn and skips grown crops. Tank count is watering days. Refill with the watering can.",
       "image": "items/utility/sprinkler.png",
       "goalLocked": false
     },

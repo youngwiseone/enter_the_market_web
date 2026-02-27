@@ -807,7 +807,7 @@ export const DEFAULT_DATA = {
       priority: 'normal',
       replaceKey: 'progress:water',
       replaceScope: 'day',
-      template: '{itemName} tank: {currentUnits}/{capacityUnits} (+{addedUnits})'
+      template: '{itemName} tank days: {currentUnits}/{capacityUnits} (+{addedUnits})'
     },
     {
       id: 'progress.infrastructure_tank_full',
@@ -819,7 +819,7 @@ export const DEFAULT_DATA = {
       priority: 'normal',
       replaceKey: 'progress:water',
       replaceScope: 'day',
-      template: '{itemName} tank full! ({currentUnits}/{capacityUnits})'
+      template: '{itemName} tank full for watering days! ({currentUnits}/{capacityUnits})'
     },
     {
       id: 'progress.sprinkler_out_of_water',
@@ -831,7 +831,7 @@ export const DEFAULT_DATA = {
       priority: 'normal',
       replaceKey: 'progress:sprinkler-dry',
       replaceScope: 'day',
-      template: 'Sprinkler is out of water. Refill it with the watering can!'
+      template: 'Sprinkler is out of tank days. Refill it with the watering can!'
     },
     {
       id: 'progress.sprinkler_tank_low',
@@ -843,7 +843,7 @@ export const DEFAULT_DATA = {
       priority: 'low',
       replaceKey: 'progress:sprinkler-low',
       replaceScope: 'day',
-      template: 'Sprinkler tank low: {currentUnits}/{capacityUnits}'
+      template: 'Sprinkler tank days low: {currentUnits}/{capacityUnits}'
     },
     {
       id: 'progress.sprinklers_empty_at_dawn',
@@ -855,7 +855,7 @@ export const DEFAULT_DATA = {
       priority: 'low',
       replaceKey: 'progress:sprinklers-empty-dawn',
       replaceScope: 'day',
-      template: '{sprinklerCount} sprinkler(s) ran dry at dawn. Refill with the watering can.'
+      template: '{sprinklerCount} sprinkler(s) had no tank days at dawn. Refill with the watering can.'
     },
     {
       id: 'tip.sprinkler_dawn_refill',
@@ -867,7 +867,7 @@ export const DEFAULT_DATA = {
       priority: 'normal',
       replaceKey: 'tip:sprinkler-basics',
       replaceScope: 'global',
-      template: 'Sprinklers water at dawn. Refill them with the watering can.'
+      template: 'Sprinklers water at dawn and use 1 tank day when they water at least one crop. Refill with the watering can.'
     },
     {
       id: 'progress.sprinklers_dawn_watered',
@@ -879,7 +879,7 @@ export const DEFAULT_DATA = {
       priority: 'normal',
       replaceKey: 'progress:sprinklers-dawn',
       replaceScope: 'day',
-      template: 'Dawn sprinklers: {sprinklerCount} active, watered {cropsWatered} crop(s), used {waterUnitsConsumed} water{bonusText}.'
+      template: 'Dawn sprinklers: {sprinklerCount} active, watered {cropsWatered} crop(s), used {waterUnitsConsumed} tank day(s){bonusText}.'
     },
     {
       id: 'progress.sprinklers_rain_refilled',
@@ -891,7 +891,7 @@ export const DEFAULT_DATA = {
       priority: 'low',
       replaceKey: 'weather:sprinkler-refill',
       replaceScope: 'day',
-      template: 'Rain refilled {sprinklersRefilled} sprinkler tank(s) (+{waterUnitsAdded} water).'
+      template: 'Rain refilled {sprinklersRefilled} sprinkler tank(s) (+{waterUnitsAdded} tank days).'
     }
   ],
   // History of news events by week. This structure records which

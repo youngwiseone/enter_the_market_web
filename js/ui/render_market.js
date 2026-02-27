@@ -87,8 +87,8 @@ function createGridTankBadge(currentUnits, capacityUnits, isFading = false) {
   const badge = document.createElement('span');
   badge.className = `grid-cell-price-delta ${toneClass}${isFading ? ' is-fading' : ''}`;
   badge.textContent = `${current}/${capacity}`;
-  badge.title = `Sprinkler tank ${current}/${capacity}`;
-  badge.setAttribute('aria-label', `Sprinkler tank ${current} of ${capacity}`);
+  badge.title = `Sprinkler tank days ${current}/${capacity}`;
+  badge.setAttribute('aria-label', `Sprinkler tank days ${current} of ${capacity}`);
   return badge;
 }
 
@@ -921,7 +921,7 @@ export function renderMarketAction(deps) {
           const resale = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
           const tankState = getRefillableTankState(it, Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[i] : null);
           cell.title = tankState
-            ? `Sell for $${resale.toFixed(2)} | Tank ${Number(tankState.current || 0)}/${Number(tankState.capacity || 0)}`
+            ? `Sell for $${resale.toFixed(2)} | Tank days ${Number(tankState.current || 0)}/${Number(tankState.capacity || 0)}`
             : `Sell for $${resale.toFixed(2)}`;
         }
         if (gridPriceBadgeDisplayState.visible && isProduceGridItem && growth.isGrown) {
