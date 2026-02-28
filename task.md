@@ -1,156 +1,250 @@
-﻿
-# Theme Readability + Visual Upgrade Proposal (Suggestions Only)
+# Late-Game Energy Sink Roadmap (Level 25-50+)
 
-## Goal
-Use `theme-marble` as the readability benchmark and bring all other themes up to a similar text/background clarity level while giving each one a stronger visual identity.
+## Problem Statement
+Players reach a stable state around Level 30:
+- Both farms are fully planted.
+- Crops are grown and often held (not sold) due to weak sell incentives.
+- Energy spend drops sharply.
+- `dayEnergySpent` stays low, so daily market roll strength flattens.
 
-## Global Readability Rules (apply to every theme)
-1. Define shared theme tokens and use them consistently:
-   - `--theme-bg`
-   - `--theme-surface`
-   - `--theme-text`
-   - `--theme-text-muted`
-   - `--theme-border`
-   - `--theme-accent`
-   - `--theme-control-bg`
-   - `--theme-control-text`
-   - `--theme-control-border`
-   - `--theme-control-active-bg`
-   - `--theme-control-active-text`
-   - `--theme-progress-track`
-   - `--theme-progress-fill`
-   - `--theme-table-header-bg`
-   - `--theme-table-header-text`
-   - `--theme-table-border`
-2. Minimum contrast targets:
-   - Body text on panel/background: WCAG AA (4.5:1+).
-   - Large headings/buttons: 3:1+.
-3. Add subtle text support where needed:
-   - Light themes: very soft dark text-shadow or stronger font-weight.
-   - Dark themes: 1px low-opacity glow only on accent text, not all text.
-4. Separate layers more clearly:
-   - Page background darkest/lightest layer.
-   - Panel surfaces one clear step different from background.
-   - Interactive controls one clear step different from panels.
-5. Unify table readability:
-   - Give every theme explicit zebra row colors and a guaranteed readable `--theme-table-text`.
+Goal: add repeatable, fun, energy-consuming actions that remain valuable even with full farms, while preserving current architecture (controllers/sim/ui split) and existing progression style.
 
-## Full Theming Coverage (Critical)
-The theme must style all major interactive and data surfaces, not just page/panel background:
-1. Rest button.
-2. Energy container and energy progress bar fill.
-3. Level container/card.
-4. Goals buttons.
-5. Tool buttons (`glove`, `watering`, `pickaxe` and any future tools).
-6. Top tab buttons (`Market`, `Goal`, `Review`).
-7. Market sub-tab buttons (`Produce`, `Utility`, `Decor`, `Cosmetics`).
-8. All market/store/goals tables:
-   - table header
-   - row background (odd/even)
-   - border lines
-   - hover/selected row state
-   - text color
+## Design Targets (Based on Current Runtime)
+1. Every new system must consume energy in small repeatable actions (1-5 energy chunks).
+2. New actions should produce at least one of:
+   - Immediate cash
+   - Crop value multipliers
+   - Inventory conversion/upgrades
+   - Progression unlocks or collection goals
+3. Systems should connect to existing market and day roll logic so `nextDay` remains meaningful.
+4. First implementation should minimize save-shape risk and reuse existing loops (`grid`, `items`, `goals`, `messages`, `day summary`, `renderAll` path).
 
-Current issue to eliminate: default gray/blue control styles remaining active under non-default themes, causing contrast conflicts with theme text colors.
+## Recommended Implementation Order
 
-## Per-Theme Suggestions
+## 1) NPC Trade Network (Recommended First)
+Why first:
+- Best effort-to-impact ratio.
+- Reuses current crop inventory and market context.
+- Strong energy sink with low animation/interaction complexity.
+- Can be introduced as a new tab/panel without heavy minigame framework.
 
-### Default (`theme-default`)
-- Keep classic 98.css look, but increase panel/background separation slightly.
-- Add mild bevel/scanline paper texture so it feels intentional, not flat.
-- Ensure button labels stay pure black on lighter controls.
+Core loop:
+1. Player spends 1 energy to perform a trade attempt.
+2. Trade consumes one crop stack/input and returns a different crop, utility item, or short buff.
+3. Trade offers rotate daily/weekly and can be influenced by market state/news.
+4. Optional reroll button costs energy or cash.
 
-### Monochrome Green (`theme-mono`)
-- Readability:
-  - Reduce neon saturation for normal text (keep neon for accents only).
-  - Use deeper panel black-green to separate content from background.
-- Visual upgrade (hacker/matrix):
-  - Add faint vertical matrix rain effect in the page background.
-  - Add occasional horizontal CRT sweep animation at very low opacity.
-  - Use monospace accent for headings/market ticker only.
-  - Keep animations subtle to avoid hurting legibility.
+Fun layers to add:
+- NPC personalities with bias:
+  - Broker: high risk/high reward swaps.
+  - Chef: converts bulk low-tier crops into cooking ingredients/buffs.
+  - Collector: asks for specific rarity and rewards premium crates.
+- Reputation per NPC:
+  - Trade streaks unlock better offers.
+  - Failed/ignored days reduce quality slightly.
+- Contract trades:
+  - "Deliver 10 Corn in 3 days" for guaranteed payout + market influence.
 
-### Aquatic Blue (`theme-aqua`)
-- Readability:
-  - Brighten text toward icy cyan/white and darken panel surface a bit.
-  - Increase border contrast so cards/sections are clearly outlined.
-- Visual upgrade (ocean):
-  - Add layered animated wave gradients in the background.
-  - Add soft caustic light pattern on panel titles.
-  - Use bubble-like glow accents on key values (cash/net worth).
+Market roll integration:
+- Successful trades add to `dayEnergySpent`.
+- Some trades create pressure tags (example: "tomato demand spike") that bias next market drift.
+- Rare "insider info" trade reward previews a likely featured crop next day.
 
-### Flame Vixen (`theme-flame`)
-- Readability:
-  - Move body text from orange to warm off-white; reserve orange for highlights.
-  - Darken panel background to increase contrast with text and controls.
-- Visual upgrade:
-  - Add ember speckle layer drifting slowly upward.
-  - Add heat-glow edge treatment on active tabs/buttons.
+Technical fit notes:
+- New controller candidate: `js/controllers/trade_controller.js`.
+- UI candidate: `js/ui/render_trade.js` + tab wiring.
+- Data file candidate: `data/traders.json` (NPC profiles + offer pools + weights).
+- State additions:
+  - `traders.reputation`
+  - `traders.dailyOffers`
+  - `traders.lastRefreshDay`
+- Goals/messages can be extended with new IDs; avoid breaking existing IDs.
 
-### Coder Black (`theme-coder`)
-- Readability:
-  - Slightly reduce pure green text for long-form readability.
-  - Lift panel background from near-black to dark charcoal for separation.
-- Visual upgrade:
-  - Terminal grid pattern background (very faint).
-  - Blinking cursor effect on selected panel titles / active HUD label.
-  - Optional subtle “boot sequence” shimmer on initial theme apply.
+Risks:
+- Offer quality can accidentally dominate planting economy.
+- Need strict guardrails against "infinite conversion loops" (A->B->A profit cycle).
 
-### Hotdog Stand (`theme-hotdog`)
-- Readability:
-  - Current yellow/red combo is high energy but fatiguing; reduce saturation.
-  - Use cream/yellow surface + deep red accents instead of red panel bodies.
-  - Keep text dark charcoal, not pure black, for better comfort.
-- Visual upgrade:
-  - Retro diner stripe motif and soft poster-grain texture.
-  - Ketchup/mustard accent lines for active controls.
+MVP scope:
+- 2 NPCs.
+- 3-5 daily offers each.
+- 1 energy per trade.
+- Basic reputation tiers (0-3).
 
-### Teal Breeze (`theme-teal`)
-- Readability:
-  - Improve panel/text contrast by darkening surface and brightening text.
-  - Add clearer border contrast for tabs and data rows.
-- Visual upgrade:
-  - Wind/ripple gradient motion in the page background.
-  - Frosted glass-like panel sheen for a modern “breeze” feel.
+---
 
-### Sophisticated (`theme-sophisticated`)
-- Readability:
-  - Mostly strong already; just increase muted text contrast slightly.
-  - Ensure secondary text/icons don’t fall below AA on darker panels.
-- Visual upgrade:
-  - Refine with subtle brushed-metal/noise texture.
-  - Add restrained gold accent pulse on major stat deltas only.
+## 2) Farm Pet + Care/Training System (Recommended Second)
+Why second:
+- Strong retention and emotional attachment.
+- Good long-term energy sink through care actions and training.
+- More content design overhead than trading, but still architecture-friendly.
 
-### Marble Luxe (`theme-marble`)
-- Keep as baseline reference.
-- Minor upgrade only:
-  - Add ultra-subtle marble vein motion/parallax at very low opacity.
-  - Preserve current text contrast exactly as the quality target.
+Core loop:
+1. Player purchases or unlocks a pet.
+2. Pet has Hunger, Mood, and Stamina.
+3. Player spends energy to feed/train/play.
+4. Pet grants time-limited farm assistance buffs.
 
-### Gold Dynasty (`theme-gold`)
-- Readability:
-  - Keep dark luxury base, but lighten default text a touch more.
-  - Reserve strong gold for highlights; avoid gold-on-gold text collisions.
-- Visual upgrade:
-  - Brushed gold shimmer pass on headers.
-  - Rare sparkle particles around milestone values.
+Pet effect examples:
+- Auto-water N random tiles at day start.
+- +X% rare roll chance for next Y harvests.
+- Small chance to duplicate harvested crop.
+- Reduce energy cost of one farm action for a day.
 
-### Diamond Apex (`theme-diamond`)
-- Readability:
-  - Slightly increase contrast between panel surface and body text.
-  - Ensure light-blue accents are not reused as normal body text.
-- Visual upgrade:
-  - Prism gradient shimmer and crystalline facet overlays.
-  - Subtle refractive glint animation on selected controls.
+Food/quest structure:
+- Pet food crafted via specific crop combos.
+- "Favorite food" rotates weekly for bonus affection.
+- Care milestones unlock pet abilities and cosmetics.
 
-## Rollout Recommendation
-1. Pass 1: readability-only token tuning for all themes.
-2. Pass 2: add visual effects per theme with low default intensity.
-3. Pass 3: add reduced-motion support / disable heavy effects when preferred.
+Fun layers to add:
+- Pet traits (Lazy, Curious, Greedy) alter buff tendencies.
+- Mini errands:
+  - Send pet to find trinkets; spends in-game time/day phase.
+  - Returns with small market modifiers or rare utility items.
+- Companion skill tree:
+  - Watering branch
+  - Harvest branch
+  - Market branch
 
-## Acceptance Checks
-1. No theme has “hard to read” body text on panels.
-2. Store/goals/market tables remain readable in every theme.
-3. Animated effects do not distract from gameplay interactions.
-4. Theme identity is clearly recognizable at a glance.
-5. No core controls remain default gray/blue when a non-default theme is active.
+Market roll integration:
+- Care/training actions consume energy and increase roll strength.
+- Some pet abilities modify one market category volatility for next day.
+
+Technical fit notes:
+- New controller candidate: `js/controllers/pet_controller.js`.
+- UI candidate: `js/ui/render_pet.js`.
+- Data candidates:
+  - `data/pets.json`
+  - `data/pet_foods.json`
+- State additions:
+  - `pet.activePetId`
+  - `pet.stats` (hunger/mood/level/xp)
+  - `pet.buffsActive`
+
+Risks:
+- Passive automation can invalidate core farm actions if too strong.
+- Needs careful buff caps and decay so player still engages manually.
+
+MVP scope:
+- 1 pet.
+- 3 care actions (feed/play/train).
+- 2 unlockable passive abilities.
+
+---
+
+## 3) Fishing Minigame (Recommended Third)
+Why third:
+- High potential for variety and "break from farming."
+- Highest implementation cost and balancing complexity.
+- Best after trade/pet loops stabilize baseline late-game economy.
+
+Core loop option A (quick-action):
+1. Spend energy to cast.
+2. Short timing window determines catch quality.
+3. Catch gives fish/resource/treasure outcomes.
+
+Core loop option B (session minigame):
+1. Spend energy to enter a short 30-60s fishing session.
+2. Catch multiple items during session.
+3. Session reward summary at end.
+
+Reward design aligned to your note:
+- Fish are mostly non-sellable utility items.
+- Examples:
+  - "Market Bait": doubles one crop's daily trend effect.
+  - "Lure Oil": increases chance of favorable daily roll.
+  - "Pearl Dust": one-time rarity upgrade on selected harvested stack.
+- Some catches can be traded to NPCs for special offers.
+
+Fun layers to add:
+- Weather/time-of-day fish pools.
+- Rod upgrades with hook modifiers.
+- Collection book + museum milestones.
+
+Market roll integration:
+- Casting always consumes energy.
+- Certain fish explicitly inject temporary multipliers into market pressure or featured crop systems.
+
+Technical fit notes:
+- New controller candidate: `js/controllers/fishing_controller.js`.
+- UI candidate: `js/ui/render_fishing.js`.
+- Potential lightweight loop can live in DOM/CSS/JS without canvas first.
+- Data candidates:
+  - `data/fish.json`
+  - `data/fishing_loot_tables.json`
+
+Risks:
+- Can become disconnected side mode if rewards do not feed core economy.
+- Tuning required so utility items feel powerful but not mandatory.
+
+MVP scope:
+- 1 location.
+- 1 simple timing mechanic.
+- 8-12 catchables.
+- 3 utility consumables tied to market/farm.
+
+---
+
+## Additional Ideas That Fit Current Game
+
+## A) Daily Work Orders Board
+- Town requests posted each day ("Deliver 6 Wheat + 2 Rare Carrot").
+- Accepting an order costs 1 energy.
+- Completing orders gives cash + guaranteed market influence token.
+- Very low scope and can be built from goals-like condition evaluation.
+
+## B) Soil/Compost Management Loop
+- Spend energy to fertilize or rehabilitate tiles.
+- Effects:
+  - Faster growth
+  - Better rarity odds
+  - Better sell price on next harvest cycle
+- Adds meaningful energy sink on full farms without new map.
+
+## C) Market Research Actions
+- Spend energy to run "analysis" actions.
+- Reveals tomorrow trend hints for selected crops.
+- Optional gamble mechanic: spend more energy for stronger prediction certainty.
+
+## D) Crop Processing Station
+- Convert crops into higher-value goods (juice, preserves, feed, oils).
+- Processing actions consume energy and time/day turns.
+- Strong synergy with NPC trades and pet feeding.
+
+## Suggested Rollout Strategy
+1. Ship NPC Trade MVP first as immediate late-game energy sink.
+2. Add Work Orders Board shortly after for additional daily objective variety.
+3. Ship Pet MVP to deepen long-session progression and identity.
+4. Add Fishing when economy baselines are stable and utility item space is clear.
+
+## Success Metrics To Track
+1. Median energy spent/day at Level 25-40.
+2. Days with zero meaningful action after farms are full.
+3. Sell frequency vs hold frequency at late game.
+4. Session length change after feature release.
+5. Number of daily market rolls with non-trivial drift (vs near-flat outcomes).
+
+## Balancing Guardrails
+1. No new feature should outperform planting/harvesting by >30% cash/hour unless gated.
+2. Utility effects should stack with hard caps.
+3. Daily offer resets and pet buffs should be deterministic on day boundary to avoid reroll exploits.
+4. Persist important random outcomes immediately when needed (same principle as rarity anti-reroll handling).
+
+## Open Questions (Need Clarification Before Implementation)
+1. Preferred tone for new content: cozy village, quirky comedy, or competitive economy sim?
+2. Should late-game loops focus more on cash generation, collection completion, or strategic market control?
+3. Do you want new systems accessible only after Level 25/30, or gradually unlocked earlier?
+4. For NPC trading, should trades use only crops, or also tools/utility/cosmetics as inputs?
+5. Do you want hard daily limits per NPC trade, or unlimited trades as long as player has energy?
+6. Should pet buffs be passive-only, active ability buttons, or both?
+7. Should fishing rewards be mostly account progression items, or mostly market-impact consumables?
+8. Are you comfortable adding at least 2-3 new data files (`traders`, `pets`, `fish`) now, or prefer minimal data surface first?
+9. Should any of these systems require new grid space, or remain off-grid UI systems?
+10. For anti-hoarding pressure: do you want spoilage/decay mechanics, or only positive incentives to sell?
+
+## Final Recommendation
+Start with NPC Trade Network + Daily Work Orders as Phase 1.
+
+Reason:
+- Fastest path to fixing "no way to spend energy" in late game.
+- Directly compatible with your current crop economy and market simulation.
+- Creates immediate daily decisions while keeping implementation complexity controlled.
