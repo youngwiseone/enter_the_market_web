@@ -16,6 +16,7 @@ These are tasks I am still planning, do not work on unless instructed.
 - Introduce rotating market “featured crop” bonuses (daily/weekly) to create short-term goals and variety in planting decisions.
 - give a hint at what the next unlock will give the player (what seed is next)
 - maybe add prestige for over lvl 99?
+- Add events like festivals, metorite landing, thunderstorm, items switching etc. Random days. Exciting gameplay.
 
 # Bigger Tasks
 
@@ -230,42 +231,3 @@ MVP scope:
 - Convert crops into higher-value goods (juice, preserves, feed, oils).
 - Processing actions consume energy and time/day turns.
 - Strong synergy with NPC trades and pet feeding.
-
-## Suggested Rollout Strategy
-1. Ship NPC Trade MVP first as immediate late-game energy sink.
-2. Add Work Orders Board shortly after for additional daily objective variety.
-3. Ship Pet MVP to deepen long-session progression and identity.
-4. Add Fishing when economy baselines are stable and utility item space is clear.
-
-## Success Metrics To Track
-1. Median energy spent/day at Level 25-40.
-2. Days with zero meaningful action after farms are full.
-3. Sell frequency vs hold frequency at late game.
-4. Session length change after feature release.
-5. Number of daily market rolls with non-trivial drift (vs near-flat outcomes).
-
-## Balancing Guardrails
-1. No new feature should outperform planting/harvesting by >30% cash/hour unless gated.
-2. Utility effects should stack with hard caps.
-3. Daily offer resets and pet buffs should be deterministic on day boundary to avoid reroll exploits.
-4. Persist important random outcomes immediately when needed (same principle as rarity anti-reroll handling).
-
-## Open Questions (Need Clarification Before Implementation)
-1. Preferred tone for new content: cozy village, quirky comedy, or competitive economy sim?
-2. Should late-game loops focus more on cash generation, collection completion, or strategic market control?
-3. Do you want new systems accessible only after Level 25/30, or gradually unlocked earlier?
-4. For NPC trading, should trades use only crops, or also tools/utility/cosmetics as inputs?
-5. Do you want hard daily limits per NPC trade, or unlimited trades as long as player has energy?
-6. Should pet buffs be passive-only, active ability buttons, or both?
-7. Should fishing rewards be mostly account progression items, or mostly market-impact consumables?
-8. Are you comfortable adding at least 2-3 new data files (`traders`, `pets`, `fish`) now, or prefer minimal data surface first?
-9. Should any of these systems require new grid space, or remain off-grid UI systems?
-10. For anti-hoarding pressure: do you want spoilage/decay mechanics, or only positive incentives to sell?
-
-## Final Recommendation
-Start with NPC Trade Network + Daily Work Orders as Phase 1.
-
-Reason:
-- Fastest path to fixing "no way to spend energy" in late game.
-- Directly compatible with your current crop economy and market simulation.
-- Creates immediate daily decisions while keeping implementation complexity controlled.
