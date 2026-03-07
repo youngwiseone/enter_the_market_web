@@ -30,6 +30,20 @@
             --tone-neutral-fg: #5f4700;
             --tone-neutral-bg: #fff4cc;
             --tone-neutral-border: #a87d00;
+            --planner-panel-bg: var(--theme-surface, #d4d0c8);
+            --planner-panel-text: var(--theme-text, #111111);
+            --planner-panel-muted: var(--theme-text-muted, #2f2f2f);
+            --planner-accent-bg: var(--theme-table-even, #eef7ff);
+            --planner-accent-border: var(--theme-border, #808080);
+            --planner-good-bg: var(--tone-good-bg);
+            --planner-good-border: var(--tone-good-border);
+            --planner-good-text: var(--tone-good-fg);
+            --planner-warn-bg: var(--tone-neutral-bg);
+            --planner-warn-border: var(--tone-neutral-border);
+            --planner-warn-text: var(--tone-neutral-fg);
+            --planner-bad-bg: var(--tone-bad-bg);
+            --planner-bad-border: var(--tone-bad-border);
+            --planner-bad-text: var(--tone-bad-fg);
         }
         html,
         body {
@@ -1280,17 +1294,51 @@
             max-width: 100%;
         }
         .profile-energy-bar.progress-indicator.energy-bar-compact {
+            position: relative;
+            overflow: hidden;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(90deg, var(--theme-accent, #0079bf) 0%, var(--theme-progress-fill, #00a2ff) 100%);
-            box-shadow: inset -2px -2px var(--theme-control-border-lo, #0c5f8a), inset 2px 2px var(--theme-control-border-hi, #87d3ff);
+            background: var(--theme-progress-track, #c0c0c0);
+            box-shadow: inset -2px -2px var(--theme-control-border-hi, #dfdfdf), inset 2px 2px var(--theme-control-border-lo, grey);
             color: var(--theme-table-header-text, #ffffff);
             font-weight: bold;
         }
+        .energy-bar-fill {
+            position: absolute;
+            inset: 2px auto 2px 2px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--theme-accent, #0079bf) 0%, var(--theme-progress-fill, #00a2ff) 100%);
+            pointer-events: none;
+        }
         .energy-compact-label {
+            position: relative;
+            z-index: 1;
             line-height: 1;
             font-size: var(--font-ui);
             text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+            white-space: nowrap;
+        }
+        .desktop-roll-indicator {
+            margin-top: 4px;
+            padding: 2px 6px;
+            border: 1px solid var(--theme-border, #808080);
+            background: rgba(255, 255, 255, 0.35);
+            color: var(--theme-text, #1f1f1f);
+            font-size: 12px;
+            line-height: 1.15;
+            white-space: nowrap;
+        }
+        .level-heading-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .mobile-roll-indicator {
+            display: none;
+            font-size: 11px;
+            line-height: 1.1;
+            color: var(--theme-text-muted, #2f2f2f);
             white-space: nowrap;
         }
         #hud-top-stats {
@@ -1451,43 +1499,16 @@
             font-size: 12px;
             color: var(--theme-text, #333);
         }
-        .guidance-row {
-            display: flex;
+        .hud-items-sold {
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            min-width: 0;
         }
-        .guidance-label {
-            font-weight: bold;
-            min-width: 72px;
-            color: #2a2a2a;
+        .hud-weather-icon {
+            width: 18px;
+            height: 18px;
             flex: 0 0 auto;
-        }
-        .guidance-text {
-            flex: 1 1 auto;
-            min-width: 0;
-            overflow-wrap: anywhere;
-        }
-        .guidance-chip {
-            flex: 0 0 auto;
-            border: 1px solid #1f5f1f;
-            background: #d9f2d9;
-            color: #1f5f1f;
-            padding: 0 6px;
-            line-height: 18px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .guidance-chip.warn {
-            border-color: #8a6d00;
-            background: #fff5cc;
-            color: #5f4800;
-        }
-        .guidance-chip.bad {
-            border-color: #8f1f1f;
-            background: #ffe1e1;
-            color: #7a0000;
+            image-rendering: pixelated;
         }
         .market-insight-panel {
             border: 1px solid var(--theme-border, #808080);
@@ -2641,8 +2662,15 @@
             margin: 0;
             font-size: clamp(12px, 2.6vw, 14px);
         }
+        body.mobile-layout .mobile-roll-indicator {
+            display: inline;
+            font-size: clamp(10px, 2.1vw, 11px);
+        }
         body.mobile-layout .player-xp-bar,
         body.mobile-layout .player-xp-text {
+            display: none;
+        }
+        body.mobile-layout .desktop-roll-indicator {
             display: none;
         }
         body.mobile-layout .profile-energy-info {
@@ -2664,6 +2692,9 @@
             box-shadow: none;
             border: none;
             font-size: clamp(10px, 2.2vw, 12px);
+        }
+        body.mobile-layout .profile-energy-bar.progress-indicator.energy-bar-compact .energy-bar-fill {
+            inset: 1px auto 1px 1px;
         }
         body.mobile-layout .profile-energy-bar .energy-compact-label {
             display: block;
@@ -3110,10 +3141,14 @@
                     <div class="profile-energy-info">
                         <div class="profile-section-label">Energy</div>
                         <div id="energy-bar" class="progress-indicator profile-energy-bar" role="progressbar" aria-valuemin="0"></div>
+                        <div id="desktop-roll-indicator" class="desktop-roll-indicator">Roll: 0%</div>
                     </div>
                     <div id="mobile-chat-log" aria-live="polite"></div>
                     <div class="player-level-info">
-                        <div id="player-level-label" class="player-level-label">Level: 1</div>
+                        <div class="level-heading-row">
+                            <div id="player-level-label" class="player-level-label">Level: 1</div>
+                            <div id="mobile-roll-indicator" class="mobile-roll-indicator">Roll: 0%</div>
+                        </div>
                         <div id="player-xp-bar" class="player-xp-bar" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="30">
                             <div id="player-xp-fill" class="player-xp-fill"></div>
                         </div>

@@ -670,7 +670,7 @@ export function renderMarketAction(deps) {
   } else {
     const produceHint = document.createElement('div');
     produceHint.className = 'market-subtable-note';
-    produceHint.textContent = 'Select then place on grid. Produce uses market pricing (changes daily).';
+    produceHint.textContent = 'Select then place on grid. Produce uses market pricing and shifts each day.';
     tableHost.appendChild(produceHint);
     const table = document.createElement('table');
     table.className = 'zebra-table';

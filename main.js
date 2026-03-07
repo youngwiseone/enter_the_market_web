@@ -1363,7 +1363,8 @@ function getGuidancePayload() {
     GUIDED_FLAGS,
     getPrimaryGuidedState,
     countReadyToHarvestTiles,
-    getBestBuyOpportunity
+    getBestBuyOpportunity,
+    isShopItemUnlocked
   });
 }
 

@@ -1,3 +1,54 @@
+function getHudWeatherVisual(state) {
+  const weatherId = String(state?.weather?.id || '').trim().toLowerCase();
+  const nextWeatherId = String(state?.nextDayWeather?.id || '').trim().toLowerCase();
+  if (weatherId === 'rain') {
+    return {
+      src: 'resources/weather/rainy.png',
+      alt: 'Rainy today'
+    };
+  }
+  if (nextWeatherId === 'rain') {
+    return {
+      src: 'resources/weather/cloudy.png',
+      alt: 'Cloudy, rain likely tomorrow'
+    };
+  }
+  return {
+    src: 'resources/weather/sunny.png',
+    alt: 'Sunny today'
+  };
+}
+
+function renderItemsSoldHud(el, totalItemsSold, weatherVisual) {
+  if (!el) return;
+  el.classList.add('hud-items-sold');
+  el.textContent = '';
+
+  if (weatherVisual?.src) {
+    const icon = document.createElement('img');
+    icon.className = 'hud-weather-icon';
+    icon.src = weatherVisual.src;
+    icon.alt = '';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.title = weatherVisual.alt || '';
+    el.appendChild(icon);
+  }
+
+  const text = document.createElement('span');
+  text.textContent = `Items Sold: ${totalItemsSold.toLocaleString('en-US')}`;
+  el.appendChild(text);
+
+  if (weatherVisual?.alt) {
+    el.title = weatherVisual.alt;
+    el.setAttribute('aria-label', `${text.textContent}. ${weatherVisual.alt}.`);
+  }
+}
+
+function getRollStrengthLabel(state) {
+  const rollStrength = Math.max(0, Math.round(Number(state?.dayEnergySpent) || 0));
+  return `Roll: ${rollStrength}%`;
+}
+
 function getBuyModeItem(state, selectedShopItemId) {
   if (!selectedShopItemId || !Array.isArray(state?.items)) return null;
   return state.items.find((item) => item && item.id === selectedShopItemId) || null;
@@ -178,6 +229,8 @@ export function renderEnergyBarAction(deps) {
 
   const bar = document.getElementById('energy-bar');
   const text = document.getElementById('energy-text');
+  const desktopRollIndicator = document.getElementById('desktop-roll-indicator');
+  const mobileRollIndicator = document.getElementById('mobile-roll-indicator');
   if (!bar || !state.player) return;
   const max = Math.max(1, Number(state.player.energyMax) || 10);
   const current = Math.max(0, Math.min(roundEnergyValue(state.player.energy ?? max), max));
@@ -186,6 +239,11 @@ export function renderEnergyBarAction(deps) {
   bar.classList.toggle('energy-bar-compact', useCompactLabel);
   bar.innerHTML = '';
   if (useCompactLabel) {
+    const fill = document.createElement('span');
+    fill.className = 'energy-bar-fill';
+    fill.style.width = `${Math.max(0, Math.min(100, (current / Math.max(1, max)) * 100))}%`;
+    bar.appendChild(fill);
+
     const compactLabel = document.createElement('span');
     compactLabel.className = 'energy-compact-label';
     compactLabel.textContent = `${formatEnergyValue(current)} / ${formatEnergyValue(max)}`;
@@ -199,8 +257,15 @@ export function renderEnergyBarAction(deps) {
   }
   bar.setAttribute('aria-valuenow', String(roundEnergyValue(current)));
   bar.setAttribute('aria-valuemax', String(roundEnergyValue(max)));
+  bar.title = '';
   if (text) {
     text.textContent = `Energy: ${formatEnergyValue(current)}/${formatEnergyValue(max)}`;
+  }
+  if (desktopRollIndicator) {
+    desktopRollIndicator.textContent = getRollStrengthLabel(state);
+  }
+  if (mobileRollIndicator) {
+    mobileRollIndicator.textContent = getRollStrengthLabel(state);
   }
   renderPlayerLevelStatus();
   updateTimeOfDayMood();
@@ -226,6 +291,7 @@ export function renderHUDAction(deps) {
   const dow = daysOfWeek[(day - 1) % 7];
   const weatherId = String(state.weather?.id || '');
   const weatherLabel = weatherId === 'rain' ? 'Rain' : '';
+  const weatherVisual = getHudWeatherVisual(state);
   if (document.body) {
     document.body.setAttribute('data-weather', weatherId || 'clear');
   }
@@ -239,7 +305,7 @@ export function renderHUDAction(deps) {
     storageElem.textContent = 'Storage: Unlimited';
   }
   netElems.forEach((el) => {
-    el.textContent = `Items Sold: ${totalItemsSold.toLocaleString('en-US')}`;
+    renderItemsSoldHud(el, totalItemsSold, weatherVisual);
   });
   renderBuyModeHudAction(deps);
   renderPlayerLevelStatus();
