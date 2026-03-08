@@ -8,10 +8,12 @@ export function updateMainViewVisibilityDom(activeMainTab) {
   const marketRoot = document.getElementById('market');
   const marketTable = document.getElementById('market-table-container');
   const goalsPanel = document.getElementById('goals-panel');
+  const dataPanel = document.getElementById('data-panel');
   const messagesPanel = document.getElementById('messages-history-panel');
   const isFarm = effectiveTab === 'farm';
   const isMarket = effectiveTab === 'market';
   const isGoals = effectiveTab === 'goals';
+  const isData = effectiveTab === 'data';
   const isMessages = effectiveTab === 'messages';
 
   if (isMobileLayout) {
@@ -19,6 +21,7 @@ export function updateMainViewVisibilityDom(activeMainTab) {
     if (marketRoot) marketRoot.style.display = isFarm ? 'none' : 'flex';
     if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
     if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
+    if (dataPanel) dataPanel.style.display = isData ? 'block' : 'none';
     if (messagesPanel) messagesPanel.style.display = isMessages ? 'flex' : 'none';
     return;
   }
@@ -27,6 +30,7 @@ export function updateMainViewVisibilityDom(activeMainTab) {
   if (marketRoot) marketRoot.style.display = 'flex';
   if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
   if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';
+  if (dataPanel) dataPanel.style.display = isData ? 'block' : 'none';
   if (messagesPanel) messagesPanel.style.display = isMessages ? 'flex' : 'none';
 }
 
@@ -36,12 +40,15 @@ export function updateMainTabButtonsDom(activeMainTab, _isStoreTabUnlocked, isGo
   const farmTabs = Array.from(document.querySelectorAll('[data-main-tab="farm"]'));
   const marketTab = document.getElementById('tab-market');
   const goalsTab = document.getElementById('tab-goals');
+  const dataTab = document.getElementById('tab-data');
   const marketTabs = Array.from(new Set([marketTab, ...Array.from(document.querySelectorAll('[data-main-tab="market"]'))].filter(Boolean)));
   const goalsTabs = Array.from(new Set([goalsTab, ...Array.from(document.querySelectorAll('[data-main-tab="goals"]'))].filter(Boolean)));
+  const dataTabs = Array.from(new Set([dataTab, ...Array.from(document.querySelectorAll('[data-main-tab="data"]'))].filter(Boolean)));
   const goalsUnlocked = isGoalsTabUnlocked();
   const isFarm = effectiveTab === 'farm';
   const isMarket = effectiveTab === 'market';
   const isGoals = effectiveTab === 'goals';
+  const isData = effectiveTab === 'data';
   farmTabs.forEach((tab) => {
     tab.classList.toggle('active', isFarm);
     tab.setAttribute('aria-selected', isFarm ? 'true' : 'false');
@@ -56,6 +63,10 @@ export function updateMainTabButtonsDom(activeMainTab, _isStoreTabUnlocked, isGo
     tab.disabled = !goalsUnlocked;
     tab.setAttribute('aria-disabled', goalsUnlocked ? 'false' : 'true');
     tab.title = goalsUnlocked ? 'Open Goal' : 'Unlocks after first harvest and rest';
+  });
+  dataTabs.forEach((tab) => {
+    tab.classList.toggle('active', isData);
+    tab.setAttribute('aria-selected', isData ? 'true' : 'false');
   });
 }
 
@@ -93,6 +104,7 @@ export function showTabDom(tabName, deps) {
     updateMainViewVisibility,
     updateMainTabButtons,
     renderMarket,
+    renderData,
     renderSelectedItemInsight,
     renderGuidancePanel,
     renderEnergyBar,
@@ -113,6 +125,7 @@ export function showTabDom(tabName, deps) {
     updateMainViewVisibility();
     updateMainTabButtons();
     renderMarket();
+    renderData();
     renderSelectedItemInsight();
     renderGuidancePanel();
     renderEnergyBar();

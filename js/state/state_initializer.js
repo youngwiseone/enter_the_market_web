@@ -28,6 +28,9 @@ export function initialiseStateAction(deps) {
     TOOL_GLOVE,
     syncGoalLockedShopUnlocks,
     ensureShopEntryMarketFields,
+    isShopItemUnlocked,
+    normalizeMarketHistoryState,
+    upsertCurrentMarketHistorySnapshotAction,
     normalizeGoalStateShape,
     normalizeDaySalesState,
     isToolUnlocked,
@@ -65,6 +68,7 @@ export function initialiseStateAction(deps) {
     ? loadedLastPriceMovesByItem
     : {};
   state.dayStartSnapshot = loadFromStorage('dayStartSnapshot', null);
+  state.marketHistory = normalizeMarketHistoryState(loadFromStorage('marketHistory', null));
   const loadedWeather = loadFromStorage('weather', null);
   const loadedNextDayWeather = loadFromStorage('nextDayWeather', null);
   const currentLoadedDay = Math.max(1, Number(state.player?.day) || 1);
@@ -245,6 +249,9 @@ export function initialiseStateAction(deps) {
   normalizeGoalStateShape(state, DEFAULT_DATA.goals);
   if (!Array.isArray(state.dailyMarketRollHistory)) {
     state.dailyMarketRollHistory = [];
+  }
+  if (upsertCurrentMarketHistorySnapshotAction(state, isShopItemUnlocked)) {
+    saveToStorage('marketHistory', state.marketHistory);
   }
   normalizeDaySalesState(state);
   if (!isToolUnlocked(TOOL_WATERING) && state.activeTool === TOOL_WATERING) {

@@ -118,6 +118,10 @@ export function createUiRuntimeController(deps) {
     return activeMainTab === 'market';
   }
 
+  function isActiveMainTabData() {
+    return activeMainTab === 'data';
+  }
+
   function updateMainTabButtons() {
     updateMainTabButtonsDom(activeMainTab, deps.isStoreTabUnlocked, deps.isGoalsTabUnlocked);
   }
@@ -152,6 +156,7 @@ export function createUiRuntimeController(deps) {
       updateMainViewVisibility,
       updateMainTabButtons,
       renderMarket: deps.renderMarket,
+      renderData: deps.renderData,
       renderSelectedItemInsight: deps.renderSelectedItemInsight,
       renderGuidancePanel: deps.renderGuidancePanel,
       renderEnergyBar: deps.renderEnergyBar,
@@ -230,6 +235,7 @@ export function createUiRuntimeController(deps) {
       renderProfileGoalSummary,
       renderGuidancePanel: deps.renderGuidancePanel,
       renderMarket: deps.renderMarket,
+      renderData: deps.renderData,
       renderSelectedItemInsight: deps.renderSelectedItemInsight,
       renderGoals,
       updateMainViewVisibility,
@@ -249,6 +255,7 @@ export function createUiRuntimeController(deps) {
     renderGoals,
     updateMainViewVisibility,
     isActiveMainTabMarket,
+    isActiveMainTabData,
     updateMainTabButtons,
     toggleMessagesPanel,
     showTab,

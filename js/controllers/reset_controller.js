@@ -19,6 +19,7 @@ export async function resetGameAction(deps) {
     updateCursorForTool,
     addMessage,
     saveState,
+    upsertCurrentMarketHistorySnapshot,
     clearGoalCelebrationSparkles,
     setGoalCelebrationOpen,
     confirmDialog,
@@ -62,11 +63,13 @@ export async function resetGameAction(deps) {
   state.totalPlaytimeMs = 0;
   state.dayTopSale = null;
   state.daySummaryHistory = [];
+  state.marketHistory = [];
   state.pendingDaySummary = null;
   state.goalCelebrationQueue = [];
   state.activeGoalCelebration = null;
   clearGoalCelebrationSparkles();
   setGoalCelebrationOpen(false);
+  upsertCurrentMarketHistorySnapshot();
   persistResetState(saveToStorage, state);
   renderAll();
   updateToolButtons();

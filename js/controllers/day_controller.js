@@ -92,6 +92,7 @@ export function nextDayAction(deps) {
     applyShopEntryPriceRecoveryStep,
     applyDailyMarketRollToShop,
     emitEconomyAlert,
+    upsertCurrentMarketHistorySnapshot,
     getBestRollOpportunityText,
     generateDailyTip,
     evaluateGoals,
@@ -283,6 +284,7 @@ export function nextDayAction(deps) {
   });
 
   updateNetWorth();
+  upsertCurrentMarketHistorySnapshot();
   const priceMoves = [];
   state.shop.forEach((entry) => {
     if (!isShopItemUnlocked(entry.itemId)) return;

@@ -162,6 +162,10 @@ import {
 } from './js/state/farm_runtime.js';
 import { hydrateDaySalesState, normalizeDaySalesState } from './js/state/day_sales_state.js';
 import { normalizeGoalStateShape } from './js/state/goal_state.js';
+import {
+  normalizeMarketHistoryState,
+  upsertCurrentMarketHistorySnapshotAction
+} from './js/state/market_history_state.js';
 import { persistFullState, persistLegacyPrimaryGridState } from './js/state/persistence.js';
 import { persistResetState } from './js/state/reset_persistence.js';
 import { initialiseStateRuntimeAction, saveStateRuntimeAction } from './js/state/state_runtime_controller.js';
@@ -252,6 +256,7 @@ import {
   getSelectedGridItemInsightDataAction,
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
+import { renderDataAction } from './js/ui/render_data.js';
 import { renderMarketAction } from './js/ui/render_market.js';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js';
 import { createMessagesController } from './js/ui/messages_controller.js';
@@ -900,6 +905,9 @@ function initialiseState() {
     TOOL_GLOVE,
     syncGoalLockedShopUnlocks,
     ensureShopEntryMarketFields,
+    isShopItemUnlocked,
+    normalizeMarketHistoryState,
+    upsertCurrentMarketHistorySnapshotAction,
     normalizeGoalStateShape,
     normalizeDaySalesState,
     isToolUnlocked,
@@ -967,6 +975,7 @@ async function resetGame() {
     updateCursorForTool,
     addMessage,
     saveState,
+    upsertCurrentMarketHistorySnapshot: () => upsertCurrentMarketHistorySnapshotAction(state, isShopItemUnlocked),
     clearGoalCelebrationSparkles: sessionRuntimeController.clearGoalCelebrationSparkles,
     setGoalCelebrationOpen: sessionRuntimeController.setGoalCelebrationOpen,
     confirmDialog: confirmDialogDom,
@@ -1107,6 +1116,15 @@ function renderMarket() {
   }));
 }
 
+function renderData() {
+  renderDataAction({
+    state,
+    isShopItemUnlocked,
+    getSelectedShopItemId: () => selectedShopItemId,
+    getSelectedGridCellIndex: () => selectedGridCellIndex
+  });
+}
+
 const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   state,
   trackRenderCall,
@@ -1136,6 +1154,7 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   syncGuidedUnlocks,
   requestLockedTab,
   renderMarket,
+  renderData,
   renderSelectedItemInsight,
   renderGuidancePanel,
   renderEnergyBar,
@@ -1659,6 +1678,7 @@ const dayMarketRuntimeController = createDayMarketRuntimeController({
   ensurePlayerProgressState,
   resetLowEnergyNoticeDay: dayEconomyController.resetLowEnergyNoticeDay,
   applyShopEntryPriceRecoveryStep,
+  upsertCurrentMarketHistorySnapshot: () => upsertCurrentMarketHistorySnapshotAction(state, isShopItemUnlocked),
   getShopEntryAveragePrice,
   startShopEntryPriceRecovery,
   priceCrashThresholdPercent: PRICE_CRASH_THRESHOLD_PERCENT,

@@ -30,6 +30,7 @@ export function persistFullState(saveFn, state) {
   saveFn('dayItemSales', state.dayItemSales);
   saveFn('marketPressureByItem', state.marketPressureByItem);
   saveFn('daySummaryHistory', state.daySummaryHistory);
+  saveFn('marketHistory', state.marketHistory);
   saveFn('farms', state.farms);
   saveFn('activeFarmId', state.activeFarmId);
   saveFn('secondFarmPurchased', state.secondFarmPurchased);

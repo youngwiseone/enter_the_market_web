@@ -125,7 +125,8 @@
             display: flex;
             gap: 4px;
         }
-        #goals-panel {
+        #goals-panel,
+        #data-panel {
             display: none;
             margin: 0;
         }
@@ -1630,6 +1631,217 @@
             background: var(--tone-neutral-bg);
             color: var(--tone-neutral-fg);
         }
+        .data-panel-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2.1fr) minmax(260px, 0.9fr);
+            gap: 8px;
+        }
+        .data-card {
+            border: 1px solid var(--theme-table-border, #808080);
+            background: var(--theme-surface, #d4d0c8);
+            color: var(--theme-table-text, var(--theme-text, inherit));
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+            padding: 8px;
+        }
+        .data-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .data-card-heading {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .data-card-title {
+            display: block;
+            background: linear-gradient(90deg, var(--header-bg, #000080), var(--secondary-color, #0078d7));
+            color: var(--header-fg, white);
+            padding: 4px 6px;
+            border-bottom: 1px solid var(--header-border, #808080);
+            font-weight: bold;
+            font-size: var(--font-title);
+        }
+        .data-card-subtitle {
+            margin-top: 4px;
+            color: var(--theme-text-muted, #5a5a5a);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        .data-group-buttons,
+        .data-window-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .data-group-buttons {
+            margin: 0 0 8px;
+        }
+        .data-group-button.tab-button,
+        .data-window-button.tab-button {
+            min-width: 50px;
+            min-height: 28px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        .data-summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .data-summary-card {
+            border: 1px solid var(--theme-table-border, #808080);
+            background: color-mix(in srgb, var(--theme-surface, #d4d0c8) 88%, white 12%);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            box-shadow: inset 3px 0 0 var(--series-color, #4f8cff);
+        }
+        .data-summary-label {
+            color: var(--theme-text-muted, #555);
+            font-size: 12px;
+        }
+        .data-summary-value-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .data-summary-icon {
+            width: 16px;
+            height: 16px;
+            flex: 0 0 auto;
+            image-rendering: pixelated;
+        }
+        .data-summary-value {
+            color: var(--theme-table-text, var(--theme-text, inherit));
+            font-weight: bold;
+            min-width: 0;
+        }
+        .data-summary-delta {
+            color: var(--theme-link, #0b62c2);
+            font-size: 12px;
+        }
+        .data-graph-surface {
+            border: 1px solid var(--theme-table-border, #808080);
+            background: var(--theme-surface, #d4d0c8);
+            min-height: 260px;
+            padding: 6px;
+        }
+        .data-graph-svg {
+            width: 100%;
+            height: 260px;
+            display: block;
+        }
+        .data-graph-plot {
+            fill: color-mix(in srgb, var(--theme-surface, #d4d0c8) 92%, white 8%);
+            stroke: rgba(96, 96, 96, 0.22);
+        }
+        .data-graph-grid-line {
+            stroke: rgba(96, 96, 96, 0.18);
+            stroke-width: 1;
+        }
+        .data-graph-axis-line {
+            stroke: rgba(64, 64, 64, 0.4);
+            stroke-width: 1;
+        }
+        .data-graph-line {
+            fill: none;
+            stroke-width: 2;
+            vector-effect: non-scaling-stroke;
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.18));
+        }
+        .data-graph-axis-label {
+            fill: var(--theme-text, #111);
+            font-size: 12px;
+            text-anchor: middle;
+        }
+        .data-graph-axis-title {
+            fill: var(--theme-text, #111);
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .data-graph-axis-label-left {
+            text-anchor: end;
+        }
+        .data-graph-axis-label-right {
+            text-anchor: end;
+        }
+        .data-graph-empty {
+            min-height: 248px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--theme-text-muted, #5a5a5a);
+            padding: 12px;
+        }
+        .data-series-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 420px;
+            overflow: auto;
+            padding-right: 2px;
+        }
+        .data-series-button {
+            width: 100%;
+            border: 1px solid var(--theme-table-border, #808080);
+            background: color-mix(in srgb, var(--theme-surface, #d4d0c8) 90%, white 10%);
+            color: var(--theme-table-text, var(--theme-text, inherit));
+            padding: 6px;
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+            text-align: left;
+            cursor: pointer;
+            min-height: 52px;
+            box-sizing: border-box;
+        }
+        .data-series-button.active {
+            border-color: var(--theme-accent, #0b62c2);
+            background: color-mix(in srgb, var(--theme-table-even, #eef7ff) 72%, var(--theme-surface, #d4d0c8) 28%);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-accent, #0b62c2) 35%, transparent), 0 0 0 2px var(--theme-accent, #0078d7);
+        }
+        .data-series-button.source-selected {
+            outline: 2px solid var(--theme-accent, #0078d7);
+            outline-offset: -2px;
+        }
+        .data-series-icon-wrap {
+            width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+        .data-series-icon {
+            width: 24px;
+            height: 24px;
+            image-rendering: pixelated;
+        }
+        .data-series-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1 1 auto;
+            justify-content: center;
+        }
+        .data-series-name-row {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+        .data-series-name {
+            font-weight: bold;
+            white-space: normal;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
         button,
         .button,
         input,
@@ -2446,6 +2658,21 @@
             z-index: 61;
             pointer-events: auto;
         }
+        #data-panel {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 100%;
+            padding: 8px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            position: relative;
+            z-index: 61;
+            pointer-events: auto;
+            box-sizing: border-box;
+        }
         #goals-content {
             padding: 8px;
             box-sizing: border-box;
@@ -2589,7 +2816,8 @@
             max-width: 100%;
         }
         body.mobile-layout #market-table-container,
-        body.mobile-layout #goals-panel {
+        body.mobile-layout #goals-panel,
+        body.mobile-layout #data-panel {
             align-self: stretch;
             width: 100%;
             max-width: 100%;
@@ -2793,7 +3021,7 @@
         }
         body.mobile-layout #mobile-bottom-tabs {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 4px;
             position: fixed;
             left: calc(8px + var(--safe-left));
@@ -2804,6 +3032,68 @@
             background: var(--theme-surface, #d4d0c8);
             border: 1px solid var(--theme-border, #808080);
             box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+        }
+        @media (max-width: 980px) {
+            .data-panel-layout {
+                grid-template-columns: 1fr;
+            }
+            .data-card-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .data-window-buttons,
+            .data-group-buttons {
+                width: 100%;
+            }
+            .data-summary-row {
+                grid-template-columns: 1fr;
+            }
+            .data-series-list {
+                max-height: 280px;
+            }
+        }
+        @media (max-width: 640px) {
+            .data-card {
+                padding: 6px;
+            }
+            .data-card-title {
+                font-size: 13px;
+            }
+            .data-group-button.tab-button,
+            .data-window-button.tab-button {
+                min-width: 0;
+                flex: 1 1 calc(25% - 4px);
+                padding: 2px 6px;
+                font-size: 11px;
+            }
+            .data-graph-surface {
+                padding: 4px;
+                min-height: 216px;
+            }
+            .data-graph-svg {
+                height: 216px;
+            }
+            .data-graph-axis-label {
+                font-size: 16px;
+            }
+            .data-graph-axis-title {
+                font-size: 14px;
+            }
+            .data-series-button {
+                min-height: 48px;
+                padding: 5px;
+            }
+            .data-series-icon-wrap {
+                width: 26px;
+            }
+            .data-series-icon {
+                width: 20px;
+                height: 20px;
+            }
+            .data-series-name,
+            .data-card-subtitle {
+                font-size: 12px;
+            }
         }
         body.mobile-layout #mobile-bottom-tabs .tab-button {
             display: inline-flex;
@@ -3189,6 +3479,7 @@
                     <div class="market-tabs" role="tablist">
                         <button id="tab-market" data-main-tab="market" class="tab-button active" role="tab" aria-selected="true">Market <span id="tab-market-badge" class="tab-badge">0</span></button>
                         <button id="tab-goals" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goal <span id="tab-goals-badge" class="tab-badge">0</span></button>
+                        <button id="tab-data" data-main-tab="data" class="tab-button" role="tab" aria-selected="false">Data</button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
                     <div id="market-insight-panel" class="market-insight-panel" aria-live="polite">
@@ -3201,6 +3492,9 @@
         <div id="goals-panel" class="panel">
             <div id="goals-content"></div>
             <button id="reset-game" class="button" style="margin-top: 8px;">Reset Game</button>
+        </div>
+        <div id="data-panel" class="panel">
+            <div id="data-content"></div>
         </div>
         <div id="market-insight-panel-mobile-market" class="market-insight-panel panel mobile-insight-panel" data-insight-panel="mobile-market" aria-live="polite"></div>
         <div id="messages-history-panel" class="panel">
@@ -3221,6 +3515,7 @@
         <button id="tab-farm-mobile" data-main-tab="farm" class="tab-button active" role="tab" aria-selected="true">Farm</button>
         <button id="tab-market-mobile" data-main-tab="market" class="tab-button" role="tab" aria-selected="false">Market <span class="tab-badge" data-badge-for="tab-market-badge">0</span></button>
         <button id="tab-goals-mobile" data-main-tab="goals" class="tab-button" role="tab" aria-selected="false">Goals <span class="tab-badge" data-badge-for="tab-goals-badge">0</span></button>
+        <button id="tab-data-mobile" data-main-tab="data" class="tab-button" role="tab" aria-selected="false">Data</button>
     </div>
 
     <div id="feedback-modal" class="feedback-modal" aria-hidden="true">
