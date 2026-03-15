@@ -285,6 +285,32 @@ export function renderSelectedItemInsightAction(deps) {
         sellSelectedGridItem(sellButton);
       });
       chipRow.appendChild(sellButton);
+      if (gridInsight.isProduce && gridInsight.identityLabels) {
+        const identityRow = document.createElement('div');
+        identityRow.className = 'market-insight-row';
+        [
+          gridInsight.identityLabels.cycle,
+          gridInsight.identityLabels.family,
+          'Noise: ' + gridInsight.identityLabels.noise,
+          'Shock: ' + gridInsight.identityLabels.shock,
+          'Rarity: ' + gridInsight.identityLabels.rarity
+        ].forEach((label) => {
+          const chip = document.createElement('span');
+          chip.className = 'insight-chip';
+          chip.textContent = label;
+          identityRow.appendChild(chip);
+        });
+        panel.appendChild(identityRow);
+      }
+      if (gridInsight.isProduce && gridInsight.identitySummary) {
+        const summaryRow = document.createElement('div');
+        summaryRow.className = 'market-insight-row';
+        const summaryChip = document.createElement('span');
+        summaryChip.className = 'insight-chip';
+        summaryChip.textContent = gridInsight.identitySummary;
+        summaryRow.appendChild(summaryChip);
+        panel.appendChild(summaryRow);
+      }
       panel.appendChild(chipRow);
       return;
     }
@@ -404,6 +430,32 @@ export function renderSelectedItemInsightAction(deps) {
       chipRow.appendChild(freeChip);
     }
     panel.appendChild(chipRow);
+    if (shopInsight.identityLabels) {
+      const identityRow = document.createElement('div');
+      identityRow.className = 'market-insight-row';
+      [
+        shopInsight.identityLabels.cycle,
+        shopInsight.identityLabels.family,
+        'Noise: ' + shopInsight.identityLabels.noise,
+        'Shock: ' + shopInsight.identityLabels.shock,
+        'Rarity: ' + shopInsight.identityLabels.rarity
+      ].forEach((label) => {
+        const chip = document.createElement('span');
+        chip.className = 'insight-chip';
+        chip.textContent = label;
+        identityRow.appendChild(chip);
+      });
+      panel.appendChild(identityRow);
+    }
+    if (shopInsight.identitySummary) {
+      const summaryRow = document.createElement('div');
+      summaryRow.className = 'market-insight-row';
+      const summaryChip = document.createElement('span');
+      summaryChip.className = 'insight-chip';
+      summaryChip.textContent = shopInsight.identitySummary;
+      summaryRow.appendChild(summaryChip);
+      panel.appendChild(summaryRow);
+    }
   }
 
   panels.forEach((panel) => renderIntoPanel(panel));

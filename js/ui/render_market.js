@@ -1,5 +1,7 @@
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
+import { resolveResourcePath } from '../content/resource_paths.js';
 import { getRefillableTankState } from '../controllers/watering_infrastructure.js';
+import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 const MARKET_SORT_KEYS = Object.freeze({
   NAME: 'name',
@@ -908,7 +910,7 @@ export function renderMarketAction(deps) {
               cell.appendChild(holo);
             }
           }
-          const multiplier = getRarityMultiplier(rarity);
+          const multiplier = getCropAdjustedRarityMultiplier(it, rarity, getRarityMultiplier);
           const sellPrice = shopEntry ? shopEntry.price * multiplier * getActiveFarmSellMultiplier() : 0;
           cell.title = `Harvest for $${sellPrice.toFixed(2)}`;
         } else if (isProduceGridItem && growDays > 0) {
@@ -958,7 +960,7 @@ export function renderMarketAction(deps) {
       const crackIndex = Math.min(10, miningHits);
       const crackImg = document.createElement('img');
       crackImg.className = 'grid-overlay';
-      crackImg.src = `resources/tools/crack${crackIndex}.png`;
+      crackImg.src = resolveResourcePath(`tools/crack${crackIndex}.png`);
       crackImg.alt = 'Mining progress';
       cell.appendChild(crackImg);
     }
@@ -974,7 +976,7 @@ export function renderMarketAction(deps) {
     ) {
       const waterImg = document.createElement('img');
       waterImg.className = 'grid-overlay';
-      waterImg.src = 'resources/tools/water.png';
+      waterImg.src = resolveResourcePath('tools/water.png');
       waterImg.alt = 'Watered';
       cell.appendChild(waterImg);
     }

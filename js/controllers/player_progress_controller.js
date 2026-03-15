@@ -1,3 +1,5 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
+
 export function isToolUnlockedAction(state, tool, defaultTool) {
   if (tool === defaultTool) return true;
   return !!(state.unlockedTools && state.unlockedTools[tool]);
@@ -136,7 +138,7 @@ export function enqueueLevelUpCelebrationAction(
     id: `level-up-${level}-${Date.now()}`,
     title: 'Level Up',
     rewardText: `Level ${level} reached${unlockedText}${rollCelebrationText} | ${changeText}`,
-    imageSrc: unlockedItem?.imageSrc || 'resources/profiles/player_level_up.png',
+    imageSrc: unlockedItem?.imageSrc || resolveResourcePath('profiles/player_level_up.png'),
     imageAlt: unlockedItem?.imageAlt || 'Level up',
     seedPacketImageSrc: unlockedItem?.seedPacketImageSrc || '',
     seedOverlayIconImageSrc: unlockedItem?.seedOverlayIconImageSrc || '',

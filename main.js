@@ -589,7 +589,7 @@ function unlockShopItemForLevel(level) {
   return {
     id: item.id,
     name: item.name || `Item ${item.id}`,
-    imageSrc: getShopSeedVisualPath(item) || 'resources/profiles/player_level_up.png',
+    imageSrc: getShopSeedVisualPath(item) || resolveResourcePath('profiles/player_level_up.png'),
     imageAlt: item.name || `Item ${item.id}`,
     ...getLevelUpUnlockSeedImagePayload(item)
   };
@@ -621,7 +621,7 @@ function getLevelUnlockedUtilityItems(level) {
     .map((item) => ({
       id: item.id,
       name: item.name || `Item ${item.id}`,
-      imageSrc: getShopSeedVisualPath(item) || 'resources/profiles/player_level_up.png',
+      imageSrc: getShopSeedVisualPath(item) || resolveResourcePath('profiles/player_level_up.png'),
       imageAlt: item.name || `Item ${item.id}`,
       ...getLevelUpUnlockSeedImagePayload(item)
     }));

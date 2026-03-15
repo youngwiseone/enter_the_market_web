@@ -1,24 +1,26 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
+
 export const PROFILE_IMAGES = {
   player: {
-    neutral: 'resources/profiles/player.png',
-    excited: 'resources/profiles/player_excited.png',
-    mining: 'resources/profiles/player_mining.png',
-    watering: 'resources/profiles/player_watering.png',
-    tired: 'resources/profiles/player_tired.png',
-    wrong: 'resources/profiles/player_wrong.png',
-    money: 'resources/profiles/player_money.png',
-    goal_unlocked: 'resources/profiles/player_goal_unlocked.png',
-    level_up: 'resources/profiles/player_level_up.png'
+    neutral: resolveResourcePath('profiles/player.png'),
+    excited: resolveResourcePath('profiles/player_excited.png'),
+    mining: resolveResourcePath('profiles/player_mining.png'),
+    watering: resolveResourcePath('profiles/player_watering.png'),
+    tired: resolveResourcePath('profiles/player_tired.png'),
+    wrong: resolveResourcePath('profiles/player_wrong.png'),
+    money: resolveResourcePath('profiles/player_money.png'),
+    goal_unlocked: resolveResourcePath('profiles/player_goal_unlocked.png'),
+    level_up: resolveResourcePath('profiles/player_level_up.png')
   },
   farmer: {
-    neutral: 'resources/profiles/farmer_chad.png',
-    excited: 'resources/profiles/farmer_chad.png',
-    watering: 'resources/profiles/farmer_chad.png',
-    produce: 'resources/profiles/farmer_chad_produce.png'
+    neutral: resolveResourcePath('profiles/farmer_chad.png'),
+    excited: resolveResourcePath('profiles/farmer_chad.png'),
+    watering: resolveResourcePath('profiles/farmer_chad.png'),
+    produce: resolveResourcePath('profiles/farmer_chad_produce.png')
   },
   merchant: {
-    neutral: 'resources/profiles/merchant.png',
-    excited: 'resources/profiles/merchant.png'
+    neutral: resolveResourcePath('profiles/merchant.png'),
+    excited: resolveResourcePath('profiles/merchant.png')
   }
 };
 

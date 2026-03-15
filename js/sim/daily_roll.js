@@ -1,3 +1,4 @@
+import { getCropAdjustedShockPercent } from './crop_identity.js';
 export function getFatigueFromEnergyState(state) {
   const energyMax = Math.max(1, Number(state.player?.energyMax) || 1);
   const energy = Math.max(0, Math.min(energyMax, Number(state.player?.energy) || 0));
@@ -93,12 +94,13 @@ export function generateDailyMarketRollState(deps) {
     const baseMagnitude = Number.isFinite(fixedImpact)
       ? Math.max(0, fixedImpact)
       : (6 + Math.floor(Math.random() * 8));
+    const impactPct = getCropAdjustedShockPercent(target, sign * baseMagnitude);
     const story = getRollStoryForItem(target.name, defaultNewsEvents);
     picks.push({
       itemId: target.id,
       itemName: target.name,
       harvestImage: getHarvestImagePath(target),
-      impactPct: sign * baseMagnitude,
+      impactPct,
       storyHeadline: story.headline,
       storyBody: story.article,
       stackCount: 1,

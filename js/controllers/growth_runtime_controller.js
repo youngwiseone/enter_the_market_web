@@ -4,6 +4,7 @@ import {
   transformRarityWeightsForQualityFertiliser
 } from './fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
+import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 export function createGrowthRuntimeController(deps) {
   const {
@@ -69,7 +70,7 @@ export function createGrowthRuntimeController(deps) {
     const normalized = normalizeRarity(rarity);
     if (normalized !== 'rare' && normalized !== 'mythic') return;
     const rarityLabel = normalized.charAt(0).toUpperCase() + normalized.slice(1);
-    const multiplier = getRarityMultiplier(normalized);
+    const multiplier = getCropAdjustedRarityMultiplier(item, normalized, getRarityMultiplier);
     const multiplierLabel = Number.isInteger(multiplier) ? String(multiplier) : multiplier.toFixed(2);
     const basePrice = getItemCurrentPrice(item.id);
     addMessage({

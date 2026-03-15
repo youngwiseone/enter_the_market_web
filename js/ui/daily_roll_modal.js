@@ -1,3 +1,5 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
+
 function createDailyRollSlotNode(item, extraClass = '') {
   const slot = document.createElement('div');
   slot.className = `daily-roll-reel-slot ${extraClass}`.trim();
@@ -18,7 +20,10 @@ function triggerDailyRollLandingEffects(reelEl, reduceMotion, hitCount = 1) {
     reelEl.classList.add('duplicate-hit');
     reelEl.addEventListener('animationend', () => reelEl.classList.remove('duplicate-hit'), { once: true });
   }
-  const sparkImages = ['resources/effects/sparkle_gold_01.png', 'resources/effects/sparkle_gold_02.png'];
+  const sparkImages = [
+    resolveResourcePath('effects/sparkle_gold_01.png'),
+    resolveResourcePath('effects/sparkle_gold_02.png')
+  ];
   const baseSparkCount = reduceMotion ? 4 : 8;
   const sparkCount = baseSparkCount + Math.max(0, Math.min(8, (Math.max(1, Number(hitCount) || 1) - 1) * 2));
   for (let i = 0; i < sparkCount; i += 1) {

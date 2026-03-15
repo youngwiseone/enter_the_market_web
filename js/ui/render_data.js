@@ -1,5 +1,5 @@
 import { isProduceItem } from '../content/item_types.js';
-import { getHarvestImagePath } from '../content/resource_paths.js';
+import { getHarvestImagePath, resolveResourcePath } from '../content/resource_paths.js';
 
 const GRAPH_WINDOW_OPTIONS = [
   { id: '7', label: '7d', days: 7 },
@@ -23,7 +23,7 @@ const SERIES_COLORS = [
 ];
 
 const MAX_ACTIVE_PRICE_SERIES = 4;
-const CASH_ICON_PATH = 'resources/effects/coin_particle_01.png';
+const CASH_ICON_PATH = resolveResourcePath('effects/coin_particle_01.png');
 
 let activeGraphWindow = '30';
 let activeDataGroup = 'total';

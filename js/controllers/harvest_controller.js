@@ -1,6 +1,7 @@
 import { emitSellFxAction } from './sell_fx_controller.js';
 import { runSellSequenceAction } from './sell_sequence_controller.js';
 import { isProduceItem } from '../content/item_types.js';
+import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 export async function sellSelectedGridItemAction(deps) {
   const {
@@ -194,7 +195,7 @@ export async function harvestPlantAction(deps) {
     ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
     : 0;
   const rarity = isProduce ? (getGridRarity(cellIndex) || assignGridRarity(cellIndex)) : null;
-  const multiplier = isProduce ? getRarityMultiplier(rarity) : 0.8;
+  const multiplier = isProduce ? getCropAdjustedRarityMultiplier(item, rarity, getRarityMultiplier) : 0.8;
   const saleValue = isProduce
     ? (basePrice * multiplier * getActiveFarmSellMultiplier())
     : ((buyPrice > 0 ? buyPrice : basePrice) * 0.8);

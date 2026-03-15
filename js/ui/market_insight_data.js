@@ -2,6 +2,7 @@ import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.
 import { getRefillableTankState, getSprinklerPlacementConfig } from '../controllers/watering_infrastructure.js';
 import { getPlantFertiliserEffectsSummary } from '../controllers/fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
+import { getCropAdjustedRarityMultiplier, getCropIdentity, getCropIdentityLabels, getExpectedCropRarityMultiplier } from '../sim/crop_identity.js';
 
 export function getSelectedShopItemInsightDataAction(deps) {
   const {
@@ -49,8 +50,10 @@ export function getSelectedShopItemInsightDataAction(deps) {
   const buyPrice = Math.max(0, Number(shopEntry.price) || 0);
   const freeCount = getFreePurchaseCount(selectedShopItemId);
   const effectiveCost = freeCount > 0 ? 0 : buyPrice;
-  const expectedSale = buyPrice * expectedRarityMultiplier;
-  const guaranteedSale = buyPrice * (rarityMultipliers.common || 1);
+  const cropExpectedRarityMultiplier = getExpectedCropRarityMultiplier(item, (rarity) => rarityMultipliers[rarity] || 1, RARITY_ROLLS);
+  const guaranteedMultiplier = getCropAdjustedRarityMultiplier(item, 'common', (rarity) => rarityMultipliers[rarity] || 1);
+  const expectedSale = buyPrice * cropExpectedRarityMultiplier;
+  const guaranteedSale = buyPrice * guaranteedMultiplier;
   const projectedDelta = expectedSale - effectiveCost;
   const guaranteedDelta = guaranteedSale - effectiveCost;
   const marginPct = effectiveCost > 0 ? ((projectedDelta / effectiveCost) * 100) : 0;
@@ -58,6 +61,8 @@ export function getSelectedShopItemInsightDataAction(deps) {
     isProduce: true,
     tableKey,
     itemName: item.name,
+    identityLabels: getCropIdentityLabels(item),
+    identitySummary: getCropIdentity(item).identitySummary,
     buyPrice,
     effectiveCost,
     freeCount,
@@ -124,7 +129,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
   if (!shopEntry) return null;
   const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
   const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
-  const sellMultiplier = growth.isGrown ? getRarityMultiplier(rarity || 'common') : 0;
+  const sellMultiplier = growth.isGrown ? getCropAdjustedRarityMultiplier(item, rarity || 'common', getRarityMultiplier) : 0;
   const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier * getActiveFarmSellMultiplier()) : 0;
   const profitNow = sellNow - buyPrice;
   const fertiliserSummary = getPlantFertiliserEffectsSummary(state, item, selectedGridCellIndex, RARITY_ROLLS);
@@ -133,6 +138,8 @@ export function getSelectedGridItemInsightDataAction(deps) {
     isProduce: true,
     tableKey,
     itemName: item.name,
+    identityLabels: getCropIdentityLabels(item),
+    identitySummary: getCropIdentity(item).identitySummary,
     buyPrice,
     currentBasePrice,
     rarity,

@@ -3426,7 +3426,7 @@
         <div id="hud-profile-panel" class="panel">
             <div id="profile-message-bubble" class="profile-message-bubble is-hidden"></div>
             <div id="mobile-profile-row">
-                <img id="chat-profile" class="hud-profile-avatar" src="resources/profiles/player.png" alt="player neutral">
+                <img id="chat-profile" class="hud-profile-avatar" data-versioned-src="resources/profiles/player.png" alt="player neutral">
                 <div id="mobile-profile-side">
                     <div class="profile-energy-info">
                         <div class="profile-section-label">Energy</div>
@@ -3458,13 +3458,13 @@
                 <div id="desktop-chat-log" aria-live="polite"></div>
                 <div class="farm-toolbar" aria-label="Farm tools">
                     <button class="tool-button active" data-tool="glove" title="Gloves">
-                        <img src="resources/tools/glove.png" alt="Gloves">
+                        <img data-versioned-src="resources/tools/glove.png" alt="Gloves">
                     </button>
                     <button class="tool-button" data-tool="watering" title="Watering can">
-                        <img src="resources/tools/watering_can.png" alt="Watering can">
+                        <img data-versioned-src="resources/tools/watering_can.png" alt="Watering can">
                     </button>
                     <button class="tool-button" data-tool="pickaxe" title="Pickaxe">
-                        <img src="resources/tools/pickaxe.png" alt="Pickaxe">
+                        <img data-versioned-src="resources/tools/pickaxe.png" alt="Pickaxe">
                     </button>
                     <button id="farm-toggle-button" class="tool-button tool-button-farm" title="Farm 2">
                         <span class="tool-label">Farm 2</span>
@@ -3532,9 +3532,9 @@
     <div id="goal-celebration-modal" class="goal-celebration-modal" aria-hidden="true">
         <div id="goal-celebration-sparkles" class="goal-celebration-sparkles" aria-hidden="true"></div>
         <div id="goal-celebration-panel" class="panel goal-celebration-panel" role="dialog" aria-labelledby="goal-celebration-title" aria-modal="true">
-            <img id="goal-celebration-image" class="goal-celebration-image" src="resources/profiles/player_goal_unlocked.png" alt="Goal unlocked">
+            <img id="goal-celebration-image" class="goal-celebration-image" data-versioned-src="resources/profiles/player_goal_unlocked.png" alt="Goal unlocked">
             <div id="goal-celebration-seed-composite" class="goal-celebration-seed-composite" hidden aria-hidden="true">
-                <img id="goal-celebration-seed-packet" class="goal-celebration-seed-packet-image" src="resources/seeds/seeds.png" alt="Unlocked seed packet">
+                <img id="goal-celebration-seed-packet" class="goal-celebration-seed-packet-image" data-versioned-src="resources/seeds/seeds.png" alt="Unlocked seed packet">
                 <img id="goal-celebration-seed-icon" class="goal-celebration-seed-icon-image" src="" alt="Unlocked item icon">
             </div>
             <h2 id="goal-celebration-title" class="goal-celebration-title">Goal Unlocked</h2>
@@ -3607,7 +3607,15 @@
     <!-- Update the version query string when modifying main.js to prevent browser caching -->
     <!-- Bump the version number each time main.js changes to ensure browsers reload the script -->
     <!-- Load the game logic. Update the version query string whenever main.js changes to ensure the latest file is fetched. -->
-    <script type="module" src="main.js?v=77"></script>
+    <script>
+        window.ETM_IMAGE_VERSION = '1';
+        document.querySelectorAll('img[data-versioned-src]').forEach((image) => {
+            const src = image.getAttribute('data-versioned-src');
+            if (!src) return;
+            image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
+        });
+    </script>
+    <script type="module" src="main.js?v=78"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

@@ -46,6 +46,14 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
     assignIfMissing('type');
     assignIfMissing('table_key');
     assignIfMissing('image');
+    assignIfMissing('cycleDays');
+    assignIfMissing('cycleOffsets');
+    assignIfMissing('cycleFamily');
+    assignIfMissing('noiseLevel');
+    assignIfMissing('shockSensitivity');
+    assignIfMissing('rarityProfile');
+    assignIfMissing('weatherSensitivity');
+    assignIfMissing('identitySummary');
     // Prices are canonical content data (shop economy uses state.shop for produce,
     // but utility/fixed-price purchases read item.price directly). Sync saved items
     // to current content pricing so balance updates apply to existing saves.

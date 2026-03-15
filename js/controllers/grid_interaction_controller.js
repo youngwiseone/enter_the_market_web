@@ -6,6 +6,7 @@ import {
 } from '../content/item_types.js';
 import { getRefillableTankState } from './watering_infrastructure.js';
 import { isFertiliserItem } from './fertiliser_controller.js';
+import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 function getBulkSelectionGroupKey(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return '';

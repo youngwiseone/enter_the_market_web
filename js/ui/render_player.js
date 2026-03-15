@@ -1,20 +1,22 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
+
 function getHudWeatherVisual(state) {
   const weatherId = String(state?.weather?.id || '').trim().toLowerCase();
   const nextWeatherId = String(state?.nextDayWeather?.id || '').trim().toLowerCase();
   if (weatherId === 'rain') {
     return {
-      src: 'resources/weather/rainy.png',
+      src: resolveResourcePath('weather/rainy.png'),
       alt: 'Rainy today'
     };
   }
   if (nextWeatherId === 'rain') {
     return {
-      src: 'resources/weather/cloudy.png',
+      src: resolveResourcePath('weather/cloudy.png'),
       alt: 'Cloudy, rain likely tomorrow'
     };
   }
   return {
-    src: 'resources/weather/sunny.png',
+    src: resolveResourcePath('weather/sunny.png'),
     alt: 'Sunny today'
   };
 }

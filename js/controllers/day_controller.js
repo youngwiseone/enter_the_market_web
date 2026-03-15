@@ -1,6 +1,7 @@
 import { WEATHER_IDS, rollWeatherId, normalizeWeatherId } from '../sim/weather.js';
 import { isProduceItem } from '../content/item_types.js';
 import { buildItemsByIdMap } from '../content/item_index.js';
+import { getCropCycleAnchorPrice } from '../sim/crop_identity.js';
 import { applyDawnSprinklersToFarm, refillSprinklersForRainToFull } from './watering_infrastructure.js';
 
 const ROLL_MEAN_REVERSION_DAYS = 3;
@@ -261,25 +262,16 @@ export function nextDayAction(deps) {
     ensureShopEntryMarketFields(entry);
     entry.priceSum = (entry.priceSum || 0) + entry.price;
     entry.daysCount = (entry.daysCount || 0) + 1;
+    const item = state.items.find((it) => it.id === entry.itemId);
+    if (!item || !isProduceItem(item)) return;
+    entry.price = getCropCycleAnchorPrice(item, state.player.day, state.weather?.id);
+    entry.priceRecoveryDaysRemaining = 0;
+    entry.priceRecoveryTarget = null;
   });
   applyDailyMarketRollToShop(dailyRoll);
-  const rolledItemIds = dailyRoll && dailyRoll.byItem instanceof Map
-    ? new Set(dailyRoll.byItem.keys())
-    : new Set();
   state.shop.forEach((entry) => {
     ensureShopEntryMarketFields(entry);
     if (!isShopItemUnlocked(entry.itemId)) return;
-    const item = state.items.find((it) => it.id === entry.itemId);
-    const basePrice = Math.max(0.01, Number(item?.price) || Number(entry.price) || 0.01);
-    if (rolledItemIds.has(entry.itemId)) {
-      entry.priceRecoveryTarget = basePrice;
-      entry.priceRecoveryDaysRemaining = ROLL_MEAN_REVERSION_DAYS;
-      entry.price = Math.max(0.01, Number(entry.price) || 0.01);
-      return;
-    }
-    if (isShopEntryPriceRecoveryActive(entry)) {
-      applyShopEntryPriceRecoveryStep(entry);
-    }
     entry.price = Math.max(0.01, Number(entry.price) || 0.01);
   });
 

@@ -1,3 +1,4 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
 import { getItemBehavior } from '../content/item_types.js';
 
 export function updateFarmToggleButtonAction(deps) {
@@ -216,11 +217,11 @@ export function updateCursorForToolAction(deps) {
       : null;
     const behavior = selectedGridItem ? getItemBehavior(selectedGridItem) : null;
     const cursorFallback = behavior && behavior.wateringMode === 'refillable' ? 'copy' : 'pointer';
-    setBodyCursor(`url('resources/tools/watering_can.png') 12 12, ${cursorFallback}`);
+    setBodyCursor(`url('${resolveResourcePath('tools/watering_can.png')}') 12 12, ${cursorFallback}`);
     return;
   }
   if (state.activeTool === TOOL_PICKAXE) {
-    setBodyCursor("url('resources/tools/pickaxe.png') 12 12, pointer");
+    setBodyCursor(`url('${resolveResourcePath('tools/pickaxe.png')}') 12 12, pointer`);
     return;
   }
   if (selectedShopItemId) {

@@ -1,16 +1,18 @@
+import { resolveResourcePath } from '../content/resource_paths.js';
+
 const GOAL_CELEBRATION_SPARKLE_IMAGES = [
-  'resources/effects/sparkle_gold_01.png',
-  'resources/effects/sparkle_gold_02.png',
-  'resources/effects/prism_sparkle_01.png',
-  'resources/effects/prism_sparkle_02.png'
+  resolveResourcePath('effects/sparkle_gold_01.png'),
+  resolveResourcePath('effects/sparkle_gold_02.png'),
+  resolveResourcePath('effects/prism_sparkle_01.png'),
+  resolveResourcePath('effects/prism_sparkle_02.png')
 ];
 const GOAL_CELEBRATION_ICON_BURST_IMAGES = [
-  'resources/effects/sparkle_gold_01.png',
-  'resources/effects/sparkle_gold_02.png',
-  'resources/effects/prism_sparkle_01.png',
-  'resources/effects/prism_sparkle_02.png',
-  'resources/effects/dust_puff_01.png',
-  'resources/effects/dust_puff_02.png'
+  resolveResourcePath('effects/sparkle_gold_01.png'),
+  resolveResourcePath('effects/sparkle_gold_02.png'),
+  resolveResourcePath('effects/prism_sparkle_01.png'),
+  resolveResourcePath('effects/prism_sparkle_02.png'),
+  resolveResourcePath('effects/dust_puff_01.png'),
+  resolveResourcePath('effects/dust_puff_02.png')
 ];
 
 export function createGoalCelebrationController(deps) {
@@ -218,7 +220,7 @@ export function createGoalCelebrationController(deps) {
           : (-26 - (Math.random() * 56)),
         rot: (Math.random() - 0.5) * 260,
         imagePool: isDust
-          ? ['resources/effects/dust_puff_01.png', 'resources/effects/dust_puff_02.png']
+          ? [resolveResourcePath('effects/dust_puff_01.png'), resolveResourcePath('effects/dust_puff_02.png')]
           : GOAL_CELEBRATION_ICON_BURST_IMAGES,
         isIconBurst: true,
         isAmbient: false
@@ -330,7 +332,7 @@ export function createGoalCelebrationController(deps) {
     }
     if (imageEl && !hasSeedUnlockImages) {
       imageEl.hidden = false;
-      imageEl.src = next.imageSrc || 'resources/profiles/player_goal_unlocked.png';
+      imageEl.src = next.imageSrc || resolveResourcePath('profiles/player_goal_unlocked.png');
       imageEl.alt = next.imageAlt || 'Goal unlocked';
     } else if (imageEl) {
       imageEl.hidden = true;
@@ -376,7 +378,7 @@ export function createGoalCelebrationController(deps) {
       id: goal.id || '',
       title: goal.name || 'Goal Complete',
       rewardText: getGoalCelebrationRewardText(goal),
-      imageSrc: 'resources/profiles/player_goal_unlocked.png',
+      imageSrc: resolveResourcePath('profiles/player_goal_unlocked.png'),
       imageAlt: 'Goal unlocked'
     });
     showNextGoalCelebration();

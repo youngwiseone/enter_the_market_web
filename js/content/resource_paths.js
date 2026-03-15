@@ -1,3 +1,5 @@
+import { appendAssetVersion } from './asset_versions.js';
+
 export function resolveResourcePath(assetPath) {
   if (typeof assetPath !== 'string') return '';
   const trimmedPath = assetPath.trim();
@@ -9,9 +11,9 @@ export function resolveResourcePath(assetPath) {
     || trimmedPath.startsWith('https://')
     || trimmedPath.startsWith('resources/')
   ) {
-    return trimmedPath;
+    return appendAssetVersion(trimmedPath);
   }
-  return `resources/${trimmedPath.replace(/^\/+/, '')}`;
+  return appendAssetVersion(`resources/${trimmedPath.replace(/^\/+/, '')}`);
 }
 
 function mapLegacyProduceItemPath(assetPath, item) {
