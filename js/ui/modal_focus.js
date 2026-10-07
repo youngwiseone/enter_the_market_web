@@ -6,7 +6,7 @@ export function setModalVisible(modal, open) {
   modal.setAttribute('aria-hidden', open ? 'false' : 'true');
   if (open) {
     const target = modal.querySelector('button:not(:disabled), input, [tabindex]') || modal.querySelector('[role="dialog"]');
-    if (target) { if (!target.hasAttribute('tabindex') && target.tagName !== 'BUTTON') target.tabIndex = -1; target.focus(); }
+    if (target) { if (!target.hasAttribute('tabindex') && !['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A'].includes(target.tagName)) target.tabIndex = -1; target.focus(); }
   } else {
     const target = returnTargets.get(modal);
     if (target?.isConnected && target.offsetParent && !target.disabled) target.focus();

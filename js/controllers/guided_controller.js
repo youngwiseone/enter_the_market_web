@@ -1,3 +1,4 @@
+import { isPlantWateredForDay } from './fertiliser_controller.js';
 export function countPlantedTilesAction(state) {
   if (!Array.isArray(state.gridItems)) return 0;
   return state.gridItems.reduce((sum, itemId) => sum + (itemId ? 1 : 0), 0);
@@ -7,7 +8,7 @@ export function getPrimaryGuidedStateAction(deps) {
   const { state, selectedShopItemId, GUIDED_FLAGS, countPlantedTiles } = deps;
   const plantedTiles = countPlantedTiles();
   const harvested = Math.max(0, Number(state.goalStats?.harvestCount) || 0);
-  const hasSelection = !!selectedShopItemId || !!state.goalFlags?.[GUIDED_FLAGS.selected];
+  const hasSelection = !!selectedShopItemId || plantedTiles > 0 || harvested > 0 || !!state.goalFlags?.[GUIDED_FLAGS.selected];
   return {
     plantedTiles,
     harvested,
@@ -103,22 +104,26 @@ function getAveragePrice(entry) {
   return Number(entry.priceSum) / Number(entry.daysCount);
 }
 
-function getBestSellSignal(state, isShopItemUnlocked) {
+export function getBestReadySellSignal(state, getGridCellSellSnapshot) {
   let best = null;
-  let bestDiff = 0;
-  if (!Array.isArray(state.shop)) return null;
-  state.shop.forEach((entry) => {
-    if (!entry || !isShopItemUnlocked(entry.itemId)) return;
+  if (!Array.isArray(state.gridItems) || typeof getGridCellSellSnapshot !== 'function') return null;
+  state.gridItems.forEach((itemId, cellIndex) => {
+    if (!itemId) return;
+    const snapshot = getGridCellSellSnapshot(cellIndex);
+    if (!snapshot?.isProduce) return;
+    const entry = state.shop?.find((candidate) => candidate.itemId === itemId);
     const avg = getAveragePrice(entry);
     if (avg <= 0) return;
     const diff = ((Number(entry.price) || 0) - avg) / avg;
-    if (diff <= bestDiff) return;
+    if (best && diff <= best.premiumPct / 100) return;
     const item = Array.isArray(state.items) ? state.items.find((it) => it?.id === entry.itemId) : null;
     if (!item) return;
-    bestDiff = diff;
     best = {
       itemName: item.name,
-      premiumPct: diff * 100
+      premiumPct: diff * 100,
+      farmId: state.activeFarmId || 1,
+      cellIndex,
+      saleValue: snapshot.sellNow
     };
   });
   return best && best.premiumPct >= 5 ? best : null;
@@ -141,7 +146,8 @@ export function getGuidancePayloadAction(deps) {
     getPrimaryGuidedState,
     countReadyToHarvestTiles,
     getBestBuyOpportunity,
-    isShopItemUnlocked
+    isShopItemUnlocked,
+    getGridCellSellSnapshot
   } = deps;
 
   const opening = state.player?.openingTrade;
@@ -155,7 +161,7 @@ export function getGuidancePayloadAction(deps) {
       const index = state.gridItems?.findIndex(Boolean) ?? -1;
       if (index < 0) return { objective: 'Plant your first carrot', hint: opening.carrotAvailable ? 'Market → Carrot → cleared soil. First crop: 2 watered days.' : 'Plant again → 6 watered days. Compare prices before selling.', progressText: 'Plant', chipClass: '' };
       const ready = countReadyToHarvestTiles() > 0;
-      const watered = state.gridWateredDay?.[index] === state.player.day;
+      const watered = isPlantWateredForDay(state, index);
       return { objective: ready ? 'Inspect today’s price: sell or wait' : watered ? 'Rest to grow and see new prices' : 'Water your carrot', hint: ready ? 'Tap crop → compare price. Hold = tile stays occupied.' : watered ? 'Rest → growth + new prices.' : 'Water → tap crop. Once per day.', progressText: ready ? 'Sell or wait' : watered ? 'Rest' : 'Water', chipClass: '' };
     }
   }
@@ -163,7 +169,7 @@ export function getGuidancePayloadAction(deps) {
   const energy = Number(state.player?.energy) || 0;
   const readyTiles = Math.max(0, Number(countReadyToHarvestTiles()) || 0);
   const rollPreview = getRollStrengthPreview(state);
-  const bestSell = getBestSellSignal(state, isShopItemUnlocked);
+  const bestSell = getBestReadySellSignal(state, getGridCellSellSnapshot);
   const nextWeatherId = String(state.nextDayWeather?.id || '').trim().toLowerCase();
   if (!state.goalFlags?.[GUIDED_FLAGS.selected]) {
     return {
@@ -185,7 +191,7 @@ export function getGuidancePayloadAction(deps) {
     if (readyTiles > 0) {
       return {
         objective: 'Harvest your first crop',
-        hint: 'Tap the ready crop tile to cash out.',
+        hint: 'Tap the ready crop to inspect its price, then choose Sell or hold it for another day.',
         progressText: `${Math.min(1, guided.harvested)}/1`,
         chipClass: ''
       };
@@ -201,7 +207,7 @@ export function getGuidancePayloadAction(deps) {
     return {
       objective: 'Choose: sell today or hold for another price',
       hint: bestSell
-        ? `${bestSell.itemName} is about ${bestSell.premiumPct.toFixed(0)}% above average. Sell into strength while today lasts.`
+        ? `Your ready ${bestSell.itemName} on Farm ${bestSell.farmId} is about ${bestSell.premiumPct.toFixed(0)}% above average. Sell today or hold for an uncertain next price.`
         : `You have ${readyTiles} ready crop${readyTiles === 1 ? '' : 's'} that can be sold at today's prices.`,
       progressText: `${readyTiles} ready`,
       chipClass: ''
@@ -237,14 +243,6 @@ export function getGuidancePayloadAction(deps) {
       chipClass: ''
     };
   }
-  if (energy > 0 && rollPreview.strengthPct < 8) {
-    return {
-      objective: 'Charge a stronger tomorrow roll',
-      hint: `You have ${energy} energy left and only ${rollPreview.strengthPct}% roll strength banked. One more action can improve tomorrow's move.`,
-      progressText: `Roll ${rollPreview.strengthPct}%`,
-      chipClass: 'warn'
-    };
-  }
   if (energy <= 1) {
     return {
       objective: 'Keep momentum',
@@ -257,7 +255,7 @@ export function getGuidancePayloadAction(deps) {
   if (bestBuy) {
     return {
       objective: 'Play the best value move',
-      hint: `Buy ${bestBuy.itemName}: about ${bestBuy.discountPct.toFixed(0)}% below average.`,
+      hint: `Seed buying opportunity: ${bestBuy.itemName} is about ${bestBuy.discountPct.toFixed(0)}% below average. Harvest prices may change.`,
       progressText: 'Value',
       chipClass: ''
     };
@@ -272,7 +270,7 @@ export function getGuidancePayloadAction(deps) {
   }
   return {
     objective: 'Keep the loop going',
-    hint: 'Plant into discounts, spend energy to shape tomorrow\'s roll, then rest for new market shifts.',
+    hint: 'Plant into discounts and hold for useful prices. Leaving energy unused keeps the extra market roll calmer; ordinary prices can still move.',
     progressText: `Roll ${rollPreview.strengthPct}%`,
     chipClass: ''
   };

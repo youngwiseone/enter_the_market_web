@@ -1,5 +1,6 @@
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
+import { XP_REWARDS } from '../sim/constants.js';
 
 const GOAL_CELEBRATION_SPARKLE_IMAGES = [
   resolveResourcePath('effects/sparkle_gold_01.png'),
@@ -100,7 +101,9 @@ export function createGoalCelebrationController(deps) {
       parts.push(`Unlocked cosmetic: ${cosmetic ? cosmetic.name : reward.grantCosmetic}`);
     }
     if (typeof reward.setFlag === 'string' && reward.setFlag) {
-      parts.push('Unlocked: New feature');
+      parts.push(reward.setFlag === 'market_timing_achieved'
+        ? `Achievement earned: +${XP_REWARDS.goal} XP`
+        : 'Unlocked: New feature');
     }
     if (parts.length > 0) return parts.join(' | ');
     const fallback = (goal.message || '').replace(/^Goal complete:\s*/i, '').trim();

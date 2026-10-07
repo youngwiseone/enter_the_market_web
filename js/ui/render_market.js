@@ -1,6 +1,7 @@
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 import { getRefillableTankState } from '../controllers/watering_infrastructure.js';
+import { isPlantWateredForDay } from '../controllers/fertiliser_controller.js';
 import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 const MARKET_SORT_KEYS = Object.freeze({
@@ -347,7 +348,7 @@ function renderUtilityMarketTable(tableHost, deps) {
   } = deps;
   const hint = document.createElement('div');
   hint.className = 'market-subtable-note';
-  hint.textContent = 'Utilities use fixed prices (no market roll). Fertilisers apply to planted crops; sprinklers place on grid. Resale is 80%.';
+  hint.textContent = 'Fixed prices. Fertilisers are consumed on crops; sprinklers water nearby crops at dawn and resell for 80%.';
   tableHost.appendChild(hint);
 
   const utilities = Array.isArray(state.items)
@@ -892,10 +893,11 @@ export function renderMarketAction(deps) {
           if (!growth.isGrown && Number(state.gridWateredCount?.[i] || 0) === 0) cell.classList.add('crop-seeded');
           const status = document.createElement('span');
           status.className = 'crop-state';
-          const watered = state.gridWateredDay?.[i] === state.player.day;
+          const watered = isPlantWateredForDay(state, i);
           status.textContent = growth.isGrown ? '✓' : `${growth.daysLeft}d`;
           if (watered && !growth.isGrown) status.classList.add('is-watered');
-          status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left${watered ? '; watered today' : '; needs water today'}`;
+          const moistureLabel = state.gridWateredDay?.[i] === state.player.day ? 'watered today' : 'retained moisture today';
+          status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left; ${watered ? moistureLabel : 'needs water today'}`;
           status.setAttribute('aria-label', status.title);
           cell.appendChild(status);
           if (growth.isGrown && !getGridRarity(i)) cell.classList.add('crop-just-ready');

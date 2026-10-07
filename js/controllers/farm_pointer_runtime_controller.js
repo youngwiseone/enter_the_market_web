@@ -57,7 +57,7 @@ export function createFarmPointerRuntimeController(deps) {
   let farmPointerHandlersInstalled = false;
 
   function isFarmActionBlocked() {
-    return isDailyRollOpen() || isGoalCelebrationOpen() || isDaySummaryOpen();
+    return !!state.runtimeFlags?.isSellBatchInFlight || !!state.runtimeFlags?.isRestInProgress || isDailyRollOpen() || isGoalCelebrationOpen() || isDaySummaryOpen();
   }
 
   function getGridIndexFromPointerEvent(event) {
@@ -141,6 +141,9 @@ export function createFarmPointerRuntimeController(deps) {
   function installFarmPointerHandlers() {
     if (farmPointerHandlersInstalled) return;
     const installed = installFarmPointerHandlersAction({
+      state,
+      getSelectedShopItemId,
+      getSelectedGridCellIndex,
       isFarmActionBlocked,
       getGridIndexFromPointerEvent,
       farmPointerState,

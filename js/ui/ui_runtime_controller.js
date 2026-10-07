@@ -106,6 +106,7 @@ export function createUiRuntimeController(deps) {
       formatPlaytime: deps.formatPlaytime,
       getAlwaysShowGridItemInfo: deps.getAlwaysShowGridItemInfo,
       setAlwaysShowGridItemInfo: deps.setAlwaysShowGridItemInfo,
+      startTradingChallenge: deps.startTradingChallenge,
       rerender: renderGoals
     });
   }

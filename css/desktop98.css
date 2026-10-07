@@ -479,3 +479,43 @@ body.mobile-layout #next-day[data-buy-mode-override='true']::before { content: '
 #grid .grid-cell.plant-target { outline: 2px dashed #fff2c4; outline-offset: -5px; }
 #grid .grid-cell.plant-target::before { content: '+'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff2c4; font-size: 22px; pointer-events: none; }
 #grid .grid-cell.crop-seeded::before { content: ''; position: absolute; width: 3px; height: 3px; left: 35%; top: 40%; background: #efdb9e; box-shadow: 8px 4px #efdb9e, 3px 11px #efdb9e; pointer-events: none; }
+
+/* The farm keeps the same geometry as contextual information changes. */
+body:not(.mobile-layout) #market-layout { grid-template-columns: 120px minmax(280px, 1fr) minmax(280px, 1fr); }
+body:not(.mobile-layout) #farm-panel { max-height: 100%; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; }
+body:not(.mobile-layout) #grid-container { margin: 0 auto; flex-shrink: 0; }
+body:not(.mobile-layout) #market-header { max-height: 58%; overflow-y: auto; flex-shrink: 0; }
+#market-table-container { flex: 1 1 auto; min-height: 0; }
+.next-unlock-preview { margin: 8px 0; padding: 9px; border: 1px solid var(--theme-border); border-left: 3px solid var(--theme-accent); background: var(--theme-table-odd); font-size: 12px; line-height: 1.5; }
+.next-unlock-preview p { margin: 5px 0; }
+.trading-challenge summary { min-height: 30px; cursor: pointer; }
+#farm-gesture-hint { margin: 5px 0 0; min-height: 32px; color: var(--theme-text-muted); font-size: 11px; line-height: 1.4; display: flex; align-items: center; gap: 8px; }
+#farm-gesture-hint button { min-width: 32px; min-height: 32px; margin-left: auto; }
+#farm-gesture-hint:empty { visibility: hidden; }
+body.mobile-layout { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+body.mobile-layout #market-layout { height: auto; flex: 0 0 auto; overflow: visible; }
+body.mobile-layout #farm-panel { overflow: visible; flex: 0 0 auto; }
+body.mobile-layout #grid-container { flex-shrink: 0; }
+body.mobile-layout #guidance-panel { order: 6; }
+body.mobile-layout #sale-receipt { order: 7; }
+body.mobile-layout #farm-gesture-hint { order: 5; }
+body.mobile-layout #market { height: auto; min-height: 260px; overflow: visible; flex: 0 0 auto; }
+body.mobile-layout #market-table-container,
+body.mobile-layout #goals-panel,
+body.mobile-layout #data-panel { overflow: visible; max-height: none; flex: 0 0 auto; }
+/* Sale and Rest share one stable row above the tabs. */
+body.mobile-layout:has(#farm-action-dock.is-visible) #rest-dock { right: calc(59% + var(--safe-right)); }
+body.mobile-layout #farm-action-dock { left: 43%; right: calc(8px + var(--safe-right)); bottom: calc(8px + var(--safe-bottom) + var(--bottom-bar-height)); }
+body.mobile-layout #farm-action-button { font-size: 11px; line-height: 1.25; padding: 5px 7px; }
+body.mobile-layout #farm-action-button:disabled { opacity: 1; background: var(--theme-surface); color: var(--theme-text-muted); }
+body.mobile-layout .daily-roll-panel, .goal-celebration-panel, .day-summary-panel { max-height: calc(100dvh - 24px); overflow-y: auto; box-sizing: border-box; }
+.daily-roll-quick-option { display: flex; align-items: center; gap: 6px; margin: 8px 0; font-size: 12px; cursor: pointer; }
+.daily-roll-quick-option input[type='checkbox'] { position: static; opacity: 1; appearance: auto; width: 16px; height: 16px; margin: 0; }
+.daily-roll-modal.is-compact .daily-roll-reels { display: none; }
+.daily-roll-modal.is-compact .daily-roll-fatigue-note { margin-bottom: 8px; }
+@media (max-height: 500px) {
+  body:not(.mobile-layout) { height: auto; overflow-y: auto; }
+  body:not(.mobile-layout) #market-layout { height: auto; min-height: 420px; overflow: visible; }
+  body:not(.mobile-layout) #farm-panel { max-height: none; }
+  body:not(.mobile-layout) #market { min-height: 420px; }
+}

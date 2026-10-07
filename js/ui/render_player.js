@@ -86,29 +86,13 @@ function setMobileRestButtonState(deps, selectedItem, priceText) {
   } = deps;
   const restButton = document.getElementById('next-day');
   if (!restButton) return;
-  const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
-  const farmPanel = document.getElementById('farm-panel');
-  const isFarmVisible = !!(farmPanel && window.getComputedStyle(farmPanel).display !== 'none');
-
-  if (selectedItem && isMobileLayout && isFarmVisible) {
-    const itemName = String(selectedItem.name || 'item');
-    const action = String(selectedItem.type || '').toLowerCase() === 'produce' ? 'planting' : 'placement';
-    restButton.textContent = `Cancel ${action} · ${itemName} ${priceText}`;
-    restButton.title = 'Tap to cancel selected item';
-    restButton.onclick = (event) => {
-      if (event) event.preventDefault();
-      if (typeof clearShopSelection === 'function') clearShopSelection();
-    };
-    restButton.dataset.buyModeOverride = 'true';
-    return;
-  }
-
-  if (restButton.dataset.buyModeOverride === 'true') {
-    restButton.textContent = 'Rest';
-    restButton.title = 'Rest';
-    restButton.onclick = typeof nextDay === 'function' ? nextDay : null;
-    delete restButton.dataset.buyModeOverride;
-  }
+  // Rest stays reachable while a seed is selected. Cancel placement uses the
+  // adjacent contextual action instead of changing this button's meaning.
+  restButton.textContent = 'Rest';
+  restButton.disabled = !!deps.state?.runtimeFlags?.isSellBatchInFlight;
+  restButton.title = 'Advance one day, refill energy and update the market';
+  restButton.onclick = typeof nextDay === 'function' ? nextDay : null;
+  delete restButton.dataset.buyModeOverride;
 }
 
 function renderBuyModeHudAction(deps) {
@@ -130,7 +114,7 @@ function renderBuyModeHudAction(deps) {
   const profile = document.getElementById('chat-profile');
 
   if (!selectedItem) {
-    setMobileRestButtonState({ clearShopSelection, nextDay }, null, '$0.00');
+    setMobileRestButtonState({ state, clearShopSelection, nextDay }, null, '$0.00');
     if (profile) {
       profile.classList.remove('buy-mode-avatar');
       if (profile.dataset.buyModeOriginalSrc) {
@@ -150,7 +134,7 @@ function renderBuyModeHudAction(deps) {
     resolveResourcePath,
     getHarvestImagePath
   );
-  setMobileRestButtonState({ clearShopSelection, nextDay }, selectedItem, priceText);
+  setMobileRestButtonState({ state, clearShopSelection, nextDay }, selectedItem, priceText);
 
   if (!profile) return;
   if (!iconPath) {
