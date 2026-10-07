@@ -116,6 +116,21 @@ node js/dev/tests/trading_loop.test.mjs
 
 These cover individual/bulk quote and payment parity, mixed crops, rarity/farm modifiers, save detection, the one-time introductory crop, moves, farm switches and retrying after a loss. Browser playtest evidence is recorded in `guide/trading_loop_playtest.txt`, with screenshots under `guide/playtest/`.
 
+Extended playtest regression checks (Node 22 or newer):
+
+```bash
+node js/dev/tests/sale_safety.test.mjs
+node js/dev/tests/growth_costs.test.mjs
+node js/dev/tests/trading_challenge.test.mjs
+node js/dev/tests/ui_flow.test.mjs
+node js/dev/tests/farm_scenery.test.mjs
+node js/dev/tests/clarity.test.mjs
+```
+
+These exercise exact crop/farm settlement, interrupted rewards, retained growth, treatment accounting, mature Quality rejection, the optional trading challenge, and contextual UI. Migration rules are in `guide/growth_cost_migration.txt`. The extended browser results and before/after images are under `guide/playtest/polish/`.
+
+The optional Market Timing challenge starts explicitly from Goals at Level 5. It counts only paid seeds bought and planted during its 14-day window, subtracts recorded seed and consumable costs when sold, and excludes inherited inventory, free seeds, resale, rewards and Farm 2's extra bonus. Missing historical treatment prices remain unknown; quotes disclose known-cost profit instead of inventing past spending.
+
 Message catalog validation:
 
 ```bash

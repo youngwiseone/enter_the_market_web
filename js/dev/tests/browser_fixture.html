@@ -1,0 +1,51 @@
+<!doctype html><meta charset="utf-8"><title>Isolated playtest fixture</title>
+<h1>Isolated playtest fixture</h1>
+<p>Use only on the disposable localhost playtest ports 8017 and 8018. Existing game saves are never cleared.</p>
+<button id="load">Create legacy two-farm fixture</button>
+<a href="../../../index.html">Play game</a>
+<button id="inspect">Read saved fixture</button><pre id="result"></pre>
+<script type="module">
+import { DEFAULT_DATA } from '../../content/fallbacks/default_data.js';
+import { createEmptyFarmStateForGrid } from '../../state/farm_state.js';
+import { SAVE_EVIDENCE_KEYS } from '../../state/opening_state.js';
+const result = document.getElementById('result');
+const safe = ['8017','8018'].includes(location.port) && location.hostname === '127.0.0.1';
+document.getElementById('load').onclick = async () => {
+  if (!safe || SAVE_EVIDENCE_KEYS.some(key => localStorage.getItem(key) !== null)) {
+    result.textContent = 'Fixture creation refused: this namespace already has a save or is not an isolated test port.';
+    return;
+  }
+  const { items } = await fetch('../../../data/items.json').then(r=>r.json());
+  const { goals } = await fetch('../../../data/goals.json').then(r=>r.json());
+  const farms = {1:createEmptyFarmStateForGrid(49),2:createEmptyFarmStateForGrid(49)};
+  for (const farm of Object.values(farms)) farm.gridUnlocked.fill(true);
+  function plant(farm,index,id,{waters=6,rarity=null,cost=1.35,meta=null}={}) {
+    farm.gridItems[index]=id; farm.gridPlantedDay[index]=1;
+    farm.gridWateredDay[index]=7; farm.gridWateredCount[index]=waters;
+    farm.gridRarity[index]=rarity; farm.gridPurchasePrice[index]=cost; farm.gridPlacedMeta[index]=meta;
+  }
+  // Old retention: one visible growth day left, then rewater on day 9.
+  plant(farms[1],0,6,{waters:4,meta:{fertiliser:{stacks:{waterRetention:1,speedGrow:0,quality:0}}}});
+  // Resolved Quality target and mixed-rarity sale batch with recorded treatment costs.
+  plant(farms[1],1,13,{rarity:'common',cost:1});
+  for(let i=7;i<14;i++) plant(farms[1],i,6,{rarity:['common','uncommon','rare'][i%3],meta:{fertiliser:{stacks:{waterRetention:1},paidCost:10}}});
+  plant(farms[2],7,6,{waters:0,rarity:null,cost:1.5});
+  // Automatic watering for complete low-action crop cycles.
+  for(let i=22;i<27;i++) plant(farms[1],i,6,{waters:0,cost:1.35});
+  const sprinklerId=items.find(it=>it.type==='sprinkler')?.id;
+  if(sprinklerId) plant(farms[1],17,sprinklerId,{waters:0,cost:100,meta:null});
+  const saved={player:{...DEFAULT_DATA.player,cash:1000,day:9,playerLevel:28,energy:32,welcomeShown:true},
+    items,shop:items.map(it=>({itemId:it.id,price:it.id===6?2.49:it.price,priceSum:it.price*8,daysCount:8})),
+    farms,activeFarmId:1,secondFarmPurchased:true,unlockedTools:{glove:true,watering:true,pickaxe:true},
+    goalStats:{harvestCount:20,itemsHarvested:{}},goalFlags:{guidedHarvested:true,has_harvested:true},
+    goalsClaimed:Object.fromEntries(goals.filter(g=>g.id!=='market-timing-challenge').map(g=>[g.id,true])),
+    weather:{id:'clear'},nextDayWeather:{id:'clear'},inventory:[],freePurchasesByItem:{},totalItemsSold:20};
+  Object.entries(saved).forEach(([key,value])=>localStorage.setItem(key,JSON.stringify(value)));
+  result.textContent='Legacy fixture created. Cash $1000; no opening bonus; both farms; mixed-rarity crops; sprinkler.';
+};
+document.getElementById('inspect').onclick=()=>{
+  if(!safe) {result.textContent='Inspection refused outside isolated test ports.';return;}
+  const keys=['player','farms','goalStats','goalsClaimed','totalItemsSold','dayEnergySpent'];
+  result.textContent=JSON.stringify(Object.fromEntries(keys.map(key=>[key,JSON.parse(localStorage.getItem(key))])),null,2);
+};
+</script>
