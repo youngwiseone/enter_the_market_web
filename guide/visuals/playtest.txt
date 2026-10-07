@@ -1,0 +1,24 @@
+Modern remembered Windows 98 visual refresh — 2026-10-07
+
+Warm beveled windows, cobalt headers, quiet pixel countryside, muted soil,
+vermilion sale accent, compact labeled tools and one consistent pixel font.
+Existing cosmetic palettes and farming art remain supported. The growth badge
+uses a days suffix plus a separate watered marker and a visible key.
+Desktop guidance moves beside the market; touch guidance stays above the farm.
+
+Browser testing: local Chromium with Playwright, not a physical phone.
+Desktop: 1280x900 and 1280x720. Touch emulation: 390x844 and 320x640.
+No horizontal overflow; toolbar and legend stay above Rest. The very short
+320x640 viewport necessarily has a smaller board. Main touch controls are 44px.
+Checked default, mono and gold cosmetic palettes and reduced motion.
+Fresh desktop and mobile openings reached sale on Day 3; sale receipt,
+dialog focus, double-submission protection and reload persistence worked.
+Trading-loop automated checks and 95-entry message validation passed.
+No save shape, content IDs, economy or item order changed in this visual pass.
+
+Refinement after inspection: kept desktop market windows compact, removed
+decorative scenery on shorter desktops, corrected modal text contrast and
+applied the same pixel font to every element, control and chart label.
+Added one 71.5KB local WebP; no runtime library or continuous render loop.
+Screenshots in this directory record before and after at the tested sizes.
+No deployment was performed.
