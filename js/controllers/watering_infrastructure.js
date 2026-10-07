@@ -1,4 +1,5 @@
 import { getItemBehavior, isProduceItem } from '../content/item_types.js';
+import { getPlantGrowthProgressWithFertiliser, isPlantWateredForDay, persistRetainedWaterProgress } from './fertiliser_controller.js';
 
 export const SPRINKLER_DEFAULT_CONFIG_BY_LEVEL = Object.freeze({
   1: Object.freeze({ capacity: 4, radius: 1, waterPerCrop: 1, efficiencyLevel: 1 })
@@ -167,12 +168,8 @@ export function refillRefillablePlacedItem({
   };
 }
 
-function isCropGrownForDawn(farm, cellIndex, item) {
-  const growDays = Math.max(0, Number(item?.growDays) || 0);
-  if (growDays <= 0) return true;
-  if (!Array.isArray(farm.gridWateredCount)) return false;
-  const watered = Math.max(0, Number(farm.gridWateredCount[cellIndex]) || 0);
-  return watered >= growDays;
+function isCropGrownForDawn(farm, cellIndex, item, dayNumber) {
+  return getPlantGrowthProgressWithFertiliser({ ...farm, player: { day: dayNumber } }, item, cellIndex).isGrown;
 }
 
 export function applyDawnSprinklersToFarm({
@@ -218,8 +215,8 @@ export function applyDawnSprinklersToFarm({
       if (!targetItemId) continue;
       const targetItem = itemsById.get(String(targetItemId));
       if (!targetItem || !isProduceItem(targetItem)) continue;
-      if (farm.gridWateredDay[targetIndex] === dayNumber) continue;
-      if (isCropGrownForDawn(farm, targetIndex, targetItem)) continue;
+      if (isPlantWateredForDay(farm, targetIndex, dayNumber)) continue;
+      if (isCropGrownForDawn(farm, targetIndex, targetItem, dayNumber)) continue;
       eligibleTargets.push({
         targetIndex,
         targetItem
@@ -233,9 +230,10 @@ export function applyDawnSprinklersToFarm({
     if (hasEligibleDryCrop && tankCurrent > 0) {
       for (let n = 0; n < eligibleTargets.length; n += 1) {
         const { targetIndex, targetItem } = eligibleTargets[n];
-        if (farm.gridWateredDay[targetIndex] === dayNumber) continue;
-        if (isCropGrownForDawn(farm, targetIndex, targetItem)) continue;
+        if (isPlantWateredForDay(farm, targetIndex, dayNumber)) continue;
+        if (isCropGrownForDawn(farm, targetIndex, targetItem, dayNumber)) continue;
   
+        persistRetainedWaterProgress(farm, targetIndex, dayNumber);
         farm.gridWateredDay[targetIndex] = dayNumber;
         farm.gridWateredCount[targetIndex] = Math.max(0, Number(farm.gridWateredCount[targetIndex]) || 0) + 1;
         summary.cropsWatered += 1;

@@ -68,6 +68,7 @@ import {
   doesConditionMeetAction,
   doesGoalMeetConditionAction,
   evaluateGoalsAction,
+  startTradingChallengeAction,
   getGoalConditionsAction,
   getGoalMetricValueAction
 } from './js/controllers/goals_controller.js';
@@ -1131,6 +1132,7 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   trackActionDuration,
   calculateGoalProgress,
   renderGoalsPanel,
+  startTradingChallenge: () => startTradingChallengeAction({ state, saveState, rerender: renderGoals }),
   updateMainViewVisibilityDom,
   updateMainTabButtonsDom,
   toggleMessagesPanelDom,
@@ -1382,6 +1384,7 @@ function getGuidancePayload() {
     GUIDED_FLAGS,
     getPrimaryGuidedState,
     countReadyToHarvestTiles,
+    getGridCellSellSnapshot,
     getBestBuyOpportunity,
     isShopItemUnlocked
   });
@@ -1396,9 +1399,9 @@ function renderGuidancePanel() {
     receipt.hidden = !trade;
     if (trade) {
       const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
-      document.getElementById('sale-receipt-result').textContent = `Sold $${trade.saleValue.toFixed(2)} · ${trade.profit >= 0 ? 'profit' : 'loss'} ${signed(trade.profit)}`;
+      document.getElementById('sale-receipt-result').textContent = `Sold $${trade.saleValue.toFixed(2)} · ${trade.quote?.historicalCostUnknown ? 'known-cost ' : ''}${trade.profit >= 0 ? 'profit' : 'loss'} ${signed(trade.profit)}`;
       const q = trade.quote;
-      document.getElementById('sale-receipt-detail').textContent = `Cost $${trade.cost.toFixed(2)}.${q ? ` Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}.` : ''}`;
+      document.getElementById('sale-receipt-detail').textContent = `Seed + treatments $${trade.cost.toFixed(2)}.${q?.historicalCostUnknown ? ' Older treatment costs are unknown.' : ''}${q ? ` Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}.` : ''}`;
     }
   }
   const keepFarming = document.getElementById('opening-keep-farming');
@@ -1419,6 +1422,7 @@ function getSelectedShopItemInsightData() {
     selectedShopItemId,
     getFreePurchaseCount,
     expectedRarityMultiplier: EXPECTED_RARITY_MULTIPLIER,
+    getActiveFarmSellMultiplier,
     rarityMultipliers: RARITY_MULTIPLIERS
   });
 }
@@ -1487,6 +1491,8 @@ function clearCurrentInfoSelection() {
 
 function renderSelectedItemInsight() {
   renderSelectedItemInsightAction({
+    clearShopSelection,
+    isSellBatchInFlight: !!state.runtimeFlags?.isSellBatchInFlight,
     getBulkSelectedGridInsightData,
     getSelectedGridItemInsightData,
     getSelectedShopItemInsightData,
@@ -2112,13 +2118,7 @@ function purchaseAndPlaceSelected(cellIndex) {
 }
 
 async function harvestPlant(cellIndex, sellButtonElement = null) {
-  if (getIsSellBatchInFlight()) return;
-  setIsSellBatchInFlight(true);
-  try {
   await gameplayRuntimeController.harvestPlant(cellIndex, sellButtonElement);
-  } finally {
-    setIsSellBatchInFlight(false);
-  }
 }
 
 /**

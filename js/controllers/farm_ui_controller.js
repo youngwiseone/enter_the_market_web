@@ -17,6 +17,7 @@ export function updateFarmToggleButtonAction(deps) {
 
   const button = getFarmToggleButton();
   if (!button) return;
+  button.disabled = !!state.runtimeFlags?.isSellBatchInFlight;
   const label = button.querySelector('.tool-label');
   const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
   const revealThreshold = Math.max(0, GRID_CELL_COUNT - FARM_TWO_BUTTON_REVEAL_TILES_LEFT);
@@ -60,6 +61,7 @@ export function setActiveFarmAction(deps) {
     renderAll
   } = deps;
 
+  if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return false;
   const safeFarmId = Number(farmId) === FARM_SECONDARY_ID ? FARM_SECONDARY_ID : FARM_PRIMARY_ID;
   if (safeFarmId === FARM_SECONDARY_ID && !isFarmTwoPurchased()) return false;
   if (state.activeFarmId === safeFarmId) return false;
@@ -91,6 +93,7 @@ export function handleFarmToggleButtonClickAction(deps) {
     confirmDialog
   } = deps;
 
+  if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return;
   if (!isFarmOneFullyUnlocked()) {
     const unlockedOnFarmOne = getUnlockedTileCountForFarm(FARM_PRIMARY_ID);
     addMessage({
@@ -185,6 +188,7 @@ export function updateToolButtonsAction(deps) {
   });
   const restButton = getRestButton();
   if (restButton) {
+    restButton.disabled = !!state.runtimeFlags?.isSellBatchInFlight;
     restButton.textContent = desktopShortcuts ? 'Rest (Space)' : 'Rest';
     restButton.title = 'Rest';
   }

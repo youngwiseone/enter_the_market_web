@@ -1,4 +1,5 @@
 import { getItemBehavior, isDecorationItem, isProduceItem } from '../content/item_types.js';
+import { getPlantGrowthProgressWithFertiliser, isPlantWateredForDay, persistRetainedWaterProgress } from './fertiliser_controller.js';
 import {
   getWateringCanLevel,
   getWateringCanTilesPerEnergy,
@@ -7,6 +8,7 @@ import {
 } from './watering_infrastructure.js';
 
 export function mineGridTileAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return false;
   const {
     state,
     index,
@@ -106,6 +108,7 @@ export function mineGridTileAction(deps) {
 }
 
 export function waterGridTileAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return false;
   const {
     state,
     index,
@@ -237,11 +240,12 @@ export function waterGridTileAction(deps) {
     return true;
   }
 
-  const wasWateredToday = state.gridWateredDay[index] === state.player.day;
+  const wasWateredToday = isPlantWateredForDay(state, index);
   if (wasWateredToday) {
-    const growDays = Number(item.id) === 4 && state.gridPlacedMeta?.[index]?.introductoryGrowDays === 2 ? 2 : Math.max(0, Number(item.growDays) || 0);
-    const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
-    const daysLeft = Math.max(0, growDays - wateredDays);
+    const progress = getPlantGrowthProgressWithFertiliser(state, item, index);
+    const growDays = progress.effectiveGrowDays;
+    const wateredDays = progress.effectiveWateredCount;
+    const daysLeft = progress.daysLeft;
     addMessage({
       id: 'progress.already_watered_today',
       vars: { itemName: item.name, wateredDays, growDays, daysLeft },
@@ -263,6 +267,7 @@ export function waterGridTileAction(deps) {
   if (!consumeEnergy(manualWaterEnergyCost, 'water this tile')) return true;
   registerDayAction();
 
+  persistRetainedWaterProgress(state, index);
   state.gridWateredDay[index] = state.player.day;
   if (Array.isArray(state.gridWateredCount)) {
     state.gridWateredCount[index] = (state.gridWateredCount[index] || 0) + 1;
@@ -276,9 +281,10 @@ export function waterGridTileAction(deps) {
   });
   awardPlayerXp(xpRewards.water);
 
-  const growDays = Number(item.id) === 4 && state.gridPlacedMeta?.[index]?.introductoryGrowDays === 2 ? 2 : Math.max(0, Number(item.growDays) || 0);
-  const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
-  const daysLeft = Math.max(0, growDays - wateredDays);
+  const progress = getPlantGrowthProgressWithFertiliser(state, item, index);
+  const growDays = progress.effectiveGrowDays;
+  const wateredDays = progress.effectiveWateredCount;
+  const daysLeft = progress.daysLeft;
   addMessage({
     id: 'progress.watering_progress',
     vars: { itemName: item.name, wateredDays, growDays, daysLeft },

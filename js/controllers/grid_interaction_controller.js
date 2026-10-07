@@ -1,4 +1,5 @@
-import { getSaleQuote } from '../sim/sale_quote.js';
+import { getSaleQuote, getCropCostBasis } from '../sim/sale_quote.js';
+import { ensureCropInstanceId } from '../state/crop_identity.js';
 import {
   isProduceItem,
   isUtilityItem,
@@ -63,7 +64,7 @@ export function applyGridActionForIndexAction(deps) {
     playGridItemMoveFx
   } = deps;
 
-  if (isFarmActionBlocked()) return false;
+  if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress || isFarmActionBlocked()) return false;
   const isDragMode = mode === 'drag';
   const allowInfoSelection = !isDragMode;
   if (!Array.isArray(state.gridUnlocked) || !Array.isArray(state.gridItems)) return false;
@@ -223,6 +224,7 @@ export function getGridCellSellSnapshotAction(deps) {
   const item = Array.isArray(state.items) ? state.items.find((it) => it.id === itemId) : null;
   const shopEntry = Array.isArray(state.shop) ? state.shop.find((entry) => entry.itemId === itemId) : null;
   if (!item) return null;
+  const identity = { farmId: Number(state.activeFarmId || 1), instanceId: ensureCropInstanceId(state, cellIndex) };
   const isProduce = isProduceItem(item);
   if (!isProduce) {
     const buyPrice = Array.isArray(state.gridPurchasePrice)
@@ -232,6 +234,7 @@ export function getGridCellSellSnapshotAction(deps) {
     const basis = buyPrice > 0 ? buyPrice : fallbackBase;
     const sellNow = basis * 0.8;
     return {
+      ...identity,
       cellIndex,
       itemId,
       item,
@@ -246,19 +249,19 @@ export function getGridCellSellSnapshotAction(deps) {
   const growth = getPlantGrowthState(item, cellIndex);
   if (!growth.isGrown) return null;
   const rarity = getGridRarity(cellIndex) || 'common';
-  const quote = getSaleQuote({ item, marketPrice: shopEntry.price, buyPrice: state.gridPurchasePrice?.[cellIndex], rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier() });
+  const farmMultiplier = getActiveFarmSellMultiplier();
+  const quote = getSaleQuote({ item, marketPrice: shopEntry.price, ...getCropCostBasis({ buyPrice: state.gridPurchasePrice?.[cellIndex], placedMeta: state.gridPlacedMeta?.[cellIndex] }), rarity, getRarityMultiplier, farmMultiplier });
   const sellNow = quote.saleValue;
-  const buyPrice = Array.isArray(state.gridPurchasePrice)
-    ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
-    : 0;
   return {
+    ...identity,
+    farmMultiplier,
     cellIndex,
     itemId,
     item,
     rarity,
     sellNow,
-    buyPrice,
-    profitNow: sellNow - buyPrice,
+    buyPrice: quote.cost,
+    profitNow: quote.profit,
     isProduce: true,
     quote
   };

@@ -1,0 +1,37 @@
+Water growth and crop costs (2026-10-07)
+
+Watering earns its normal growth day at the next dawn. Water Retention keeps
+moisture available for one additional day per stack after the last watering;
+each completed retained day is stored in gridPlacedMeta.growthWater.retainedDays.
+growthWater.throughDay prevents the same interval from being counted twice.
+Earned days are captured before manual water, rain or sprinkler water updates
+the last-water date, and at dawn for both farms. Manual water and sprinklers skip
+currently retained moisture; rain may refresh it. Rewatering never removes
+earned growth. The existing watering-can/sprinkler bonus growth roll is separate.
+
+An older crop without growthWater initially has exactly the progress the former
+formula displayed for its current last-water date. That visible contribution is
+captured on the next action/dawn. We cannot reconstruct retained days that older
+versions already erased. Migration does not guess those days or change cash.
+All metadata travels in the existing farm arrays, so moves and farm switches
+retain growth, rarity, opening exceptions, paid costs and transaction identity.
+
+Each new treatment records the actual amount paid in fertiliser.paidCost.
+Crop cost is its recorded seed acquisition cost plus all known treatment spend.
+Reusable sprinklers are infrastructure and contribute no per-crop treatment cost.
+Inventory placements use the inventory's recorded average acquisition cost.
+
+Older fertiliser stacks without a recorded paidCost are historicalCostUnknown.
+New paid applications add their exact amount, retaining that unknown flag. Quotes
+and receipts display known-cost profit with an explicit historical limitation;
+they never reconstruct spending from today's prices. Existing cash, prior sales
+and historical records receive no retroactive charge, refund or rewritten profit.
+
+Quality Fertiliser only affects the eventual rarity roll. Once a crop matures or
+has a cached rarity, applications fail before cash or energy is spent. Growing,
+unresolved crops can still stack quality. Utility descriptions describe real
+effects and current prices, and legacy saved descriptions are refreshed by ID.
+
+Regression command:
+  node js/dev/tests/growth_costs.test.mjs
+Requires modern Node supporting native ES modules in .js (Node 22+).

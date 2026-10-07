@@ -63,12 +63,19 @@ export function hasPlantFertiliser(state, cellIndex) {
   return (stacks.waterRetention + stacks.speedGrow + stacks.quality) > 0;
 }
 
-export function withAppliedPlantFertiliserMeta(existingMeta, fertiliserTypeKey) {
+export function withAppliedPlantFertiliserMeta(existingMeta, fertiliserTypeKey, amountPaid = null) {
   if (!FERTILISER_STACK_KEYS.includes(fertiliserTypeKey)) return existingMeta ?? null;
   const meta = (existingMeta && typeof existingMeta === 'object') ? { ...existingMeta } : {};
   const stacks = getNormalizedFertiliserStacksFromMeta(existingMeta);
   stacks[fertiliserTypeKey] = toNonNegativeInt(stacks[fertiliserTypeKey]) + 1;
-  meta.fertiliser = { ...(meta.fertiliser && typeof meta.fertiliser === 'object' ? meta.fertiliser : {}), stacks };
+  const previous = meta.fertiliser || {};
+  const previousStacks = getNormalizedFertiliserStacksFromMeta(existingMeta);
+  const hadTreatment = Object.values(previousStacks).some((count) => count > 0);
+  const historicalCostUnknown = !!previous.historicalCostUnknown
+    || (hadTreatment && !Number.isFinite(previous.paidCost)) || amountPaid === null;
+  meta.fertiliser = { ...previous, stacks,
+    paidCost: Math.max(0, Number(previous.paidCost) || 0) + Math.max(0, Number(amountPaid) || 0),
+    historicalCostUnknown };
   return meta;
 }
 
@@ -108,15 +115,34 @@ export function getRetainedWaterBonusDays(state, cellIndex, stacksOrCount = null
     ? { waterRetention: stacksOrCount }
     : (stacksOrCount || getPlantFertiliserStacks(state, cellIndex));
   const retentionStacks = toNonNegativeInt(stacks.waterRetention);
-  if (retentionStacks <= 0) return 0;
+  const earned = Math.max(0, Number(state?.gridPlacedMeta?.[cellIndex]?.growthWater?.retainedDays) || 0);
+  if (retentionStacks <= 0) return earned;
   const wateredCount = Math.max(0, Number(Array.isArray(state?.gridWateredCount) ? state.gridWateredCount[cellIndex] : 0) || 0);
-  if (wateredCount <= 0) return 0;
+  if (wateredCount <= 0) return earned;
+  if (state?.gridWateredDay?.[cellIndex] == null) return earned;
   const lastWateredDay = Number(Array.isArray(state?.gridWateredDay) ? state.gridWateredDay[cellIndex] : NaN);
   const currentDay = Number(state?.player?.day);
-  if (!Number.isFinite(lastWateredDay) || !Number.isFinite(currentDay)) return 0;
-  const daysSinceLastWatering = Math.max(0, Math.floor(currentDay - lastWateredDay));
-  // Base watering covers one day of progress; retention extends after that.
-  return Math.max(0, Math.min(retentionStacks, daysSinceLastWatering - 1));
+  if (!Number.isFinite(lastWateredDay) || !Number.isFinite(currentDay)) return earned;
+  const throughDay = Number(state?.gridPlacedMeta?.[cellIndex]?.growthWater?.throughDay);
+  // At dawn, yesterday's retained moisture earns a day. Today's water remains
+  // pending until the next dawn, exactly like manual, rain and sprinkler water.
+  const intervalStart = Math.max(lastWateredDay + 1, Number.isFinite(throughDay) ? throughDay : lastWateredDay + 1);
+  const intervalEnd = Math.min(currentDay, lastWateredDay + retentionStacks + 1);
+  return earned + Math.max(0, Math.floor(intervalEnd - intervalStart));
+}
+
+export function persistRetainedWaterProgress(state, cellIndex, dayNumber = state?.player?.day) {
+  if (!Array.isArray(state?.gridPlacedMeta)) return;
+  const retainedDays = getRetainedWaterBonusDays({ ...state, player: { day: dayNumber } }, cellIndex);
+  const meta = state.gridPlacedMeta[cellIndex] || {};
+  state.gridPlacedMeta[cellIndex] = { ...meta, growthWater: { retainedDays, throughDay: Number(dayNumber) } };
+}
+
+export function isPlantWateredForDay(state, cellIndex, dayNumber = state?.player?.day) {
+  const lastDay = state?.gridWateredDay?.[cellIndex];
+  if (lastDay == null) return false;
+  const elapsed = Number(dayNumber) - Number(lastDay);
+  return elapsed >= 0 && elapsed <= getPlantFertiliserStacks(state, cellIndex).waterRetention;
 }
 
 export function getPlantGrowthProgressWithFertiliser(state, item, cellIndex) {
@@ -254,6 +280,9 @@ export function canApplyFertiliserToPlant({ state, cellIndex, fertiliserItem, ta
     return { ok: true, fertiliserTypeKey, nextStackCount: stacks.waterRetention + 1 };
   }
   if (fertiliserTypeKey === 'quality') {
+    if (progress.isGrown || state?.gridRarity?.[cellIndex]) {
+      return { ok: false, reason: 'quality_resolved', messageId: 'progress.fertiliser_quality_resolved' };
+    }
     const mythicWeight = getQualityMythicWeight(rarityRolls, stacks.quality);
     if (mythicWeight >= 99.999) {
       return { ok: false, reason: 'quality_maxed', messageId: 'progress.fertiliser_quality_maxed' };

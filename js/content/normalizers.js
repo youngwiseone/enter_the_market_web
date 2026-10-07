@@ -43,6 +43,14 @@ export function mergeItemAssetsWithDefaults(items, defaultItems) {
     assignIfMissing('rarity');
     assignIfMissing('name');
     assignIfMissing('description');
+    // Saved item text is content, not player progress. Replace only the three
+    // obsolete fertiliser descriptions with their actual current effects.
+    if ([33, 34, 35].includes(Number(item.id)) && defaultItem.description
+      && nextItem.description !== defaultItem.description) {
+      if (nextItem === item) nextItem = { ...item };
+      nextItem.description = defaultItem.description;
+      changed = true;
+    }
     assignIfMissing('type');
     assignIfMissing('table_key');
     assignIfMissing('image');
