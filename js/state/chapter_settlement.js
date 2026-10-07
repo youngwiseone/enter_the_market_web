@@ -34,7 +34,17 @@ export function createChapterCommit({ state, storage, saveState, rebind }) {
     }
     saveState();
     // Keep a journal when the existing forgiving storage helper reports failure.
-    if (storage.getItem('player') === JSON.stringify(state.player)
-      && storage.getItem('farms') === JSON.stringify(state.farms)) storage.removeItem(CHAPTER_JOURNAL_KEY);
+    finishChapterJournal(state, storage);
   };
+}
+
+// Subsequent ordinary saves must not leave an older recovery checkpoint behind.
+// A normal market sale after a meal therefore advances the same checkpoint.
+export function refreshChapterJournal(state, storage) {
+  if (storage.getItem(CHAPTER_JOURNAL_KEY)) storage.setItem(CHAPTER_JOURNAL_KEY, JSON.stringify(snapshot(state)));
+}
+export function finishChapterJournal(state, storage) {
+  if (!storage.getItem(CHAPTER_JOURNAL_KEY)) return;
+  const value = snapshot(state);
+  if (Object.entries(value).every(([key, data]) => storage.getItem(key) === JSON.stringify(data))) storage.removeItem(CHAPTER_JOURNAL_KEY);
 }

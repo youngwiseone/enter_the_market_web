@@ -48,7 +48,7 @@ export function createProfileChatController({ getCookingOutfit = () => false } =
   }
 
   function reactCooking() {
-    if (!cookingPrevious) cookingPrevious = { speaker: activeSpeaker, emotion: activeEmotion };
+    if (!cookingPrevious || activeEmotion !== 'cooking_happy') cookingPrevious = { speaker: activeSpeaker, emotion: activeEmotion };
     if (cookingTimer) window.clearTimeout(cookingTimer);
     setChatProfile('player', 'cooking_happy');
     cookingTimer = window.setTimeout(() => {

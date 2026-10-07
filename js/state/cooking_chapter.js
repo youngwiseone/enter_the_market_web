@@ -11,6 +11,8 @@ export function normalizeChapter(state) {
   c.stage = Math.min(4, Math.max(0, Math.floor(Number(c.stage) || 0)));
   for (const key of ['readyDay', 'cooldownDay', 'restaurantDay', 'cookedCount', 'completedRequests']) c[key] = Math.max(0, Math.floor(Number(c[key]) || 0));
   c.potUnlocked = !!c.potUnlocked;
+  c.visits = c.visits && typeof c.visits === 'object' ? c.visits : {};
+  c.storyDelivered = c.storyDelivered && typeof c.storyDelivered === 'object' ? c.storyDelivered : {};
   c.knownRecipes = Array.isArray(c.knownRecipes) ? c.knownRecipes.filter(id => [101, 102, 103].includes(id)) : [];
   if (!c.active || typeof c.active !== 'object' || !Array.isArray(c.active.requirements)) c.active = null;
   if (c.active) {
@@ -42,7 +44,7 @@ export function getChapterOffers(state) {
   }
   if (c.stage === 3) return day(state) >= c.readyDay ? [decorate({ id: 'mina-pot-gift', person: 'mina', kind: 'gift', title: 'Mina’s old pot', dialogue: POT_GIFT_DIALOGUE, requirements: [], reward: 0 })] : [];
   if (!c.cookedCount) return [];
-  const offers = MEAL_REQUESTS.map(r => ({ ...copy(r), kind: 'meal', duration: 18, dialogue: r.dialogue[c.completedRequests % r.dialogue.length] }));
+  const offers = MEAL_REQUESTS.map(r => ({ ...copy(r), kind: 'meal', duration: 18, dialogue: r.dialogue[Number(c.visits[r.person] || 0) % r.dialogue.length] }));
   if (day(state) >= c.restaurantDay) {
     const tiles = Object.values(state.farms || {}).reduce((sum, f) => sum + (f.gridUnlocked || []).filter(Boolean).length, 0) || (state.gridUnlocked || []).filter(Boolean).length;
     const quantity = tiles >= 60 ? 12 : tiles >= 35 ? 9 : 6;
@@ -58,6 +60,7 @@ export function acceptRequest(state, id) {
   const offer = getChapterOffers(state).find(o => o.id === id && o.kind !== 'gift');
   if (!offer) return { ok: false, reason: 'That visit is not available.' };
   c.active = { ...copy(offer), acceptedDay: day(state), deadlineDay: day(state) + offer.duration, deadline: day(state) + offer.duration, delivered: {} };
+  if (offer.kind === 'story') c.active.delivered = copy(c.storyDelivered[offer.id] || {});
   return { ok: true, request: c.active };
 }
 export function declineRequest(state) {
@@ -74,6 +77,7 @@ export function claimPot(state) {
   c.potUnlocked = true;
   c.knownRecipes = [101, 102, 103];
   c.restaurantDay = day(state) + 8;
+  c.lastOutcome = 'Mina gave you her old pot and taught you three recipes. Her restaurant has a place for your produce.';
   state.unlockedTools ||= {};
   state.unlockedTools.pot = true;
   return { ok: true, message: POT_GIFT_DIALOGUE };
@@ -91,7 +95,7 @@ export function getDeliveryPreview(state, cells = []) {
     const req = request.requirements.find(r => r.itemId === cell.itemId);
     const farm = getSaleOriginFarm(state, cell);
     const item = state.items?.find(i => i.id === cell.itemId) || cell.item;
-    if (!item || (cell.itemId < 101 && !getPlantGrowthProgressWithFertiliser({ ...farm, player: state.player }, item, cell.cellIndex).isGrown)) return { ...result, reason: 'Only mature ingredients can be given.' };
+    if (!item || (item.type === 'produce' && !getPlantGrowthProgressWithFertiliser({ ...farm, player: state.player }, item, cell.cellIndex).isGrown)) return { ...result, reason: 'Only mature ingredients can be given.' };
     if (!req || (req.commonOnly && farm.gridRarity?.[cell.cellIndex] !== 'common')) return { ...result, reason: 'Remove unrelated items; this request needs only the listed ingredients.' };
     result.counts[cell.itemId] = (result.counts[cell.itemId] || 0) + 1;
     result.eligibleCount++;
@@ -114,11 +118,13 @@ export function settleDelivery(state, cells) {
     if (Array.isArray(farm.gridWateredCount)) farm.gridWateredCount[cell.cellIndex] = 0;
     request.delivered[cell.itemId] = Number(request.delivered[cell.itemId] || 0) + 1;
   }
+  if (request.kind === 'story') c.storyDelivered[request.id] = copy(request.delivered);
   let reward = 0;
   if (preview.completes) {
     reward = Math.max(0, Number(request.reward) || 0);
     state.player.cash = Number(state.player.cash || 0) + reward;
     c.completedRequests++;
+    if (request.kind === 'meal') c.visits[request.person] = Number(c.visits[request.person] || 0) + 1;
     c.lastOutcome = request.completion;
     if (request.kind === 'story') {
       c.stage++;

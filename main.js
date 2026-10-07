@@ -2,7 +2,7 @@ import { createCookingController } from './js/controllers/cooking_controller.js'
 import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js';
 import { normalizeChapter } from './js/state/cooking_chapter.js';
 import { DISH_ITEMS } from './js/content/cooking_chapter.js';
-import { createChapterCommit, recoverChapterSettlement } from './js/state/chapter_settlement.js';
+import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal } from './js/state/chapter_settlement.js';
 /*
  * main.js - client-side logic for Enter The Market (Web)
  *
@@ -945,6 +945,7 @@ function initialiseState() {
  * any mutation to player data, shop, inventory, reports, or news.
  */
 function saveState() {
+  refreshChapterJournal(state, localStorage);
   saveStateRuntimeAction({
     trackSaveCall,
     updateNetWorth,
@@ -958,6 +959,7 @@ function saveState() {
     persistLegacyPrimaryGridState,
     saveToStorage
   });
+  finishChapterJournal(state, localStorage);
 }
 
 /**
@@ -1792,6 +1794,7 @@ function getBestRollOpportunityText(rollResult) {
 }
 
 function nextDay() {
+  if (Date.now() < (state.runtimeFlags?.chapterInputCooldownUntil || 0)) return;
   if (document.querySelector('.is-open [role="dialog"]') || getIsSellBatchInFlight()) return;
   cookingController.cancel();
   messageRuntimeController.notePlayerActivity();
@@ -1939,7 +1942,7 @@ const cookingController = createCookingController({ state, getCellSnapshot: getG
   onFeedback: text => chapterFeedback(text),
   onCooked: ({ recipe, index, quote }) => {
     selectedGridCellIndices.clear(); selectedGridCellIndex = index;
-    chapterUi.note(`${recipe.name} ready. Value $${quote.saleValue.toFixed(2)}; ${quote.historicalCostUnknown ? 'known-cost ' : ''}profit $${quote.profit.toFixed(2)}.`);
+    chapterUi.note(`${recipe.name} ready · value $${quote.saleValue.toFixed(2)}.`);
     renderAll();
     profileChatController.reactCooking();
     showProfileMessageBubble(`${recipe.name} ready!`);
@@ -2013,8 +2016,8 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFar
   getFreePurchaseCount,
   GUIDED_FLAGS,
   saveState,
-  playGridItemMoveFx
-  ,cookIngredient: index => {
+  playGridItemMoveFx,
+  cookIngredient: index => {
     const result = cookingController.tap(index);
     if (result.ok && !result.complete) chapterUi.note('');
     if (!result.complete) renderMarket();
@@ -2150,7 +2153,7 @@ function setActiveTool(tool) {
   cookingController.cancel();
   if (tool === 'pot') { selectedShopItemId = null; selectedGridCellIndex = null; selectedGridCellIndices.clear(); }
   farmUiRuntimeController.setActiveTool(tool);
-  renderMarket();
+  updateGridSize();
 }
 
 function notifyDailyRollClosed() {

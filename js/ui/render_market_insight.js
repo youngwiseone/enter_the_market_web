@@ -364,6 +364,13 @@ export function renderSelectedItemInsightAction(deps) {
       profileTitle.textContent = gridInsight.isProduce ? 'Crop details' : 'Item details';
       profile.appendChild(profileTitle);
       profile.appendChild(chipRow);
+      if (gridInsight.isDish) {
+        const recipeNote = document.createElement('p');
+        recipeNote.className = 'market-context';
+        recipeNote.textContent = 'Meal value is fixed at 115% of base ingredient values, with their crop quality and farm bonuses included once. Market peaks may favour selling ingredients. Meal quality is descriptive; it adds no second bonus.'
+          + (gridInsight.quote?.historicalCostUnknown ? ' Older ingredient treatment costs are unknown; profit uses recorded costs only.' : '');
+        profile.appendChild(recipeNote);
+      }
       panel.appendChild(profile);
       if (gridInsight.isProduce && gridInsight.identityLabels) {
         const identityRow = document.createElement('div');

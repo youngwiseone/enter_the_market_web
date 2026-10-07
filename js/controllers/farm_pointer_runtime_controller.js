@@ -91,8 +91,8 @@ export function createFarmPointerRuntimeController(deps) {
         updateCursorForTool,
         saveState,
         renderMarket,
-        playGridItemMoveFx
-        ,cookIngredient
+        playGridItemMoveFx,
+        cookIngredient
       });
     } finally {
       trackActionDuration('applyGridActionForIndex', performance.now() - perfStart);

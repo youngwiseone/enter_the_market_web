@@ -2,6 +2,7 @@
 .chapter-portrait { flex:none; width:72px; height:72px; object-fit:contain; image-rendering:pixelated; }
 .chapter-card-copy { min-width:0; flex:1; }
 .chapter-card p { margin:7px 0; line-height:1.35; }
+#chapter-requests h3 { font-size:16px; margin:12px 0 8px; }
 .chapter-requirements { font-weight:bold; }
 .chapter-outcome { color:inherit; border-left:3px solid #659b45; padding-left:7px; }
 .chapter-split { display:flex !important; flex-wrap:wrap; gap:6px; }
@@ -10,7 +11,8 @@
 .chapter-button { min-height:44px; }
 .request-eligible::after { content:''; position:absolute; inset:3px; border:1px dashed #c7e586; pointer-events:none; border-radius:3px; }
 .grid-cell.cooking-selected { outline:3px solid #ffd477; outline-offset:-3px; }
-#cooking-context { flex:none; margin:4px 0; padding:7px; }
+#cooking-context { flex:none; margin:4px 0; padding:7px; height:132px; overflow:auto; box-sizing:border-box; }
+body.is-cooking #farm-notes { display:none; }
 #cooking-context[hidden], [data-tool="pot"][hidden], #chapter-farm-hint[hidden] { display:none !important; }
 #cooking-context p { margin:5px 0; font-size:12px; line-height:1.25; }
 .cooking-recipe-row { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
@@ -22,6 +24,16 @@
 @media (prefers-reduced-motion:reduce) { .cooking-reveal img { animation:none; } }
 body.mobile-layout #farm-action-dock.chapter-split { gap:4px; }
 body.mobile-layout #farm-action-dock.chapter-split > button { font-size:11px; line-height:1.2; min-height:44px; padding:5px; min-width:0; }
-body.mobile-layout .cooking-recipe-row button, body.mobile-layout .cooking-recipe-row select { min-height:44px; }
+body.mobile-layout #cooking-context button.chapter-button, body.mobile-layout #cooking-context select { min-height:44px; height:auto; }
+body.mobile-layout #chapter-requests button.chapter-button { min-height:44px; height:auto; }
+body.mobile-layout #profile-message-bubble { left:0; top:100%; max-width:calc(100vw - 40px); box-sizing:border-box; }
+body.mobile-layout #profile-message-bubble.is-hidden { display:none; }
 body.mobile-layout .chapter-card { padding:7px; gap:7px; }
 body.mobile-layout .chapter-portrait { width:56px; height:56px; }
+/* Short landscape uses a third column for the same contextual recipe area. */
+body.compact-farm-layout.is-cooking[data-active-main-tab='farm'] #market-layout { width:min(100%, calc(var(--grid-size) + 490px)); }
+body.compact-farm-layout.is-cooking #farm-panel { grid-template-columns:var(--grid-size) 112px minmax(190px, 1fr); }
+body.compact-farm-layout.is-cooking #cooking-context { grid-column:3; grid-row:2; height:var(--grid-size); margin:0; }
+body.compact-farm-layout [data-tool='pot'] { min-height:44px; height:44px; flex-basis:44px; }
+body.compact-farm-layout #chapter-farm-hint { position:absolute; right:8px; top:4px; width:180px; min-height:24px; height:24px; margin:0; font-size:10px; }
+body.compact-farm-layout:has(#chapter-farm-hint:not([hidden])) #farm-notes { display:none; }

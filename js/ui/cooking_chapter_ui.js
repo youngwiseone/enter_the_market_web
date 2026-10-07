@@ -1,6 +1,7 @@
 import { RECIPES } from '../content/cooking_chapter.js';
 import { normalizeChapter, getChapterOffers, acceptRequest, declineRequest, claimPot, getDeliveryPreview, settleDelivery } from '../state/cooking_chapter.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
+import { quoteRecipe } from '../controllers/cooking_controller.js';
 
 const make = (tag, className, text) => {
   const el = document.createElement(tag);
@@ -19,7 +20,12 @@ export function createCookingChapterUi(deps) {
   let lastFeedback = '';
   function transact(fn) {
     if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return;
-    try { commit(fn); } catch { feedback('Could not save the request. Please try again.'); }
+    try {
+      commit(fn);
+      // A second touch must not fall through a disappearing Give dock onto Rest.
+      state.runtimeFlags ||= {};
+      state.runtimeFlags.chapterInputCooldownUntil = Date.now() + 400;
+    } catch { feedback('Could not save the request. Please try again.'); }
     cooking.cancel(); renderAll();
   }
   function requestText(request) {
@@ -62,11 +68,13 @@ export function createCookingChapterUi(deps) {
     const indices = getSelection();
     const cells = indices.map(getCellSnapshot).filter(Boolean);
     const preview = getDeliveryPreview(state, cells);
+    preview.eligibleCount = cells.filter(cell => preview.request?.requirements.some(r => r.itemId === cell.itemId && (!r.commonOnly || cell.rarity === 'common'))).length;
     if (indices.length !== cells.length) { preview.ok = false; preview.reason = 'Remove growing or unsuitable items from the selection.'; }
     return { cells, preview, indices };
   }
   function give(cells, requestId, indices) {
-    if (state.player.cookingChapter?.active?.id !== requestId || getSelection().join(',') !== indices.join(',')) {
+    const active = state.player.cookingChapter?.active;
+    if (`${active?.id}:${active?.acceptedDay}` !== requestId || getSelection().join(',') !== indices.join(',')) {
       feedback('The request or selection changed. Select again before giving.'); renderAll(); return;
     }
     const person = state.player.cookingChapter.active.person;
@@ -82,6 +90,7 @@ export function createCookingChapterUi(deps) {
     document.querySelectorAll('.chapter-split').forEach(el => el.classList.remove('chapter-split'));
     const c = normalizeChapter(state);
     if (!c.active || state.activeTool === 'pot') return;
+    const targetId = `${c.active.id}:${c.active.acceptedDay}`;
     const { cells, preview, indices } = selectionPreview();
     const text = `${c.active.speaker}: ${requestText(c.active)}. Selected eligible: ${preview.eligibleCount}/${indices.length}. ${preview.reason}`;
     const panels = Array.from(document.querySelectorAll('#market-insight-panel, [data-insight-panel]'));
@@ -95,7 +104,7 @@ export function createCookingChapterUi(deps) {
       }
       const row = sell.parentElement;
       row.classList.add('chapter-split');
-      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : ''}`, () => give(cells, c.active.id, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
+      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : ''}`, () => give(cells, targetId, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
       giveButton.classList.add('give-action-button'); giveButton.title = preview.reason; row.append(giveButton);
     });
     const dock = document.getElementById('farm-action-dock');
@@ -103,7 +112,7 @@ export function createCookingChapterUi(deps) {
     if (dock && sell && document.body.classList.contains('mobile-layout')) {
       dock.classList.add('is-visible', 'chapter-split');
       if (!indices.length) { sell.textContent = 'Sell · select items'; sell.disabled = true; }
-      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : ' · select request items'}`, () => give(cells, c.active.id, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
+      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : ' · select request items'}`, () => give(cells, targetId, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
       giveButton.classList.add('give-action-button'); giveButton.title = preview.reason; dock.append(giveButton);
     }
   }
@@ -123,12 +132,25 @@ export function createCookingChapterUi(deps) {
     row.append(outfit); host.append(row);
     const names = recipe.ingredients.map(id => name(id)).join(' + ');
     const nextIsFinal = pending.cells.length === recipe.ingredients.length - 1;
-    host.append(make('p', '', `${recipe.name}: ${names}. ${pending.cells.length}/${recipe.ingredients.length} selected. ${nextIsFinal ? `Next valid tap makes ${recipe.name} on that tile.` : 'Tap each mature ingredient on this farm.'} 1 energy; +2 cooking XP.`));
+    host.append(make('p', '', `${names} · ${pending.cells.length}/${recipe.ingredients.length}. ${nextIsFinal ? `Next valid tap makes ${recipe.name} here.` : 'Tap mature ingredients on this farm.'} 1 energy · +2 cooking XP.`));
     if (pending.cells.length) {
       const remaining = recipe.ingredients.slice();
       pending.cells.forEach(c => remaining.splice(remaining.indexOf(c.itemId), 1));
-      host.append(make('p', 'chapter-requirements', `Still needed: ${remaining.map(name).join(' + ')}. Cancel, Escape, changing tools or farms costs nothing.`));
+      if (nextIsFinal) {
+        const quotes = state.gridItems.map((id, index) => remaining.includes(id) ? getCellSnapshot(index) : null)
+          .filter(cell => cell && !pending.cells.some(c => c.instanceId === cell.instanceId))
+          .map(cell => quoteRecipe([...pending.cells, cell]));
+        const range = key => {
+          const values = quotes.map(q => q[key]);
+          const low = Math.min(...values), high = Math.max(...values);
+          return `$${low.toFixed(2)}${high - low > .005 ? `–$${high.toFixed(2)}` : ''}`;
+        };
+        host.append(make('p', 'chapter-requirements', quotes.length
+          ? `Meal ${range('saleValue')} · ${quotes.some(q => q.historicalCostUnknown) ? 'known-cost ' : ''}profit ${range('profit')}`
+          : `Need mature ${remaining.map(name).join(' + ')}. Nothing spent.`));
+      } else host.append(make('p', 'chapter-requirements', `Next: ${remaining.map(name).join(' + ')}.`));
     }
+    else if (!lastFeedback) host.append(make('p', '', 'Cancel/Escape or switch tools/farms: no cost.'));
     if (lastFeedback) host.append(make('p', 'chapter-outcome', lastFeedback));
   }
   function highlight() {
@@ -139,11 +161,22 @@ export function createCookingChapterUi(deps) {
         && (!r.commonOnly || state.gridRarity[index] === 'common'));
       const item = state.items.find(i => i.id === id);
       const mature = item?.type === 'dish' || (item?.type === 'produce' && deps.getGrowth(item, index).isGrown);
-      tile.classList.toggle('request-eligible', !!eligible && mature);
+      const remaining = pending.recipe.ingredients.slice();
+      pending.cells.forEach(cell => remaining.splice(remaining.indexOf(cell.itemId), 1));
+      const cookEligible = state.activeTool === 'pot' && remaining.includes(id) && mature && !pending.cells.some(cell => cell.cellIndex === index);
+      tile.classList.toggle('request-eligible', mature && (state.activeTool === 'pot' ? cookEligible : !!eligible));
+      if (cookEligible && remaining.length === 1) {
+        const snapshot = getCellSnapshot(index);
+        if (snapshot) {
+          const quote = quoteRecipe([...pending.cells, snapshot]);
+          tile.title = `Cook ${pending.recipe.name} here · $${quote.saleValue.toFixed(2)} · ${quote.historicalCostUnknown ? 'known-cost ' : ''}profit $${quote.profit.toFixed(2)} · 1 energy`;
+        }
+      }
       tile.classList.toggle('cooking-selected', pending.cells.some(cell => cell.cellIndex === index));
     });
   }
   function render() {
+    document.body.classList.toggle('is-cooking', state.activeTool === 'pot');
     renderRequests(); renderCooking(); decorateDelivery(); highlight();
     const c = normalizeChapter(state);
     const pot = document.querySelector('[data-tool="pot"]');
@@ -156,7 +189,7 @@ export function createCookingChapterUi(deps) {
     const hint = document.getElementById('chapter-farm-hint');
     if (hint) {
       const offers = getChapterOffers(state);
-      hint.hidden = !(c.active || offers.length || c.potUnlocked);
+      hint.hidden = state.activeTool === 'pot' || !(c.active || offers.length || c.potUnlocked);
       hint.textContent = c.active ? `${c.active.speaker} · ${requestText(c.active)} · Goals` : offers.length ? `${offers[0].speaker} is visiting · Goals` : 'Recipes & requests · Goals';
       hint.onclick = showGoals;
     }

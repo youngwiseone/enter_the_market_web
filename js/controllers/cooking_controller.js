@@ -33,7 +33,7 @@ export function createCookingController(deps) {
   let recipeId = RECIPES[0].id;
   let cells = [];
   let context = null;
-  const contextKey = () => `${state.activeFarmId || 1}:${state.player.day}:${state.activeTool}:${state.player.cookingChapter?.active?.id || ''}`;
+  const contextKey = () => `${state.activeFarmId || 1}:${state.player.day}:${state.activeTool}:${state.player.cookingChapter?.active?.id || ''}:${state.player.cookingChapter?.active?.acceptedDay || ''}`;
   function cancel() { cells = []; context = null; }
   function sync() { if (context !== null && context !== contextKey()) cancel(); }
   function getRecipe() { return RECIPES.find(r => r.id === recipeId) || RECIPES[0]; }

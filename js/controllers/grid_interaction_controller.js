@@ -62,8 +62,8 @@ export function applyGridActionForIndexAction(deps) {
     updateCursorForTool,
     saveState,
     renderMarket,
-    playGridItemMoveFx
-    ,cookIngredient
+    playGridItemMoveFx,
+    cookIngredient
   } = deps;
 
   if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress || isFarmActionBlocked()) return false;
