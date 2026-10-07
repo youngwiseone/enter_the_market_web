@@ -1,0 +1,55 @@
+Enter The Market — cooking chapter, 8 October 2026
+
+Baseline and review
+Started clean at d70007b. Verified origin/codex/extended-playtest-polish still points to d70007b; origin/main points to 072bd56. The responsive farm and exact sale/cost fixes are reused. No publishing, deployment or push performed.
+
+Chapter and controls
+Mina (a nervous soup notebook keeper) visits from level 4, asking for three common carrots, then two tomatoes and an onion. After the player has reached the $25,000 cash milestone (current cash OR its existing claimed ID/flag) and at least eight unlocked/harvested produce species, her restaurant trial asks for three potatoes, three carrots and two onions. Completing the trial earns a personal gift on the next in-game day. The player explicitly receives the pot and three recipes; old saves are never auto-completed or treated as fresh.
+
+Story requests allow 24 in-game days. Partial donations persist across reload, decline and expiry; completed stages remain earned. One accepted target at a time; fixed advertised rewards pay only on full delivery. Give rejects unrelated, immature, duplicate, stale or excess selections, including mixed selections that contain growing crops. Sell remains independent. The delivery target includes its acceptance day, so an old action cannot redirect to a later visit. A 400ms post-request guard prevents a double tap on a disappearing mobile Give control from landing on Rest.
+
+Pot selection uses mature produce only, exact crop instance and source farm IDs. Cancel/Escape/tool/farm/day/request changes safely clear transient selection; a reload also cancels it. A wrong/repeated ingredient tap spends nothing. The final ingredient's tile receives one dish, even on a completely full grid. The combination settles synchronously before cosmetic effects. The final-tap context previews candidate meal values and carried-cost profits; eligible output tiles have exact hover quotes. No dish is an ingredient, and meals cannot be dismantled.
+
+Balance model
+- Garden Soup: carrot + potato. Tomato Stew: tomato + onion + potato. Pumpkin Mash: pumpkin + garlic + potato.
+- Frozen meal value = 1.15 × SUM(input crop's canonical base price × its crop-specific rarity multiplier × its source farm sale multiplier). Market prices are excluded. All bonuses enter once; the final dish never gets another rarity/farm multiplier.
+- Display quality = floor(arithmetic mean of rarity tier indexes), with common=0, uncommon=1, rare=2, mythic=3. Quality is descriptive and does not multiply value. No recooking prevents compounding.
+- Costs = sum of each exact input's known seed/acquisition cost and known paid treatment cost. Unknown legacy treatment cost remains unknown. Profit previews say known-cost profit where necessary. Full numeric precision is stored; two decimals are presentation only.
+- One energy per meal, contributing to cumulative dayEnergySpent even across level refills. Two cooking XP through the existing capped level system; no harvest, sale or quest-delivery XP is silently bundled into cooking.
+- Bea requests soup ($8) or pumpkin mash ($40); Rowan requests tomato stew ($12). Meal visits allow 18 in-game days. Dialogue variants advance on that villager's completed meals.
+- Restaurant offers require a total of 6/9/12 potatoes and tomatoes for <35/35–59/60+ unlocked tiles across both farms. Advertised payment is 125% of base produce value, frozen when accepted, without premium rarity bonuses. Twenty-four in-game days to deliver. Mina waits at least eight days after completion/decline/expiry, and the first restaurant visit waits eight days after the gift. There is no unlimited restaurant conversion loop. Premium ingredients and market peaks can beat both cooking and fixed request offers.
+
+Persistence and integration
+player.cookingChapter is additive. Existing cash, themes, crops, metadata, growth, rarities, both farms and claimed goals are retained. Stable dish IDs append to runtime items without disturbing saved/default crop ordering, and are excluded from purchasable utility rows. Existing cost and immutable crop-sale snapshots drive dish quotes. Single/bulk dish sales settle via the existing sale sequence; no crop harvest XP/count or produce market pressure.
+
+etm.chapterSettlement.v1 journals player/farms/tools and progression-related keys as a durable recovery point before multi-key saves. Startup replays it before normal initialization. Later ordinary saves advance the checkpoint, so a meal sold after an interrupted save cannot reappear. It clears only after all included keys match. A failed journal write restores the pre-operation state and rebinds active farm arrays.
+
+Portraits/art
+14 original generated assets, inspected against actual 32px RGBA crops, 30px RGBA tools and existing green-on-black CRT portraits. Pot includes selected/disabled variants; dishes use nearest-neighbour 32px pixels; character expression pairs are optimized indexed 800px portraits. Player identity is retained with an apron variant. Prompts, native QA and contact sheet: guide/cooking_assets.txt and guide/cooking_assets_contact_sheet.png.
+
+Cooking reacts with the smiling apron portrait for 1.2 seconds, then restores the previous speaker/expression. New dialogue retains ownership if it arrives during the reaction. Rapid cooking replaces the timer rather than queuing. Wear/Remove apron is an explicit optional cosmetic; it changes no theme or other customization. Existing FX/reduced-motion handling is reused; no new audio was added.
+
+Actual checks completed
+- Every JavaScript file checked for syntax; message catalog validation passes.
+- All eight .test.mjs regression scripts pass: clarity, cooking_chapter, farm_scenery, growth_costs, sale_safety, trading_challenge, trading_loop, ui_flow.
+- New tests cover fresh/advanced legacy story access, full story with reload at every stage, retained partial donations, strict/excess/unrelated/immature delivery rejection, deadlines, dialogue visits, scale/cadence, rewards once, full farm output on exact last tile, cost/rarity/legacy uncertainty, cancellation/context/identity changes, energy/XP, actual single/bulk dish payment versus quote, no harvest credit, journal interruption/quota rollback/replay and subsequent ordinary sale recovery.
+- Browser: local in-app Chromium, default 1280×720, 390×844 portrait and 844×390 landscape. Test save installed only after verifying an empty separate 127.0.0.1:8001 origin. Existing 8000-origin state was preserved after automated review refused an initial reset fixture.
+- Played Mina's three requests and next-day gift from an advanced legacy save with all goals already claimed. One-carrot partial survived reload; unrelated tomato Give disabled; a normal requested-carrot market sale did not change delivery counts.
+- Full 49-item board: soup replaces exact final potato tile, earlier carrot clears, 48 items remain. Wrong ingredient, immature ingredient, tool/farm cancellation and V/Escape exercised. All three recipes cooked successfully.
+- Played three real six-watered-day crop cycles: fixture-grown produce -> soup/stew/mash and village meals; newly purchased seeds -> restaurant supplies; newly purchased seeds -> soup/stew -> village meals. Actual planting, watering, rest, random rarity reveal and market sales remained functional.
+- Restaurant scaled to 12 items on two farms. Partial Potato 2/6 + Tomato 2/6 survived reload; final paid $37.50 once. Meal payments $8, $12 and $40 tested. A premium mash had $53.03 normal sale value versus Bea's $40 offer, demonstrating a genuine alternative. A soup normal sale paid its $5.90 frozen quote.
+- Equipped apron, observed happy success expression and restoration to the equipped neutral portrait; another reaction restored the previous money expression. Theme-aqua remained selected.
+- Mobile Sell/Give measured 44px high, approximately 105px wide each. Recipe Cancel/apron controls measured 44px. No horizontal overflow at tested sizes. Cooking board stayed fixed between taps; short landscape contextual recipes are beside the board. Physical touch hardware was not tested.
+- Rapid mobile Give paid Rowan exactly $12 and left Day 73 unchanged; no duplicate reward and no fall-through Rest. No captured application console errors in final browser checks.
+
+Screenshots
+guide/playtest/cooking/pot-gift.jpg — earned story gift
+guide/playtest/cooking/final-ingredient.jpg — full-board final-tap preview
+guide/playtest/cooking/soup-success.jpg — exact tile output and correct dish quote
+guide/playtest/cooking/villager-give.jpg — advertised paid meal delivery
+guide/playtest/cooking/mobile-sell-give.jpg — narrow-screen split control
+guide/playtest/cooking/mobile-stew-reaction.jpg — smiling apron reaction
+guide/playtest/cooking/landscape-recipes.jpg — reachable landscape context
+
+Still unverified
+No real phone/touch hardware, Safari/Firefox, or OS reduced-motion setting was exercised. Reduced-motion behavior follows existing FX preferences and the new reveal CSS media query; no new sound system exists. Quota/interrupted writes and long deadline expiry were exercised through deterministic tests, not by exhausting the browser's real disk quota or playing 24 more days. The entire fresh campaign to $25,000 was not manually replayed; fresh access is covered by initialization/story tests and browser startup, while the story transition and connected cycles were played from a controlled advanced legacy save.
