@@ -1,3 +1,4 @@
+import { takeIntroCropMeta } from '../state/opening_state.js';
 import {
   consumeSeedBuyStreakMessageId,
   shouldSuppressSeedStandardBuyMessage
@@ -171,7 +172,7 @@ export function purchaseAndPlaceSelectedAction(deps) {
   if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cellIndex] = totalCost;
   if (Array.isArray(state.gridPlacedMeta)) {
     state.gridPlacedMeta[cellIndex] = isProduce
-      ? null
+      ? takeIntroCropMeta(state, item)
       : ensureInfrastructureMetaForPlacedItem(item, {
         tableKey,
         itemType: String(item.type || '').trim().toLowerCase() || 'unknown'

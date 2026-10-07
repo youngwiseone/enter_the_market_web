@@ -1,3 +1,4 @@
+import { getSaleQuote } from '../sim/sale_quote.js';
 import {
   isProduceItem,
   isUtilityItem,
@@ -6,7 +7,6 @@ import {
 } from '../content/item_types.js';
 import { getRefillableTankState } from './watering_infrastructure.js';
 import { isFertiliserItem } from './fertiliser_controller.js';
-import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 function getBulkSelectionGroupKey(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return '';
@@ -246,8 +246,8 @@ export function getGridCellSellSnapshotAction(deps) {
   const growth = getPlantGrowthState(item, cellIndex);
   if (!growth.isGrown) return null;
   const rarity = getGridRarity(cellIndex) || 'common';
-  const multiplier = getRarityMultiplier(rarity);
-  const sellNow = Math.max(0, Number(shopEntry.price) || 0) * multiplier * getActiveFarmSellMultiplier();
+  const quote = getSaleQuote({ item, marketPrice: shopEntry.price, buyPrice: state.gridPurchasePrice?.[cellIndex], rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier() });
+  const sellNow = quote.saleValue;
   const buyPrice = Array.isArray(state.gridPurchasePrice)
     ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
     : 0;
@@ -259,7 +259,8 @@ export function getGridCellSellSnapshotAction(deps) {
     sellNow,
     buyPrice,
     profitNow: sellNow - buyPrice,
-    isProduce: true
+    isProduce: true,
+    quote
   };
 }
 

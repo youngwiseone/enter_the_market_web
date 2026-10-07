@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import { getSaleQuote } from '../../sim/sale_quote.js';
+import { applyGridActionForIndexAction, getGridCellSellSnapshotAction, getBulkSelectedGridInsightDataAction } from '../../controllers/grid_interaction_controller.js';
+import { getSelectedGridItemInsightDataAction } from '../../ui/market_insight_data.js';
+import { runSellSequenceAction } from '../../controllers/sell_sequence_controller.js';
+import { harvestPlantAction } from '../../controllers/harvest_controller.js';
+import { isFreshStorage, beginOpening, takeIntroCropMeta, recordOpeningSale } from '../../state/opening_state.js';
+import { normalizeFarmStateForGrid, createEmptyFarmStateForGrid } from '../../state/farm_state.js';
+import { applyFarmStateToActiveGridRuntime } from '../../state/farm_runtime.js';
+import { getPlantGrowthProgressWithFertiliser } from '../../controllers/fertiliser_controller.js';
+import { getRarityMultiplier } from '../../sim/rarity.js';
+const carrot={id:4,name:'Carrot',price:1,type:'produce',growDays:6,plantStages:6};
+const pumpkin={id:1,name:'Pumpkin',price:18,type:'produce',growDays:6};
+const tank={id:31,name:'Tank',price:10,type:'decoration'};
+function fixture(){return {player:{cash:100,day:9},items:[carrot,pumpkin,tank],shop:[{itemId:4,price:0.91},{itemId:1,price:19.135}],gridItems:[4,1,4,31],gridRarity:['uncommon','rare','mythic',null],gridPurchasePrice:[1,18,1,10],gridPlacedMeta:[null,null,null,null],gridPlantedDay:[1,1,1,null],gridWateredCount:[6,6,6,0],goalStats:{harvestCount:0,itemsHarvested:{}},goalFlags:{}}}
+const noop=()=>{};
+for(const rarity of ['common','uncommon','rare','mythic'])for(const farmMultiplier of [1,1.25]){
+ const state=fixture();state.gridRarity[0]=rarity;
+ const deps={state,cellIndex:0,selectedGridCellIndex:0,getPlantGrowthState:()=>({isGrown:true}),getGridRarity:i=>state.gridRarity[i],getRarityMultiplier,getActiveFarmSellMultiplier:()=>farmMultiplier};
+ const single=getSelectedGridItemInsightDataAction(deps),bulk=getGridCellSellSnapshotAction(deps);
+ assert.equal(single.sellNow,bulk.sellNow,`${rarity} preview`);
+ const initial=state.player.cash;
+ await harvestPlantAction({...deps,addMessage:noop,registerDayAction:noop,assignGridRarity:()=>rarity,registerSaleEvent:noop,registerItemSalePressure:noop,guidedHarvestFlag:'harvest',awardPlayerXp:noop,xpRewards:{harvest:1},updateNetWorth:noop,evaluateGoals:noop,saveState:noop,getSelectedGridCellIndex:()=>null,setSelectedGridCellIndex:noop,renderAll:noop,getTileCenter:()=>null,spawnBurst:noop,spawnRing:noop,spawnFloatingText:noop,showXpGainFeedback:noop,pulseHud:noop,getHudCenters:()=>[]});
+ assert.ok(Math.abs(state.player.cash-initial-single.sellNow)<1e-12);
+ assert.equal(state.gridItems[0],null);
+ assert.equal(state.gridRarity[0],null);
+}
+const state=fixture();const snapshot=i=>getGridCellSellSnapshotAction({state,cellIndex:i,getPlantGrowthState:()=>({isGrown:true}),getGridRarity:i=>state.gridRarity[i],getRarityMultiplier,getActiveFarmSellMultiplier:()=>1.25});
+const batch=getBulkSelectedGridInsightDataAction({state,selectedGridCellIndices:new Set([3,2,0,1]),getGridCellSellSnapshot:snapshot});
+assert.deepEqual(batch.cells.map(c=>c.cellIndex),[0,1,2,3]);
+const before=state.player.cash;
+const result=await runSellSequenceAction({state,cells:batch.cells,registerSaleEvent:noop,registerItemSalePressure:noop,guidedHarvestFlag:'harvest'});
+assert.equal(result.harvestedCount,4);assert.equal(result.totalSaleValue,batch.totalSale);
+assert.ok(Math.abs(state.player.cash-before-batch.totalSale)<1e-10);
+assert.equal(result.totalSaleValue.toFixed(2),batch.totalSale.toFixed(2));
+const again=await runSellSequenceAction({state,cells:batch.cells,registerSaleEvent:noop,registerItemSalePressure:noop});assert.equal(again.harvestedCount,0);
+assert.ok(isFreshStorage(()=>null));
+for(const key of ['player','farms','grid','gridItems','gridRarity','items','store','activeTool','marketHistory']) assert.equal(isFreshStorage(k=>k===key?[]:null),false);
+const farm=createEmptyFarmStateForGrid(49), fresh={player:{},unlockedTools:{glove:true}};beginOpening(fresh,farm);assert.equal(farm.gridUnlocked.filter(Boolean).length,1);assert.equal(fresh.unlockedTools.watering,true);
+assert.equal(takeIntroCropMeta(fresh,pumpkin),null);farm.gridItems[24]=4;farm.gridPlacedMeta[24]=takeIntroCropMeta(fresh,carrot);assert.equal(takeIntroCropMeta(fresh,carrot),null);
+const saved=normalizeFarmStateForGrid(JSON.parse(JSON.stringify(farm)),49);assert.equal(saved.gridPlacedMeta[24].introductoryGrowDays,2);
+const grow={...saved,player:{day:3}};grow.gridWateredCount[24]=2;grow.gridWateredDay[24]=2;assert.equal(getPlantGrowthProgressWithFertiliser(grow,carrot,24).isGrown,true);assert.equal(getPlantGrowthProgressWithFertiliser({...grow,gridPlacedMeta:Array(49).fill(null)},carrot,24).isGrown,false);
+// Metadata moves with the existing placement arrays and remains farm-local.
+saved.gridPlacedMeta[25]=saved.gridPlacedMeta[24];saved.gridPlacedMeta[24]=null;assert.equal(normalizeFarmStateForGrid(saved,49).gridPlacedMeta[25].introductoryGrowDays,2);
+const q=getSaleQuote({item:carrot,marketPrice:.91,buyPrice:1,rarity:'rare',getRarityMultiplier});assert.ok(Math.abs(q.ordinaryValue+q.marketEffect+q.rarityBonus+q.farmBonus-q.saleValue)<1e-12);
+console.log('Trading loop checks passed: individual/bulk/payout parity, all rarities, farm modifiers, mixed quantities, rounding, repeat submission, fresh-save detection, one-time intro and metadata reload.');
+
+const moving = { ...saved, items: [carrot], player: { day: 3 }, activeTool: 'glove' };
+moving.gridUnlocked[26] = true; moving.gridItems[25] = 4; moving.gridRarity[25] = 'rare';
+applyGridActionForIndexAction({ state: moving, index: 26, mode: 'click', TOOL_GLOVE: 'glove', TOOL_PICKAXE: 'pickaxe', TOOL_WATERING: 'watering', selectedShopItemId: null, isFarmActionBlocked: () => false, getSelectedGridCellIndex: () => 25, getPlantGrowthState: () => ({ isGrown: true }), setSelectedGridCellIndex: noop, selectedGridCellIndices: new Set(), saveState: noop, renderMarket: noop });
+assert.equal(moving.gridPlacedMeta[26].introductoryGrowDays, 2); assert.equal(moving.gridRarity[26], 'rare');
+const switching = { farms: { 1: normalizeFarmStateForGrid(moving,49), 2: createEmptyFarmStateForGrid(49) } };
+const config = { farmPrimaryId: 1, farmSecondaryId: 2, gridCellCount: 49 };
+applyFarmStateToActiveGridRuntime(switching, 2, config); assert.equal(switching.gridPlacedMeta[26], null);
+applyFarmStateToActiveGridRuntime(switching, 1, config); assert.equal(switching.gridPlacedMeta[26].introductoryGrowDays, 2); assert.equal(switching.gridRarity[26], 'rare');
+const retry = { player: { openingTrade: { carrotAvailable: false } } };
+recordOpeningSale(retry, 1, .5); assert.equal(retry.player.openingTrade.completed, undefined);
+retry.player.openingTrade.payoffDismissed = true;
+recordOpeningSale(retry, 1, 1.4); assert.equal(retry.player.openingTrade.completed, true); assert.equal(retry.player.openingTrade.payoffDismissed, false);
+console.log('Actual crop move, farm switch, retained rarity and loss-then-profit retry checks passed.');

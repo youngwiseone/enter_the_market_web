@@ -1,3 +1,4 @@
+import { isFreshStorage, beginOpening } from './opening_state.js';
 import { normalizeWeatherId, rollWeatherId } from '../sim/weather.js';
 
 export function initialiseStateAction(deps) {
@@ -43,6 +44,7 @@ export function initialiseStateAction(deps) {
     setGoalCelebrationOpen
   } = deps;
 
+  const freshStorage = isFreshStorage(loadFromStorage);
   state.player = loadFromStorage('player', null) ?? clone(DEFAULT_DATA.player);
   state.items = loadFromStorage('items', null) ?? clone(DEFAULT_DATA.items);
   state.shop = loadFromStorage('shop', null) ?? clone(DEFAULT_DATA.shop);
@@ -208,6 +210,7 @@ export function initialiseStateAction(deps) {
   if (state.activeFarmId === FARM_SECONDARY_ID && !isFarmTwoPurchased()) {
     state.activeFarmId = FARM_PRIMARY_ID;
   }
+  if (freshStorage) beginOpening(state, state.farms[FARM_PRIMARY_ID]);
   applyFarmStateToActiveGrid(state.activeFarmId);
   state.activeTool = loadFromStorage('activeTool', null);
   if (!TOOL_LIST.includes(state.activeTool)) {

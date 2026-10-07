@@ -1,3 +1,4 @@
+import { recordOpeningSale } from '../state/opening_state.js';
 export async function runSellSequenceAction(deps) {
   const {
     cells,
@@ -17,6 +18,7 @@ export async function runSellSequenceAction(deps) {
 
   const result = {
     harvestedCount: 0,
+    produceSoldCount: 0,
     totalSaleValue: 0,
     totalProfitValue: 0,
     summaryByItem: new Map()
@@ -59,6 +61,7 @@ export async function runSellSequenceAction(deps) {
       registerItemSalePressure(itemId, 1);
     }
     state.player.cash += saleValue;
+  if (isProduce) recordOpeningSale(state, buyPrice, saleValue, cell.quote);
     if (isProduce) {
       state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
     }
@@ -79,6 +82,7 @@ export async function runSellSequenceAction(deps) {
     result.totalSaleValue += saleValue;
     result.totalProfitValue += profit;
     result.harvestedCount += 1;
+    if (isProduce) result.produceSoldCount += 1;
     result.summaryByItem.set(item.name, (result.summaryByItem.get(item.name) || 0) + 1);
 
     if (typeof emitSellFx === 'function') {

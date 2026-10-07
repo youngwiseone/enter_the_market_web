@@ -1,3 +1,4 @@
+import { takeIntroCropMeta } from '../state/opening_state.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
 import {
@@ -151,7 +152,7 @@ export function placeItemOnGridAction(deps) {
   }
   if (Array.isArray(state.gridPlacedMeta)) {
     state.gridPlacedMeta[cellIndex] = isProduceItem(item)
-      ? null
+      ? takeIntroCropMeta(state, item)
       : ensureInfrastructureMetaForPlacedItem(item, {
         tableKey: getNormalizedItemTableKey(item),
         itemType: String(item.type || '').trim().toLowerCase() || 'unknown'

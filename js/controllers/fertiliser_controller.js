@@ -125,7 +125,10 @@ export function getPlantGrowthProgressWithFertiliser(state, item, cellIndex) {
   const wateredToday = Array.isArray(state?.gridWateredDay) && state.gridWateredDay[cellIndex] === state?.player?.day;
   const retainedWaterBonusDays = getRetainedWaterBonusDays(state, cellIndex, stacks);
   const effectiveWateredCount = Math.max(0, wateredCount + retainedWaterBonusDays - (wateredToday ? 1 : 0));
-  const effectiveGrowDays = getEffectiveGrowDaysForPlant(item, stacks);
+  const meta = state?.gridPlacedMeta?.[cellIndex];
+  const introductoryItem = Number(item?.id) === 4 && meta?.introductoryGrowDays === 2
+    ? { ...item, growDays: 2 } : item;
+  const effectiveGrowDays = getEffectiveGrowDaysForPlant(introductoryItem, stacks);
   const isGrown = effectiveWateredCount >= effectiveGrowDays;
   const daysLeft = Math.max(0, effectiveGrowDays - effectiveWateredCount);
   return {

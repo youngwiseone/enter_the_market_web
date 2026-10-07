@@ -1,7 +1,8 @@
+import { recordOpeningSale } from '../state/opening_state.js';
+import { getSaleQuote } from '../sim/sale_quote.js';
 import { emitSellFxAction } from './sell_fx_controller.js';
 import { runSellSequenceAction } from './sell_sequence_controller.js';
 import { isProduceItem } from '../content/item_types.js';
-import { getCropAdjustedRarityMultiplier } from '../sim/crop_identity.js';
 
 export async function sellSelectedGridItemAction(deps) {
   const {
@@ -88,6 +89,7 @@ export async function sellBulkSelectedGridItemsAction(deps) {
         showXpGainFeedback
       }),
       onStepRendered: () => {
+        saveState(); // Persist each paid step if a sale animation is interrupted by reload.
         if (typeof refreshSellStep === 'function') {
           refreshSellStep();
         } else {
@@ -104,9 +106,12 @@ export async function sellBulkSelectedGridItemsAction(deps) {
     if (!harvestedCount) {
       return;
     }
-    const produceSoldCount = Array.isArray(bulkInsight?.cells)
-      ? bulkInsight.cells.reduce((sum, cell) => sum + (cell?.isProduce ? 1 : 0), 0)
-      : harvestedCount;
+    if (harvestedCount > 0) {
+      const combined = { ordinaryValue: 0, marketEffect: 0, rarityBonus: 0, farmBonus: 0 };
+      bulkInsight.cells.forEach(cell => Object.keys(combined).forEach(key => { combined[key] += Number(cell.quote?.[key]) || 0; }));
+      state.player.lastTrade = { cost: totalSaleValue - totalProfitValue, saleValue: totalSaleValue, profit: totalProfitValue, quote: combined };
+    }
+    const produceSoldCount = sequenceSummary.produceSoldCount;
     if (produceSoldCount > 0) {
       awardPlayerXp(xpRewards.harvest * produceSoldCount);
     }
@@ -195,16 +200,15 @@ export async function harvestPlantAction(deps) {
     ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)
     : 0;
   const rarity = isProduce ? (getGridRarity(cellIndex) || assignGridRarity(cellIndex)) : null;
-  const multiplier = isProduce ? getCropAdjustedRarityMultiplier(item, rarity, getRarityMultiplier) : 0.8;
-  const saleValue = isProduce
-    ? (basePrice * multiplier * getActiveFarmSellMultiplier())
-    : ((buyPrice > 0 ? buyPrice : basePrice) * 0.8);
+  const quote = getSaleQuote({ item, marketPrice: basePrice, buyPrice, rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier(), isProduce });
+  const saleValue = quote.saleValue;
   const realizedProfit = saleValue - buyPrice;
   registerSaleEvent(item.name, saleValue, 1);
   if (isProduce) {
     registerItemSalePressure(itemId, 1);
   }
   state.player.cash += saleValue;
+  if (isProduce) recordOpeningSale(state, buyPrice, saleValue, quote);
   if (isProduce) {
     state.goalStats.harvestCount = (state.goalStats.harvestCount || 0) + 1;
   }

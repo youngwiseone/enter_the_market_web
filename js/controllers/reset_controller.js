@@ -1,3 +1,5 @@
+import { beginOpening } from '../state/opening_state.js';
+
 export async function resetGameAction(deps) {
   const {
     state,
@@ -40,13 +42,14 @@ export async function resetGameAction(deps) {
     [FARM_PRIMARY_ID]: createEmptyFarmState(),
     [FARM_SECONDARY_ID]: createEmptyFarmState()
   };
+  beginOpening(state, state.farms[FARM_PRIMARY_ID]);
   state.secondFarmPurchased = false;
   state.activeFarmId = FARM_PRIMARY_ID;
   applyFarmStateToActiveGrid(FARM_PRIMARY_ID);
   state.activeTool = TOOL_GLOVE;
   state.goals = clone(defaultGoals);
   state.goalsClaimed = {};
-  state.unlockedTools = getDefaultUnlockedTools();
+  state.unlockedTools = { ...getDefaultUnlockedTools(), watering: true };
   state.unlockedShopItems = getDefaultUnlockedShopItems(state.items);
   state.freePurchasesByItem = {};
   state.goalFlags = {};

@@ -1,8 +1,17 @@
+import { getSaleQuote } from '../sim/sale_quote.js';
+import { getCropCycleOffsetPercent } from '../sim/crop_identity.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { getRefillableTankState, getSprinklerPlacementConfig } from '../controllers/watering_infrastructure.js';
 import { getPlantFertiliserEffectsSummary } from '../controllers/fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
 import { getCropAdjustedRarityMultiplier, getCropIdentity, getCropIdentityLabels, getExpectedCropRarityMultiplier } from '../sim/crop_identity.js';
+
+function getMarketContext(state, item, entry) {
+  const average = entry.daysCount > 0 ? entry.priceSum / entry.daysCount : item.price;
+  const relative = average > 0 ? (entry.price / average - 1) * 100 : 0;
+  const cycleChange = getCropCycleOffsetPercent(item, state.player.day + 1) - getCropCycleOffsetPercent(item, state.player.day);
+  return { relative, average, cycleChange, growDays: item.growDays };
+}
 
 export function getSelectedShopItemInsightDataAction(deps) {
   const {
@@ -63,6 +72,7 @@ export function getSelectedShopItemInsightDataAction(deps) {
     itemName: item.name,
     identityLabels: getCropIdentityLabels(item),
     identitySummary: getCropIdentity(item).identitySummary,
+    marketContext: getMarketContext(state, item, shopEntry),
     buyPrice,
     effectiveCost,
     freeCount,
@@ -129,8 +139,8 @@ export function getSelectedGridItemInsightDataAction(deps) {
   if (!shopEntry) return null;
   const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
   const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
-  const sellMultiplier = growth.isGrown ? getCropAdjustedRarityMultiplier(item, rarity || 'common', getRarityMultiplier) : 0;
-  const sellNow = growth.isGrown ? (currentBasePrice * sellMultiplier * getActiveFarmSellMultiplier()) : 0;
+  const quote = getSaleQuote({ item, marketPrice: currentBasePrice, buyPrice, rarity: rarity === 'unknown' ? 'common' : rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier() });
+  const sellNow = growth.isGrown ? quote.saleValue : 0;
   const profitNow = sellNow - buyPrice;
   const fertiliserSummary = getPlantFertiliserEffectsSummary(state, item, selectedGridCellIndex, RARITY_ROLLS);
   return {
@@ -140,6 +150,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
     itemName: item.name,
     identityLabels: getCropIdentityLabels(item),
     identitySummary: getCropIdentity(item).identitySummary,
+    marketContext: getMarketContext(state, item, shopEntry),
     buyPrice,
     currentBasePrice,
     rarity,
@@ -147,6 +158,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
     canSell: growth.isGrown,
     sellNow,
     profitNow,
+    quote,
     fertiliser: fertiliserSummary
   };
 }
