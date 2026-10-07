@@ -1,0 +1,27 @@
+.chapter-card { display:flex; gap:10px; padding:10px; margin:8px 0; border:1px solid #778b70; background:rgba(90,140,65,.08); }
+.chapter-portrait { flex:none; width:72px; height:72px; object-fit:contain; image-rendering:pixelated; }
+.chapter-card-copy { min-width:0; flex:1; }
+.chapter-card p { margin:7px 0; line-height:1.35; }
+.chapter-requirements { font-weight:bold; }
+.chapter-outcome { color:inherit; border-left:3px solid #659b45; padding-left:7px; }
+.chapter-split { display:flex !important; flex-wrap:wrap; gap:6px; }
+.chapter-split > button { flex:1; min-width:100px; min-height:44px; }
+.chapter-delivery { font-size:12px; line-height:1.35; margin:8px 0; }
+.chapter-button { min-height:44px; }
+.request-eligible::after { content:''; position:absolute; inset:3px; border:1px dashed #c7e586; pointer-events:none; border-radius:3px; }
+.grid-cell.cooking-selected { outline:3px solid #ffd477; outline-offset:-3px; }
+#cooking-context { flex:none; margin:4px 0; padding:7px; }
+#cooking-context[hidden], [data-tool="pot"][hidden], #chapter-farm-hint[hidden] { display:none !important; }
+#cooking-context p { margin:5px 0; font-size:12px; line-height:1.25; }
+.cooking-recipe-row { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+.cooking-recipe-row select { flex:1; min-height:36px; min-width:110px; }
+.cooking-recipe-row button { min-height:36px; }
+.chapter-farm-hint { flex:none; font-size:11px; min-height:28px; margin:3px 0; }
+.cooking-reveal img { animation:cooking-reveal .45s steps(4,end); }
+@keyframes cooking-reveal { 0% { transform:scale(.7); filter:brightness(2); } 60% { transform:scale(1.15); } 100% { transform:scale(1); } }
+@media (prefers-reduced-motion:reduce) { .cooking-reveal img { animation:none; } }
+body.mobile-layout #farm-action-dock.chapter-split { gap:4px; }
+body.mobile-layout #farm-action-dock.chapter-split > button { font-size:11px; line-height:1.2; min-height:44px; padding:5px; min-width:0; }
+body.mobile-layout .cooking-recipe-row button, body.mobile-layout .cooking-recipe-row select { min-height:44px; }
+body.mobile-layout .chapter-card { padding:7px; gap:7px; }
+body.mobile-layout .chapter-portrait { width:56px; height:56px; }

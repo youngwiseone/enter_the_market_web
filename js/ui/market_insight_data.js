@@ -1,3 +1,4 @@
+import { getDishSaleQuote } from '../sim/dish_quote.js';
 import { getSaleQuote, getCropCostBasis } from '../sim/sale_quote.js';
 import { getCropCycleOffsetPercent } from '../sim/crop_identity.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
@@ -115,6 +116,16 @@ export function getSelectedGridItemInsightDataAction(deps) {
     ? Math.max(0, Number(state.gridPurchasePrice[selectedGridCellIndex]) || 0)
     : 0;
   if (!isProduce) {
+    if (item.type === 'dish') {
+      const quote = getDishSaleQuote(state.gridPlacedMeta?.[selectedGridCellIndex]);
+      if (!quote) return null;
+      return { cellIndex: selectedGridCellIndex, itemName: item.name, isProduce: false,
+        isDish: true, itemType: 'dish', tableKey, quote, rarity: state.gridRarity?.[selectedGridCellIndex],
+        growth: { isGrown: true, daysLeft: 0 }, canSell: true, buyPrice: quote.cost,
+        currentBasePrice: quote.saleValue, sellNow: quote.saleValue, profitNow: quote.profit,
+        tankCapacity: null, tankCurrent: null,
+        recipeId: state.gridPlacedMeta[selectedGridCellIndex].dish.recipeId };
+    }
     const fallbackBase = Math.max(0, Number(item.price) || 0);
     const sellNow = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
     const placedMeta = Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[selectedGridCellIndex] : null;
@@ -172,3 +183,4 @@ export function getSelectedGridItemInsightDataAction(deps) {
     fertiliser: fertiliserSummary
   };
 }
+

@@ -45,7 +45,8 @@ export function createFarmPointerRuntimeController(deps) {
     getFreePurchaseCount,
     GUIDED_FLAGS,
     saveState,
-    playGridItemMoveFx
+    playGridItemMoveFx,
+    cookIngredient
   } = deps;
 
   const farmPointerState = {
@@ -91,6 +92,7 @@ export function createFarmPointerRuntimeController(deps) {
         saveState,
         renderMarket,
         playGridItemMoveFx
+        ,cookIngredient
       });
     } finally {
       trackActionDuration('applyGridActionForIndex', performance.now() - perfStart);

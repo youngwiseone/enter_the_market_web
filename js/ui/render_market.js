@@ -353,7 +353,7 @@ function renderUtilityMarketTable(tableHost, deps) {
 
   const utilities = Array.isArray(state.items)
     ? state.items
-      .filter((item) => item && getItemTableKey(item) === 'utility' && (!isShopItemUnlocked || isShopItemUnlocked(item.id)))
+      .filter((item) => item && item.type !== 'dish' && getItemTableKey(item) === 'utility' && (!isShopItemUnlocked || isShopItemUnlocked(item.id)))
       .slice()
       .sort((a, b) => {
         const priceDiff = (Number(a?.price) || 0) - (Number(b?.price) || 0);
@@ -943,7 +943,8 @@ export function renderMarketAction(deps) {
             ? Math.max(0, Number(state.gridPurchasePrice[i]) || 0)
             : 0;
           const fallbackBase = Math.max(0, Number(it.price) || 0);
-          const resale = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
+          const resale = it.type === 'dish' ? (getGridCellSellSnapshot(i)?.sellNow || 0)
+            : Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
           const tankState = getRefillableTankState(it, Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[i] : null);
           cell.title = tankState
             ? `Sell for $${resale.toFixed(2)} | Tank days ${Number(tankState.current || 0)}/${Number(tankState.capacity || 0)}`

@@ -210,7 +210,12 @@ export function renderSelectedItemInsightAction(deps) {
       appendMarketContext(panel, gridInsight);
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
-      const rows = gridInsight.isProduce ? [
+      const rows = gridInsight.isDish ? [
+        ['Meal value', `$${gridInsight.sellNow.toFixed(2)}`, ''],
+        ['Ingredient costs', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
+        [gridInsight.quote?.historicalCostUnknown ? 'Known-cost profit' : 'Net profit', `${gridInsight.profitNow >= 0 ? '+' : '−'}$${Math.abs(gridInsight.profitNow).toFixed(2)}`, gridInsight.profitNow >= 0 ? 'good' : 'bad'],
+        ['Recipe quality', gridInsight.rarity, '']
+      ] : gridInsight.isProduce ? [
         ['Sell Now', gridInsight.canSell ? `$${gridInsight.sellNow.toFixed(2)}` : 'Not ready', gridInsight.canSell ? '' : 'bad'],
         [gridInsight.quote?.historicalCostUnknown ? 'Known-cost profit' : 'Net profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : '−'}$${Math.abs(gridInsight.profitNow).toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : '']
       ] : [

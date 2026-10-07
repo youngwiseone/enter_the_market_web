@@ -45,8 +45,9 @@ export function calculateInventoryValueAction(state, getItemCurrentPrice) {
 
 export function calculateGridValueAction(state, getItemCurrentPrice) {
   if (!Array.isArray(state.gridItems)) return 0;
-  return state.gridItems.reduce((total, itemId) => {
+  return state.gridItems.reduce((total, itemId, index) => {
     if (!itemId) return total;
+    if (state.gridPlacedMeta?.[index]?.dish) return total + Math.max(0, Number(state.gridPlacedMeta[index].dish.saleValue) || 0);
     return total + getItemCurrentPrice(itemId);
   }, 0);
 }

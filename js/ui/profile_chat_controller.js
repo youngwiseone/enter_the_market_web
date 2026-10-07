@@ -10,8 +10,12 @@ export const PROFILE_IMAGES = {
     wrong: resolveResourcePath('profiles/player_wrong.png'),
     money: resolveResourcePath('profiles/player_money.png'),
     goal_unlocked: resolveResourcePath('profiles/player_goal_unlocked.png'),
-    level_up: resolveResourcePath('profiles/player_level_up.png')
+    level_up: resolveResourcePath('profiles/player_level_up.png'),
+    cooking_happy: resolveResourcePath('cooking/player_cooking_happy.png')
   },
+  mina: { neutral: resolveResourcePath('cooking/mina.png'), excited: resolveResourcePath('cooking/mina_happy.png') },
+  rowan: { neutral: resolveResourcePath('cooking/rowan.png'), excited: resolveResourcePath('cooking/rowan_happy.png') },
+  bea: { neutral: resolveResourcePath('cooking/bea.png'), excited: resolveResourcePath('cooking/bea_happy.png') },
   farmer: {
     neutral: resolveResourcePath('profiles/farmer_chad.png'),
     excited: resolveResourcePath('profiles/farmer_chad.png'),
@@ -27,15 +31,32 @@ export const PROFILE_IMAGES = {
 const PROFILE_BUBBLE_HIDE_MS = 3000;
 const OUT_OF_ENERGY_TEXT_MATCHERS = ['not enough energy', 'low energy'];
 
-export function createProfileChatController() {
+export function createProfileChatController({ getCookingOutfit = () => false } = {}) {
   let profileBubbleHideTimerId = null;
   let profileShakeTimerId = null;
   let activeSpeaker = 'player';
   let activeEmotion = 'neutral';
+  let cookingTimer = null;
+  let cookingPrevious = null;
 
   function getProfileImage(speaker, emotion) {
+    if (speaker === 'player' && getCookingOutfit() && ['neutral', 'excited'].includes(emotion)) {
+      return resolveResourcePath(`cooking/player_cooking${emotion === 'excited' ? '_happy' : ''}.png`);
+    }
     const speakerMap = PROFILE_IMAGES[speaker] || PROFILE_IMAGES.player;
     return speakerMap[emotion] || speakerMap.neutral || PROFILE_IMAGES.player.neutral;
+  }
+
+  function reactCooking() {
+    if (!cookingPrevious) cookingPrevious = { speaker: activeSpeaker, emotion: activeEmotion };
+    if (cookingTimer) window.clearTimeout(cookingTimer);
+    setChatProfile('player', 'cooking_happy');
+    cookingTimer = window.setTimeout(() => {
+      const previous = cookingPrevious;
+      cookingPrevious = null; cookingTimer = null;
+      // New dialogue owns the portrait if it arrived during the reaction.
+      if (activeSpeaker === 'player' && activeEmotion === 'cooking_happy') setChatProfile(previous.speaker, previous.emotion);
+    }, 1200);
   }
 
   function setChatProfile(speaker, emotion) {
@@ -128,6 +149,7 @@ export function createProfileChatController() {
     getProfileImage,
     setChatProfile,
     showProfileMessageBubble,
-    hideProfileMessageBubbleImmediately
+    hideProfileMessageBubbleImmediately,
+    reactCooking
   };
 }

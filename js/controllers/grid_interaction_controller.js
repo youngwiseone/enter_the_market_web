@@ -1,5 +1,6 @@
 import { getSaleQuote, getCropCostBasis } from '../sim/sale_quote.js';
 import { ensureCropInstanceId } from '../state/crop_identity.js';
+import { getDishSaleQuote } from '../sim/dish_quote.js';
 import {
   isProduceItem,
   isUtilityItem,
@@ -62,9 +63,14 @@ export function applyGridActionForIndexAction(deps) {
     saveState,
     renderMarket,
     playGridItemMoveFx
+    ,cookIngredient
   } = deps;
 
   if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress || isFarmActionBlocked()) return false;
+  if (state.activeTool === 'pot') {
+    if (mode === 'drag') return false;
+    return typeof cookIngredient === 'function' ? cookIngredient(index) : false;
+  }
   const isDragMode = mode === 'drag';
   const allowInfoSelection = !isDragMode;
   if (!Array.isArray(state.gridUnlocked) || !Array.isArray(state.gridItems)) return false;
@@ -226,6 +232,12 @@ export function getGridCellSellSnapshotAction(deps) {
   if (!item) return null;
   const identity = { farmId: Number(state.activeFarmId || 1), instanceId: ensureCropInstanceId(state, cellIndex) };
   const isProduce = isProduceItem(item);
+  if (item.type === 'dish') {
+    const quote = getDishSaleQuote(state.gridPlacedMeta?.[cellIndex]);
+    if (!quote) return null;
+    return { ...identity, cellIndex, itemId, item, rarity: state.gridRarity?.[cellIndex] || 'common',
+      sellNow: quote.saleValue, buyPrice: quote.cost, profitNow: quote.profit, isProduce: false, quote };
+  }
   if (!isProduce) {
     const buyPrice = Array.isArray(state.gridPurchasePrice)
       ? Math.max(0, Number(state.gridPurchasePrice[cellIndex]) || 0)

@@ -601,6 +601,7 @@ export const DEFAULT_DATA = {
     }
   ],
   messages: [
+    { id: 'chapter.feedback', type: 'progress', icon: 'chat', speaker: 'player', emotion: 'neutral', category: 'progress', priority: 'normal', template: '{text}', replaceKey: 'chapter-feedback', replaceScope: 'global' },
     {
       id: 'system.fallback_forgot',
       type: 'system',
