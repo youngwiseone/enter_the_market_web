@@ -84,6 +84,7 @@ export function createMessageRuntimeController(deps) {
   }
 
   function emitStuckTipsIfNeeded() {
+    if (state.player?.openingTrade && !state.player.openingTrade.completed) return;
     const now = Date.now();
     if (now - lastTipAt < TIP_COOLDOWN_MS) return;
     const day = Math.max(1, Number(state.player?.day) || 1);

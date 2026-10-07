@@ -1,3 +1,13 @@
+function appendMarketContext(panel, insight) {
+  const context = insight.marketContext;
+  if (!context) return;
+  const note = document.createElement('p');
+  note.className = 'market-context';
+  const relative = context.relative;
+  note.textContent = `Today: ${relative > 3 ? 'above' : relative < -3 ? 'below' : 'near'} the average ($${context.average.toFixed(2)}). Price cycle ${context.cycleChange > 0 ? 'leans upward' : context.cycleChange < 0 ? 'leans downward' : 'is flat'} next day; market rolls, weather and selling pressure can change the result.`;
+  panel.appendChild(note);
+}
+
 function createInsightHeader(titleText, clearCurrentInfoSelection) {
   const head = document.createElement('div');
   head.className = 'market-insight-head';
@@ -68,7 +78,7 @@ export function renderSelectedItemInsightAction(deps) {
       delete farmButton.dataset.sellActionButton;
     }
     farmButton.onclick = onClick || null;
-    setRestReplacementMode(isMobileLayout && isFarmVisible);
+    setRestReplacementMode(false);
   }
 
   if (isMobileLayout && isFarmVisible) {
@@ -144,6 +154,18 @@ export function renderSelectedItemInsightAction(deps) {
         metricGrid.appendChild(metric);
       });
       panel.appendChild(metricGrid);
+      if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
+        const details = document.createElement('details');
+        details.className = 'sale-breakdown';
+        const summary = document.createElement('summary');
+        summary.textContent = 'Why this sale value?';
+        const text = document.createElement('p');
+        const q = gridInsight.quote;
+        const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
+        text.textContent = `Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}. Cost $${q.cost.toFixed(2)}; net ${signed(q.profit)}. Holding keeps your crop, but uses this growing tile.`;
+        details.append(summary, text);
+        panel.appendChild(details);
+      }
       const chipRow = document.createElement('div');
       chipRow.className = 'market-insight-row';
       const compositionChip = document.createElement('span');
@@ -165,6 +187,7 @@ export function renderSelectedItemInsightAction(deps) {
 
     if (gridInsight) {
       panel.appendChild(createInsightHeader(`${gridInsight.itemName} selected tile`, clearCurrentInfoSelection));
+      appendMarketContext(panel, gridInsight);
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = gridInsight.isProduce ? [
@@ -192,6 +215,18 @@ export function renderSelectedItemInsightAction(deps) {
         metricGrid.appendChild(metric);
       });
       panel.appendChild(metricGrid);
+      if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
+        const details = document.createElement('details');
+        details.className = 'sale-breakdown';
+        const summary = document.createElement('summary');
+        summary.textContent = 'Why this sale value?';
+        const text = document.createElement('p');
+        const q = gridInsight.quote;
+        const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
+        text.textContent = `Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}. Cost $${q.cost.toFixed(2)}; net ${signed(q.profit)}. Holding keeps your crop, but uses this growing tile.`;
+        details.append(summary, text);
+        panel.appendChild(details);
+      }
 
       const chipRow = document.createElement('div');
       chipRow.className = 'market-insight-row';
@@ -348,6 +383,18 @@ export function renderSelectedItemInsightAction(deps) {
         metricGrid.appendChild(metric);
       });
       panel.appendChild(metricGrid);
+      if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
+        const details = document.createElement('details');
+        details.className = 'sale-breakdown';
+        const summary = document.createElement('summary');
+        summary.textContent = 'Why this sale value?';
+        const text = document.createElement('p');
+        const q = gridInsight.quote;
+        const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
+        text.textContent = `Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}. Cost $${q.cost.toFixed(2)}; net ${signed(q.profit)}. Holding keeps your crop, but uses this growing tile.`;
+        details.append(summary, text);
+        panel.appendChild(details);
+      }
       const chipRow = document.createElement('div');
       chipRow.className = 'market-insight-row';
       const typeChip = document.createElement('span');
@@ -389,12 +436,17 @@ export function renderSelectedItemInsightAction(deps) {
     }
 
     panel.appendChild(createInsightHeader(`${shopInsight.itemName} outlook`, clearCurrentInfoSelection));
+    appendMarketContext(panel, shopInsight);
+    const growthNote = document.createElement('p');
+    growthNote.className = 'market-context';
+    growthNote.textContent = `Normal growth: ${shopInsight.marketContext?.growDays || 0} watered days. Sale estimates use today’s price; the price at maturity can rise or fall.`;
+    panel.appendChild(growthNote);
     const metricGrid = document.createElement('div');
     metricGrid.className = 'market-insight-grid';
     const rows = [
       ['Buy Price', `$${shopInsight.buyPrice.toFixed(2)}`, ''],
       ['Effective Cost', `$${shopInsight.effectiveCost.toFixed(2)}`, shopInsight.effectiveCost === 0 ? 'good' : ''],
-      ['Expected Sale', `$${shopInsight.expectedSale.toFixed(2)}`, ''],
+      ['Sale if price stays (rarity average)', `$${shopInsight.expectedSale.toFixed(2)}`, ''],
       ['Projected Delta', `${shopInsight.projectedDelta >= 0 ? '+' : ''}$${shopInsight.projectedDelta.toFixed(2)}`, shopInsight.projectedDelta >= 0 ? 'good' : 'bad']
     ];
     rows.forEach(([label, value, tone]) => {
@@ -416,7 +468,7 @@ export function renderSelectedItemInsightAction(deps) {
     chipRow.className = 'market-insight-row';
     const safetyChip = document.createElement('span');
     safetyChip.className = `insight-chip${shopInsight.guaranteedDelta >= 0 ? ' good' : ' bad'}`;
-    safetyChip.textContent = `Guaranteed: ${shopInsight.guaranteedDelta >= 0 ? '+' : ''}$${shopInsight.guaranteedDelta.toFixed(2)}`;
+    safetyChip.textContent = `Common at today’s price: ${shopInsight.guaranteedDelta >= 0 ? '+' : ''}$${shopInsight.guaranteedDelta.toFixed(2)}`;
     chipRow.appendChild(safetyChip);
     const marginChip = document.createElement('span');
     const marginTone = shopInsight.marginPct >= 0 ? ' good' : ' bad';

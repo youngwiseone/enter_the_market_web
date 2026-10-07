@@ -1,3 +1,4 @@
+import { setModalVisible } from './modal_focus.js';
 function showCopiedMessage() {
   const copiedEl = document.getElementById('feedback-copied');
   if (!copiedEl) return;
@@ -10,8 +11,7 @@ function showCopiedMessage() {
 export function setFeedbackModalOpenDom(isOpen) {
   const modal = document.getElementById('feedback-modal');
   if (!modal) return;
-  modal.classList.toggle('is-open', isOpen);
-  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  setModalVisible(modal, !!isOpen);
 }
 
 export async function copyFeedbackTextAction(text) {

@@ -271,6 +271,13 @@ function renderGraphSvg(visibleHistory, selectedSeries, graphWidth) {
     `;
   }).join('');
 
+  let averageMarkup = '';
+  if (selectedSeries.length === 1 && selectedSeries[0].key !== 'cash') {
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const y = axisTop + innerHeight - ((average - paddedMin) / (paddedMax - paddedMin) * innerHeight);
+    averageMarkup = `<line x1="${axisLeft}" y1="${y}" x2="${axisLeft + innerWidth}" y2="${y}" stroke="#655c42" stroke-dasharray="5 4" /><text x="${axisLeft + 8}" y="${y - 5}" class="data-graph-axis-label data-graph-axis-label-left">Average ${escapeSvgAttribute(formatMoney(average))}</text>`;
+  }
+
   const gridLines = yTicks.map((tick) => {
     const ratio = (tick - paddedMin) / Math.max(1, paddedMax - paddedMin);
     const y = axisTop + innerHeight - (ratio * innerHeight);
@@ -298,6 +305,7 @@ function renderGraphSvg(visibleHistory, selectedSeries, graphWidth) {
       <rect x="${axisLeft}" y="${axisTop}" width="${innerWidth}" height="${innerHeight}" class="data-graph-plot" />
       ${gridLines}
       <line x1="${axisLeft}" y1="${(axisTop + innerHeight).toFixed(2)}" x2="${(axisLeft + innerWidth).toFixed(2)}" y2="${(axisTop + innerHeight).toFixed(2)}" class="data-graph-axis-line" />
+      ${averageMarkup}
       ${lineMarkup}
       ${xAxisLabels}
       ${xAxisTitle}
@@ -462,6 +470,24 @@ export function renderDataAction(deps) {
   graphSurface.className = 'data-graph-surface';
   graphSurface.innerHTML = renderGraphSvg(visibleHistory, selectedSeries, graphWidth);
   graphCard.appendChild(graphSurface);
+  const historyNote = document.createElement('p');
+  historyNote.className = 'market-context';
+  historyNote.textContent = 'Recorded prices, not a forecast. Crop prices exclude rarity bonuses. The dashed line shows the visible-window average when one crop is selected.';
+  graphCard.appendChild(historyNote);
+  const historyDetails = document.createElement('details');
+  historyDetails.className = 'sale-breakdown';
+  const historySummary = document.createElement('summary');
+  historySummary.textContent = 'Tap for recent daily prices';
+  historyDetails.appendChild(historySummary);
+  selectedSeries.forEach(series => {
+    const row = document.createElement('p');
+    row.textContent = `${series.name || series.label || series.key}: ` + visibleHistory.slice(-7).map(snapshot => {
+      const value = getSeriesValue(snapshot, series);
+      return `Day ${snapshot.day} ${Number.isFinite(value) ? formatMoney(value) : '—'}`;
+    }).join(' · ');
+    historyDetails.appendChild(row);
+  });
+  graphCard.appendChild(historyDetails);
 
   const sideCard = document.createElement('section');
   sideCard.className = 'data-card data-card-series';

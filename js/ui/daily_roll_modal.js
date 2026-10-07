@@ -1,3 +1,4 @@
+import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 
 function createDailyRollSlotNode(item, extraClass = '') {
@@ -148,8 +149,7 @@ export function setDailyRollOpenDom(isOpen, moveFocusOutsideModal) {
   if (!isOpen) {
     moveFocusOutsideModal(modal);
   }
-  modal.classList.toggle('is-open', !!isOpen);
-  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  setModalVisible(modal, !!isOpen);
 }
 
 export function continueDailyRollModalAction(deps) {
@@ -168,8 +168,7 @@ export function setDaySummaryOpenDom(isOpen, moveFocusOutsideModal) {
   if (!isOpen) {
     moveFocusOutsideModal(modal);
   }
-  modal.classList.toggle('is-open', !!isOpen);
-  modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  setModalVisible(modal, !!isOpen);
 }
 
 export function showDaySummaryModalDom(summary, setDaySummaryOpen) {
@@ -299,7 +298,7 @@ export async function showDailyMarketRollModalAction(deps) {
     return;
   }
 
-  const totalDurationMs = isReduceMotion() ? 1800 : 3000;
+  const totalDurationMs = isReduceMotion() ? 0 : 1100;
   const emitIntervalMs = Math.max(60, Math.floor(totalDurationMs / Math.max(1, picks.length)));
   const spinSlowdownStartMs = isReduceMotion() ? 1700 : 2500;
   const fastSpinIntervalMs = isReduceMotion() ? 55 : 24;

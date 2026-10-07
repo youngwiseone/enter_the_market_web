@@ -59,11 +59,11 @@ export function syncGuidedUnlocksAction(deps) {
   }
   if (!state.goalFlags[GUIDED_FLAGS.storeAnnounced] && isStoreTabUnlocked()) {
     state.goalFlags[GUIDED_FLAGS.storeAnnounced] = true;
-    addMessage({ id: 'progress.store_unlocked' });
+    if (!state.player?.openingTrade || state.player.openingTrade.completed) addMessage({ id: 'progress.store_unlocked' });
   }
   if (!state.goalFlags[GUIDED_FLAGS.goalsAnnounced] && isGoalsTabUnlocked()) {
     state.goalFlags[GUIDED_FLAGS.goalsAnnounced] = true;
-    addMessage({ id: 'progress.goals_unlocked', meta: { emotion: 'excited' } });
+    if (!state.player?.openingTrade || state.player.openingTrade.completed) addMessage({ id: 'progress.goals_unlocked', meta: { emotion: 'excited' } });
   }
 }
 
@@ -144,6 +144,21 @@ export function getGuidancePayloadAction(deps) {
     isShopItemUnlocked
   } = deps;
 
+  const opening = state.player?.openingTrade;
+  if (opening) {
+    const last = opening.lastSale;
+    if (last && !opening.payoffDismissed) {
+      return { objective: last.profit > 0 ? 'First trading loop complete!' : 'Your first trade — try another price window', hint: `Cost $${last.cost.toFixed(2)} → sale $${last.saleValue.toFixed(2)} → ${last.profit >= 0 ? 'profit' : 'loss'} $${Math.abs(last.profit).toFixed(2)}. ${last.profit > 0 ? 'Keep farming. Mine a second growing space next.' : 'Prices moved while you grew. Rarity adds value; holding can help, but prices can fall too.'}`, progressText: last.profit > 0 ? 'Keep farming' : 'Try again', chipClass: last.profit > 0 ? '' : 'warn' };
+    }
+    if (opening.completed && opening.payoffDismissed && !state.goalsClaimed?.['tomato-first-harvest']) return { objective: 'Next milestone: Tomato Starter', hint: 'Harvest one Tomato to earn two free Tomato seeds. Keep growing to unlock it; mine a second tile when you want more room.', progressText: '0/1 Tomato', chipClass: '' };
+    if (!opening.completed) {
+      const index = state.gridItems?.findIndex(Boolean) ?? -1;
+      if (index < 0) return { objective: 'Plant your first carrot', hint: opening.carrotAvailable ? 'Choose Carrot in the market, then tap the cleared centre tile. This first carrot needs just two watered growth days.' : 'Plant another carrot in the free tile. Normal carrots need six watered growth days; compare prices before selling.', progressText: 'Plant', chipClass: '' };
+      const ready = countReadyToHarvestTiles() > 0;
+      const watered = state.gridWateredDay?.[index] === state.player.day;
+      return { objective: ready ? 'Inspect today’s price: sell or wait' : watered ? 'Rest to grow and see new prices' : 'Water your carrot', hint: ready ? 'Select the crop for its sale quote. Waiting keeps the crop safe, but occupies this growing space.' : watered ? 'Rest advances growth and changes prices. The next price is uncertain.' : 'Choose the watering can, then tap your crop. Water once each growing day.', progressText: ready ? 'Sell or wait' : watered ? 'Rest' : 'Water', chipClass: '' };
+    }
+  }
   const guided = getPrimaryGuidedState();
   const energy = Number(state.player?.energy) || 0;
   const readyTiles = Math.max(0, Number(countReadyToHarvestTiles()) || 0);
@@ -184,7 +199,7 @@ export function getGuidancePayloadAction(deps) {
   }
   if (readyTiles > 0) {
     return {
-      objective: 'Cash out ready crops before resting',
+      objective: 'Choose: sell today or hold for another price',
       hint: bestSell
         ? `${bestSell.itemName} is about ${bestSell.premiumPct.toFixed(0)}% above average. Sell into strength while today lasts.`
         : `You have ${readyTiles} ready crop${readyTiles === 1 ? '' : 's'} that can be sold at today's prices.`,

@@ -203,7 +203,7 @@ export function getExpectedCropRarityMultiplier(item, getBaseRarityMultiplier, r
 export function getCropIdentityLabels(item) {
   const identity = getCropIdentity(item);
   return {
-    cycle: `${identity.cycleDays}-day cycle`,
+    cycle: `${identity.cycleDays}-day price cycle`,
     family: CYCLE_FAMILY_LABELS[identity.cycleFamily] || 'Cycle',
     noise: identity.noiseLevel.replace(/_/g, ' '),
     shock: identity.shockSensitivity.replace(/_/g, ' '),

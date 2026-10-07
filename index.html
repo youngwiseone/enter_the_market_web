@@ -3208,10 +3208,10 @@
             z-index: 30; 
         } 
         .fx-pop { 
-            animation: fx-pop 160ms ease-out; 
+            animation: fx-pop var(--action-fast) ease-out; 
         } 
         .fx-shake { 
-            animation: fx-shake 120ms ease-in-out; 
+            animation: fx-shake var(--action-fast) ease-in-out; 
         } 
         .fx-shake-impact {
             animation: fx-shake-impact 150ms ease-in-out;
@@ -3220,7 +3220,7 @@
             animation: fx-grid-jiggle 180ms ease-in-out;
         }
         .fx-wobble { 
-            animation: fx-wobble 180ms ease-in-out; 
+            animation: fx-wobble var(--action-settle) ease-in-out; 
         } 
         .fx-pulse-up { 
             animation: fx-pulse-up 260ms ease-out; 
@@ -3413,6 +3413,25 @@
             opacity: 1;
             transform: translateY(0);
         }
+        [hidden] { display: none !important; }
+        :root { --action-fast: 140ms; --action-settle: 240ms; }
+        #guidance-panel { background: #f7f2db; color: #343523; border: 1px solid #a9a386; padding: 9px 10px; margin: 6px 0; line-height: 1.4; }
+        .guidance-heading { display: flex; gap: 8px; align-items: start; justify-content: space-between; }
+        #guidance-objective-chip { font-size: 12px; white-space: nowrap; border: 1px solid #a9a386; padding: 2px 5px; background: #fff9e6; }
+        #guidance-hint-text { margin: 5px 0 0; font-size: 13px; }
+        .market-day-move { display: block; font-size: 11px; line-height: 1.5; }
+        .market-context, .sale-breakdown { line-height: 1.45; font-size: 13px; color: #303b31; }
+        .sale-breakdown { background: #f7f2db; padding: 8px; margin: 8px 0; }
+        .sale-breakdown summary { cursor: pointer; min-height: 32px; display: list-item; }
+        .sale-breakdown p { margin: 4px 0; }
+        .crop-state { position: absolute; bottom: 2px; right: 3px; background: #fff9e6; color: #203527; border: 1px solid #746e53; font: bold 12px monospace; min-width: 14px; text-align: center; z-index: 6; pointer-events: none; }
+        .crop-just-ready { animation: crop-ready var(--action-settle) ease-out; }
+        @keyframes crop-ready { 50% { transform: scale(1.07); } }
+        button:focus-visible, summary:focus-visible { outline: 3px solid #343c91; outline-offset: 2px; }
+        body.mobile-layout #farm-action-dock { bottom: calc(60px + var(--safe-bottom) + var(--bottom-bar-height)); }
+        body.mobile-layout #guidance-panel { padding: 7px 9px; }
+        body.mobile-layout .market-insight-close { min-width: 44px; min-height: 44px; }
+        @media (prefers-reduced-motion: reduce) { .crop-just-ready { animation: none; } }
     </style> 
 </head>
 <body>    
@@ -3456,6 +3475,12 @@
                 <!-- Interactive grid area. -->
                 <div id="farm-title" class="panel-title">Farm 1</div>
                 <div id="desktop-chat-log" aria-live="polite"></div>
+                <div id="guidance-panel" aria-live="polite">
+                    <div class="guidance-heading"><strong id="guidance-objective-text"></strong><span id="guidance-objective-chip"></span></div>
+                    <p id="guidance-hint-text"></p>
+                    <button id="opening-keep-farming" type="button" hidden>Keep farming</button>
+                </div>
+                <details id="sale-receipt" class="sale-breakdown" hidden aria-live="polite"><summary id="sale-receipt-result"></summary><p id="sale-receipt-detail"></p></details>
                 <div class="farm-toolbar" aria-label="Farm tools">
                     <button class="tool-button active" data-tool="glove" title="Gloves">
                         <img data-versioned-src="resources/tools/glove.png" alt="Gloves">

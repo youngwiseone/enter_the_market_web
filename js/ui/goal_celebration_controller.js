@@ -1,3 +1,4 @@
+import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 
 const GOAL_CELEBRATION_SPARKLE_IMAGES = [
@@ -71,8 +72,7 @@ export function createGoalCelebrationController(deps) {
     if (!isOpen) {
       moveFocusOutsideModal(modal);
     }
-    modal.classList.toggle('is-open', !!isOpen);
-    modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    setModalVisible(modal, !!isOpen);
   }
 
   function getGoalCelebrationRewardText(goal) {
@@ -307,7 +307,7 @@ export function createGoalCelebrationController(deps) {
   }
 
   function showNextGoalCelebration() {
-    if (getActiveGoalCelebration()) return;
+    if (getActiveGoalCelebration() || state.runtimeFlags?.isRestInProgress || document.querySelector('.is-open [role="dialog"]')) return;
     const queue = getGoalCelebrationQueue();
     if (!Array.isArray(queue) || queue.length === 0) return;
     const next = queue.shift();
@@ -369,6 +369,7 @@ export function createGoalCelebrationController(deps) {
 
   function enqueueGoalCelebration(goal) {
     if (!goal || typeof goal !== 'object') return;
+    if (state.player?.openingTrade && goal.id === 'day-2-watering') return;
     let queue = getGoalCelebrationQueue();
     if (!Array.isArray(queue)) {
       queue = [];
@@ -393,6 +394,8 @@ export function createGoalCelebrationController(deps) {
       showNextGoalCelebration();
     }, 120);
   }
+
+  document.addEventListener('etm-modal-closed', showNextGoalCelebration);
 
   return {
     isGoalCelebrationOpen,

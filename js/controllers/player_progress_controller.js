@@ -228,14 +228,8 @@ export function awardPlayerXpAction(amount, options, deps) {
         priority: 'high'
       }
     });
-    enqueueLevelUpCelebration(
-      state.player.playerLevel,
-      changeText,
-      celebrationPrimaryUnlock,
-      rollCelebrationText,
-      celebrationUnlockedSummaryText,
-      allLevelUnlocks
-    );
+    // Routine level rewards are shown inline by progress.level_up and the HUD.
+    // Keep modal celebrations for milestones, avoiding a second dismissal on rest.
   }
 
   if (state.player.playerLevel >= playerLevelCap) {

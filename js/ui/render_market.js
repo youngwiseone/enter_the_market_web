@@ -9,6 +9,7 @@ const MARKET_SORT_KEYS = Object.freeze({
   PERCENT: 'percent'
 });
 
+const lastPriceCueDayByItem = new Map();
 let activeMarketSortKey = MARKET_SORT_KEYS.PRICE;
 let activeMarketSortDirection = 'asc';
 let activeCosmeticsSortKey = 'price';
@@ -753,6 +754,16 @@ export function renderMarketAction(deps) {
           ? `$${entry.price.toFixed(2)} (${freeCount} free)`
           : `$${entry.price.toFixed(2)}`;
         priceCell.appendChild(priceText);
+        const dayMove = Number(state.lastPriceMovesByItem?.[String(item.id)]) || 0;
+        if (dayMove !== 0) {
+          const move = document.createElement('small');
+          move.className = 'market-day-move';
+          move.textContent = ` ${dayMove > 0 ? '↑' : '↓'} ${Math.abs(dayMove * 100).toFixed(0)}% today`;
+          move.setAttribute('aria-label', `Price ${dayMove > 0 ? 'rose' : 'fell'} ${Math.abs(dayMove * 100).toFixed(0)} percent today`);
+          priceCell.appendChild(move);
+          if (lastPriceCueDayByItem.get(item.id) !== state.player.day) priceCell.classList.add('fx-pop');
+        }
+        lastPriceCueDayByItem.set(item.id, state.player.day);
         row.appendChild(priceCell);
 
         const percentCell = document.createElement('td');
@@ -879,6 +890,15 @@ export function renderMarketAction(deps) {
         }
         img.alt = it.name;
         cell.appendChild(img);
+        if (isProduceGridItem) {
+          const status = document.createElement('span');
+          status.className = 'crop-state';
+          const watered = state.gridWateredDay?.[i] === state.player.day;
+          status.textContent = growth.isGrown ? '✓' : watered ? '💧' : String(growth.daysLeft);
+          status.title = growth.isGrown ? 'Ready to sell or hold' : watered ? 'Watered today' : `${growth.daysLeft} watered growth days left`;
+          cell.appendChild(status);
+          if (growth.isGrown && !getGridRarity(i)) cell.classList.add('crop-just-ready');
+        }
         if (isProduceGridItem && growth.isGrown) {
           const hadRarity = !!getGridRarity(i);
           const rarity = assignGridRarity(i);

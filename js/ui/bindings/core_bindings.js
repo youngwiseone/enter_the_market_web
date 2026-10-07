@@ -1,3 +1,5 @@
+import { installModalFocusGuard } from '../modal_focus.js';
+
 export function attachCoreEventHandlers(deps) {
   const {
     showTab,
@@ -115,6 +117,7 @@ export function attachCoreEventHandlers(deps) {
     });
   });
 
+  installModalFocusGuard();
   const farmToggleButton = document.getElementById('farm-toggle-button');
   if (farmToggleButton) {
     farmToggleButton.addEventListener('click', () => {
@@ -172,6 +175,8 @@ export function attachCoreEventHandlers(deps) {
       const isTildePress = event.key === '~'
         || (event.key === '`' && event.shiftKey)
         || (event.code === 'Backquote' && event.shiftKey);
+      if (isTextInputTarget) return;
+      if (document.querySelector('.is-open [role="dialog"]') && !isDailyRollOpen() && !isGoalCelebrationOpen()) return;
       if (isTildePress) {
         event.preventDefault();
         toggleLicenseAndCreator();

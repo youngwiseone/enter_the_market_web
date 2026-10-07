@@ -101,236 +101,241 @@ export function nextDayAction(deps) {
     renderAll
   } = deps;
 
-  updateNetWorth();
-  playDayTransition();
-  syncGuidedUnlocks();
-  const daySummaryStart = (state.dayStartSnapshot && typeof state.dayStartSnapshot === 'object')
-    ? state.dayStartSnapshot
-    : getCurrentDaySnapshot();
-  const preRestCash = Number(state.player?.cash) || 0;
+  if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return;
+  state.runtimeFlags = state.runtimeFlags || {};
+  state.runtimeFlags.isRestInProgress = true;
+  try {
+    updateNetWorth();
+    playDayTransition();
+    syncGuidedUnlocks();
+    const daySummaryStart = (state.dayStartSnapshot && typeof state.dayStartSnapshot === 'object')
+      ? state.dayStartSnapshot
+      : getCurrentDaySnapshot();
+    const preRestCash = Number(state.player?.cash) || 0;
 
-  const previousPrices = new Map();
-  state.shop.forEach((entry) => {
-    if (!isShopItemUnlocked(entry.itemId)) return;
-    previousPrices.set(entry.itemId, Number(entry.price) || 0);
-  });
-  const fatigue = getFatigueFromEnergy();
-  state.lastRollFatiguePercent = fatigue.fatiguePercent;
-  state.lastRollImpactMultiplier = fatigue.impactMultiplier;
-  addMessage({
-    id: 'economy.roll_strength',
-    vars: {
-      fatiguePercent: fatigue.fatiguePercent,
-      energySpent: formatEnergyValue(fatigue.energySpent),
-      energyMax: formatEnergyValue(fatigue.energyMax)
-    },
-    meta: { speaker: 'farmer', category: 'economy', priority: 'normal' }
-  });
-
-  updateMarketPressureForNextDay();
-  const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier, fatigue.impactPercent);
-  const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
-  if (dailyRoll.picks.length > 0) {
-    addMessage({
-      id: 'economy.market_roll',
-      vars: { rollSummary },
-      meta: {
-        speaker: 'farmer',
-        category: 'economy',
-        priority: 'high'
-      }
+    const previousPrices = new Map();
+    state.shop.forEach((entry) => {
+      if (!isShopItemUnlocked(entry.itemId)) return;
+      previousPrices.set(entry.itemId, Number(entry.price) || 0);
     });
-  }
+    const fatigue = getFatigueFromEnergy();
+    state.lastRollFatiguePercent = fatigue.fatiguePercent;
+    state.lastRollImpactMultiplier = fatigue.impactMultiplier;
+    addMessage({
+      id: 'economy.roll_strength',
+      vars: {
+        fatiguePercent: fatigue.fatiguePercent,
+        energySpent: formatEnergyValue(fatigue.energySpent),
+        energyMax: formatEnergyValue(fatigue.energyMax)
+      },
+      meta: { speaker: 'farmer', category: 'economy', priority: 'normal' }
+    });
 
-  const nextDayWeatherId = normalizeWeatherId(state.nextDayWeather?.id || rollWeatherId());
-  state.player.day += 1;
-  resetLowEnergyNoticeDay();
-  ensurePlayerProgressState();
-  state.player.energy = state.player.energyMax;
-  state.dayActionCount = 0;
-  state.dayEnergySpent = 0;
-  const dowIndex = (state.player.day - 1) % 7;
-  if (dowIndex === 0 && state.player.day !== 1) state.player.week += 1;
-  state.weather = {
-    id: nextDayWeatherId,
-    rolledOnDay: Math.max(1, Number(state.player.day) || 1)
-  };
-  state.nextDayWeather = {
-    id: rollWeatherId(),
-    rolledOnDay: Math.max(1, Number(state.player.day) || 1),
-    day: Math.max(1, Number(state.player.day) || 1) + 1
-  };
-  const itemsById = buildItemsByIdMap(state.items);
-  let dawnSprinklerSummary = {
-    sprinklerCount: 0,
-    activeSprinklerCount: 0,
-    cropsWatered: 0,
-    waterUnitsConsumed: 0,
-    bonusGrowthTriggers: 0,
-    waterUnitsRemaining: 0,
-    events: [],
-    emptyAtDawnCount: 0
-  };
-  const activeFarmRef = state.farms && typeof state.farms === 'object'
-    ? state.farms[state.activeFarmId]
-    : state;
-  let activeFarmSprinklerEvents = [];
-  const weatherEffectsSummary = applyDailyWeatherEffects(state, addMessage);
-  if (state.farms && typeof state.farms === 'object') {
-    Object.values(state.farms).forEach((farm) => {
-      const summary = applyDawnSprinklersToFarm({
-        farm,
+    updateMarketPressureForNextDay();
+    const dailyRoll = generateDailyMarketRoll(fatigue.impactMultiplier, fatigue.impactPercent);
+    const rollSummary = getDailyRollSummaryText(dailyRoll, fatigue.fatiguePercent);
+    if (dailyRoll.picks.length > 0) {
+      addMessage({
+        id: 'economy.market_roll',
+        vars: { rollSummary },
+        meta: {
+          speaker: 'farmer',
+          category: 'economy',
+          priority: 'high'
+        }
+      });
+    }
+
+    const nextDayWeatherId = normalizeWeatherId(state.nextDayWeather?.id || rollWeatherId());
+    state.player.day += 1;
+    resetLowEnergyNoticeDay();
+    ensurePlayerProgressState();
+    state.player.energy = state.player.energyMax;
+    state.dayActionCount = 0;
+    state.dayEnergySpent = 0;
+    const dowIndex = (state.player.day - 1) % 7;
+    if (dowIndex === 0 && state.player.day !== 1) state.player.week += 1;
+    state.weather = {
+      id: nextDayWeatherId,
+      rolledOnDay: Math.max(1, Number(state.player.day) || 1)
+    };
+    state.nextDayWeather = {
+      id: rollWeatherId(),
+      rolledOnDay: Math.max(1, Number(state.player.day) || 1),
+      day: Math.max(1, Number(state.player.day) || 1) + 1
+    };
+    const itemsById = buildItemsByIdMap(state.items);
+    let dawnSprinklerSummary = {
+      sprinklerCount: 0,
+      activeSprinklerCount: 0,
+      cropsWatered: 0,
+      waterUnitsConsumed: 0,
+      bonusGrowthTriggers: 0,
+      waterUnitsRemaining: 0,
+      events: [],
+      emptyAtDawnCount: 0
+    };
+    const activeFarmRef = state.farms && typeof state.farms === 'object'
+      ? state.farms[state.activeFarmId]
+      : state;
+    let activeFarmSprinklerEvents = [];
+    const weatherEffectsSummary = applyDailyWeatherEffects(state, addMessage);
+    if (state.farms && typeof state.farms === 'object') {
+      Object.values(state.farms).forEach((farm) => {
+        const summary = applyDawnSprinklersToFarm({
+          farm,
+          itemsById,
+          dayNumber: Math.max(1, Number(state.player?.day) || 1)
+        });
+        dawnSprinklerSummary.sprinklerCount += summary.sprinklerCount;
+        dawnSprinklerSummary.activeSprinklerCount += summary.activeSprinklerCount;
+        dawnSprinklerSummary.cropsWatered += summary.cropsWatered;
+        dawnSprinklerSummary.waterUnitsConsumed += summary.waterUnitsConsumed;
+        dawnSprinklerSummary.bonusGrowthTriggers += summary.bonusGrowthTriggers;
+        dawnSprinklerSummary.waterUnitsRemaining += summary.waterUnitsRemaining;
+        dawnSprinklerSummary.events.push(...(Array.isArray(summary.events) ? summary.events : []));
+        dawnSprinklerSummary.emptyAtDawnCount += Math.max(0, Number(summary.emptyAtDawnCount) || 0);
+        if (farm === activeFarmRef && Array.isArray(summary.events)) {
+          activeFarmSprinklerEvents = summary.events.slice();
+        }
+      });
+    } else {
+      dawnSprinklerSummary = applyDawnSprinklersToFarm({
+        farm: state,
         itemsById,
         dayNumber: Math.max(1, Number(state.player?.day) || 1)
       });
-      dawnSprinklerSummary.sprinklerCount += summary.sprinklerCount;
-      dawnSprinklerSummary.activeSprinklerCount += summary.activeSprinklerCount;
-      dawnSprinklerSummary.cropsWatered += summary.cropsWatered;
-      dawnSprinklerSummary.waterUnitsConsumed += summary.waterUnitsConsumed;
-      dawnSprinklerSummary.bonusGrowthTriggers += summary.bonusGrowthTriggers;
-      dawnSprinklerSummary.waterUnitsRemaining += summary.waterUnitsRemaining;
-      dawnSprinklerSummary.events.push(...(Array.isArray(summary.events) ? summary.events : []));
-      dawnSprinklerSummary.emptyAtDawnCount += Math.max(0, Number(summary.emptyAtDawnCount) || 0);
-      if (farm === activeFarmRef && Array.isArray(summary.events)) {
-        activeFarmSprinklerEvents = summary.events.slice();
-      }
-    });
-  } else {
-    dawnSprinklerSummary = applyDawnSprinklersToFarm({
-      farm: state,
-      itemsById,
-      dayNumber: Math.max(1, Number(state.player?.day) || 1)
-    });
-    activeFarmSprinklerEvents = Array.isArray(dawnSprinklerSummary.events) ? dawnSprinklerSummary.events.slice() : [];
-  }
-  if (dawnSprinklerSummary.cropsWatered > 0) {
-    addMessage({
-      id: 'progress.sprinklers_dawn_watered',
-      vars: {
-        sprinklerCount: dawnSprinklerSummary.activeSprinklerCount,
-        cropsWatered: dawnSprinklerSummary.cropsWatered,
-        waterUnitsConsumed: dawnSprinklerSummary.waterUnitsConsumed,
-        bonusText: dawnSprinklerSummary.bonusGrowthTriggers > 0
-          ? `, bonus growth x${dawnSprinklerSummary.bonusGrowthTriggers}`
-          : ''
-      },
-      meta: {
-        speaker: 'farmer',
-        category: 'progress',
-        priority: 'normal',
-        replaceKey: 'progress:sprinklers-dawn'
-      }
-    });
-  }
-  if (weatherEffectsSummary?.rainApplied && weatherEffectsSummary.sprinklersRefilled > 0) {
-    addMessage({
-      id: 'progress.sprinklers_rain_refilled',
-      vars: {
-        sprinklersRefilled: weatherEffectsSummary.sprinklersRefilled,
-        waterUnitsAdded: weatherEffectsSummary.waterUnitsAdded
-      },
-      meta: {
-        speaker: 'farmer',
-        category: 'weather',
-        priority: 'low',
-        replaceKey: 'weather:sprinkler-refill'
-      }
-    });
-  }
-  if (!weatherEffectsSummary?.rainApplied && dawnSprinklerSummary.emptyAtDawnCount > 0) {
-    addMessage({
-      id: 'progress.sprinklers_empty_at_dawn',
-      vars: { sprinklerCount: dawnSprinklerSummary.emptyAtDawnCount },
-      meta: {
-        speaker: 'farmer',
-        category: 'progress',
-        priority: 'low',
-        replaceKey: 'progress:sprinklers-empty-dawn'
-      }
-    });
-  }
-  if (!state.runtimeFlags || typeof state.runtimeFlags !== 'object') {
-    state.runtimeFlags = {};
-  }
-  state.runtimeFlags.pendingSprinklerDawnFxEvents = activeFarmSprinklerEvents.slice();
-  state.runtimeFlags.pendingSprinklerDawnVisualTargetIndices = activeFarmSprinklerEvents
-    .map((event) => Number(event?.targetIndex))
-    .filter((index) => Number.isInteger(index));
-
-  state.shop.forEach((entry) => {
-    if (!isShopItemUnlocked(entry.itemId)) return;
-    ensureShopEntryMarketFields(entry);
-    entry.priceSum = (entry.priceSum || 0) + entry.price;
-    entry.daysCount = (entry.daysCount || 0) + 1;
-    const item = state.items.find((it) => it.id === entry.itemId);
-    if (!item || !isProduceItem(item)) return;
-    entry.price = getCropCycleAnchorPrice(item, state.player.day, state.weather?.id);
-    entry.priceRecoveryDaysRemaining = 0;
-    entry.priceRecoveryTarget = null;
-  });
-  applyDailyMarketRollToShop(dailyRoll);
-  state.shop.forEach((entry) => {
-    ensureShopEntryMarketFields(entry);
-    if (!isShopItemUnlocked(entry.itemId)) return;
-    entry.price = Math.max(0.01, Number(entry.price) || 0.01);
-  });
-
-  updateNetWorth();
-  upsertCurrentMarketHistorySnapshot();
-  const priceMoves = [];
-  state.shop.forEach((entry) => {
-    if (!isShopItemUnlocked(entry.itemId)) return;
-    const previous = previousPrices.get(entry.itemId);
-    if (typeof previous !== 'number' || previous <= 0) return;
-    const current = Number(entry.price) || 0;
-    const pctChange = (current - previous) / previous;
-    const item = state.items.find((it) => it.id === entry.itemId);
-    priceMoves.push({
-      itemId: entry.itemId,
-      itemName: item ? item.name : `Item ${entry.itemId}`,
-      pctChange
-    });
-  });
-  state.lastPriceMovesByItem = priceMoves.reduce((acc, move) => {
-    const itemIdKey = String(move?.itemId ?? '');
-    if (!itemIdKey) return acc;
-    acc[itemIdKey] = Number(move?.pctChange) || 0;
-    return acc;
-  }, {});
-  emitEconomyAlert(priceMoves);
-  if (dailyRoll.picks.length > 0) {
-    state.dailyMarketRollHistory.push({
-      day: Number(state.player.day) || 1,
-      week: Number(state.player.week) || 1,
-      picks: dailyRoll.picks,
-      summary: rollSummary
-    });
-    if (state.dailyMarketRollHistory.length > 30) {
-      state.dailyMarketRollHistory = state.dailyMarketRollHistory.slice(-30);
+      activeFarmSprinklerEvents = Array.isArray(dawnSprinklerSummary.events) ? dawnSprinklerSummary.events.slice() : [];
     }
-  }
-  const daySummary = {
-    day: Number(daySummaryStart.day) || Math.max(1, Number(state.player.day) - 1),
-    itemsSold: Math.max(0, Number(state.daySalesCount) || 0),
-    salesTotal: Math.max(0, Number(state.daySalesTotal) || 0),
-    cashDelta: preRestCash - (Number(daySummaryStart.cash) || 0),
-    topSale: state.dayTopSale || null,
-    nextOpportunity: getBestRollOpportunityText(dailyRoll)
-  };
-  if (!Array.isArray(state.daySummaryHistory)) state.daySummaryHistory = [];
-  state.daySummaryHistory.push(daySummary);
-  if (state.daySummaryHistory.length > 7) state.daySummaryHistory = state.daySummaryHistory.slice(-7);
-  state.pendingDaySummary = daySummary;
-  showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, daySummary);
+    if (dawnSprinklerSummary.cropsWatered > 0) {
+      addMessage({
+        id: 'progress.sprinklers_dawn_watered',
+        vars: {
+          sprinklerCount: dawnSprinklerSummary.activeSprinklerCount,
+          cropsWatered: dawnSprinklerSummary.cropsWatered,
+          waterUnitsConsumed: dawnSprinklerSummary.waterUnitsConsumed,
+          bonusText: dawnSprinklerSummary.bonusGrowthTriggers > 0
+            ? `, bonus growth x${dawnSprinklerSummary.bonusGrowthTriggers}`
+            : ''
+        },
+        meta: {
+          speaker: 'farmer',
+          category: 'progress',
+          priority: 'normal',
+          replaceKey: 'progress:sprinklers-dawn'
+        }
+      });
+    }
+    if (weatherEffectsSummary?.rainApplied && weatherEffectsSummary.sprinklersRefilled > 0) {
+      addMessage({
+        id: 'progress.sprinklers_rain_refilled',
+        vars: {
+          sprinklersRefilled: weatherEffectsSummary.sprinklersRefilled,
+          waterUnitsAdded: weatherEffectsSummary.waterUnitsAdded
+        },
+        meta: {
+          speaker: 'farmer',
+          category: 'weather',
+          priority: 'low',
+          replaceKey: 'weather:sprinkler-refill'
+        }
+      });
+    }
+    if (!weatherEffectsSummary?.rainApplied && dawnSprinklerSummary.emptyAtDawnCount > 0) {
+      addMessage({
+        id: 'progress.sprinklers_empty_at_dawn',
+        vars: { sprinklerCount: dawnSprinklerSummary.emptyAtDawnCount },
+        meta: {
+          speaker: 'farmer',
+          category: 'progress',
+          priority: 'low',
+          replaceKey: 'progress:sprinklers-empty-dawn'
+        }
+      });
+    }
+    if (!state.runtimeFlags || typeof state.runtimeFlags !== 'object') {
+      state.runtimeFlags = {};
+    }
+    state.runtimeFlags.pendingSprinklerDawnFxEvents = activeFarmSprinklerEvents.slice();
+    state.runtimeFlags.pendingSprinklerDawnVisualTargetIndices = activeFarmSprinklerEvents
+      .map((event) => Number(event?.targetIndex))
+      .filter((index) => Number.isInteger(index));
 
-  generateDailyTip(dowIndex);
-  state.daySalesCount = 0;
-  state.daySalesTotal = 0;
-  state.dayTopSale = null;
-  evaluateGoals();
-  syncGuidedUnlocks();
-  state.dayStartSnapshot = getCurrentDaySnapshot();
-  saveState();
-  renderAll();
-  state.pendingDaySummary = null;
+    state.shop.forEach((entry) => {
+      if (!isShopItemUnlocked(entry.itemId)) return;
+      ensureShopEntryMarketFields(entry);
+      entry.priceSum = (entry.priceSum || 0) + entry.price;
+      entry.daysCount = (entry.daysCount || 0) + 1;
+      const item = state.items.find((it) => it.id === entry.itemId);
+      if (!item || !isProduceItem(item)) return;
+      entry.price = getCropCycleAnchorPrice(item, state.player.day, state.weather?.id);
+      entry.priceRecoveryDaysRemaining = 0;
+      entry.priceRecoveryTarget = null;
+    });
+    applyDailyMarketRollToShop(dailyRoll);
+    state.shop.forEach((entry) => {
+      ensureShopEntryMarketFields(entry);
+      if (!isShopItemUnlocked(entry.itemId)) return;
+      entry.price = Math.max(0.01, Number(entry.price) || 0.01);
+    });
+
+    updateNetWorth();
+    upsertCurrentMarketHistorySnapshot();
+    const priceMoves = [];
+    state.shop.forEach((entry) => {
+      if (!isShopItemUnlocked(entry.itemId)) return;
+      const previous = previousPrices.get(entry.itemId);
+      if (typeof previous !== 'number' || previous <= 0) return;
+      const current = Number(entry.price) || 0;
+      const pctChange = (current - previous) / previous;
+      const item = state.items.find((it) => it.id === entry.itemId);
+      priceMoves.push({
+        itemId: entry.itemId,
+        itemName: item ? item.name : `Item ${entry.itemId}`,
+        pctChange
+      });
+    });
+    state.lastPriceMovesByItem = priceMoves.reduce((acc, move) => {
+      const itemIdKey = String(move?.itemId ?? '');
+      if (!itemIdKey) return acc;
+      acc[itemIdKey] = Number(move?.pctChange) || 0;
+      return acc;
+    }, {});
+    emitEconomyAlert(priceMoves);
+    if (dailyRoll.picks.length > 0) {
+      state.dailyMarketRollHistory.push({
+        day: Number(state.player.day) || 1,
+        week: Number(state.player.week) || 1,
+        picks: dailyRoll.picks,
+        summary: rollSummary
+      });
+      if (state.dailyMarketRollHistory.length > 30) {
+        state.dailyMarketRollHistory = state.dailyMarketRollHistory.slice(-30);
+      }
+    }
+    const daySummary = {
+      day: Number(daySummaryStart.day) || Math.max(1, Number(state.player.day) - 1),
+      itemsSold: Math.max(0, Number(state.daySalesCount) || 0),
+      salesTotal: Math.max(0, Number(state.daySalesTotal) || 0),
+      cashDelta: preRestCash - (Number(daySummaryStart.cash) || 0),
+      topSale: state.dayTopSale || null,
+      nextOpportunity: getBestRollOpportunityText(dailyRoll)
+    };
+    if (!Array.isArray(state.daySummaryHistory)) state.daySummaryHistory = [];
+    state.daySummaryHistory.push(daySummary);
+    if (state.daySummaryHistory.length > 7) state.daySummaryHistory = state.daySummaryHistory.slice(-7);
+    state.pendingDaySummary = daySummary;
+    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, daySummary);
+
+    if (!state.player?.openingTrade || state.player.openingTrade.completed) generateDailyTip(dowIndex);
+    state.daySalesCount = 0;
+    state.daySalesTotal = 0;
+    state.dayTopSale = null;
+    evaluateGoals();
+    syncGuidedUnlocks();
+    state.dayStartSnapshot = getCurrentDaySnapshot();
+    saveState();
+    renderAll();
+    state.pendingDaySummary = null;
+  } finally { state.runtimeFlags.isRestInProgress = false; }
 }

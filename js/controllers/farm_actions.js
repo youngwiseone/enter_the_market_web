@@ -83,7 +83,7 @@ export function mineGridTileAction(deps) {
         lifeRange: [300, 560]
       });
       spawnRing({ x: center.x, y: center.y, radius: 12, color: 'rgba(255,255,255,0.8)', life: 220 });
-      if (gridContainer) triggerFxClass(gridContainer, 'fx-camera-nudge');
+      if (fxTargets?.cell) triggerFxClass(fxTargets.cell, 'fx-pop');
     } else {
       spawnBurst({
         x: center.x,
@@ -239,7 +239,7 @@ export function waterGridTileAction(deps) {
 
   const wasWateredToday = state.gridWateredDay[index] === state.player.day;
   if (wasWateredToday) {
-    const growDays = Math.max(0, Number(item.growDays) || 0);
+    const growDays = Number(item.id) === 4 && state.gridPlacedMeta?.[index]?.introductoryGrowDays === 2 ? 2 : Math.max(0, Number(item.growDays) || 0);
     const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
     const daysLeft = Math.max(0, growDays - wateredDays);
     addMessage({
@@ -276,7 +276,7 @@ export function waterGridTileAction(deps) {
   });
   awardPlayerXp(xpRewards.water);
 
-  const growDays = Math.max(0, Number(item.growDays) || 0);
+  const growDays = Number(item.id) === 4 && state.gridPlacedMeta?.[index]?.introductoryGrowDays === 2 ? 2 : Math.max(0, Number(item.growDays) || 0);
   const wateredDays = Math.max(0, Number(state.gridWateredCount[index]) || 0);
   const daysLeft = Math.max(0, growDays - wateredDays);
   addMessage({

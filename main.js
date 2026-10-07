@@ -1389,6 +1389,27 @@ function getGuidancePayload() {
 
 function renderGuidancePanel() {
   renderGuidancePanelDom(getGuidancePayload());
+  const receipt = document.getElementById('sale-receipt');
+  const trade = state.player?.lastTrade;
+  if (receipt) {
+    receipt.hidden = !trade;
+    if (trade) {
+      const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
+      document.getElementById('sale-receipt-result').textContent = `Sold $${trade.saleValue.toFixed(2)} · ${trade.profit >= 0 ? 'profit' : 'loss'} ${signed(trade.profit)}`;
+      const q = trade.quote;
+      document.getElementById('sale-receipt-detail').textContent = `Cost $${trade.cost.toFixed(2)}.${q ? ` Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}.` : ''}`;
+    }
+  }
+  const keepFarming = document.getElementById('opening-keep-farming');
+  if (keepFarming) {
+    const opening = state.player?.openingTrade;
+    keepFarming.hidden = !opening?.lastSale || !!opening.payoffDismissed;
+    keepFarming.onclick = () => {
+      opening.payoffDismissed = true;
+      saveState();
+      renderGuidancePanel();
+    };
+  }
 }
 
 function getSelectedShopItemInsightData() {
@@ -1750,6 +1771,7 @@ function getBestRollOpportunityText(rollResult) {
 }
 
 function nextDay() {
+  if (document.querySelector('.is-open [role="dialog"]') || getIsSellBatchInFlight()) return;
   messageRuntimeController.notePlayerActivity();
   dayMarketRuntimeController.nextDay();
 }
@@ -2068,6 +2090,7 @@ function setActiveTool(tool) {
 }
 
 function notifyDailyRollClosed() {
+  sessionRuntimeController.showNextGoalCelebration();
   playQueuedSprinklerDawnFxAction({
     state,
     renderMarket,
