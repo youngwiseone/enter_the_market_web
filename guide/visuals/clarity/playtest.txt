@@ -1,0 +1,52 @@
+Clarity pass — 2026-10-07
+
+Design shared before implementation:
+1. Lead seed cards with cost, growth time and price position; disclose estimates.
+2. Give the opening one short action chain at a time.
+3. Make planting mode and valid empty soil unmistakable.
+4. Lead sale quotes with revenue and net profit; retain breakdowns by tapping.
+
+Implemented using existing renderers, selection and controls:
+- Compact seed cards and explicit Go to Farm navigation on mobile.
+- Correct 2-day first-carrot display; subsequent carrots show their normal
+  6 watered days. No change to growing logic, economy, saved IDs or ordering.
+- Projections, crop cycle/noise/shock traits and descriptions in native details.
+- Near/below/above average replaces ambiguous fair/discount/premium cues;
+  neutral styling applies to both buying and selling. Cycle direction remains
+  model-based, with visible uncertainty about the eventual price.
+- Short action guidance, Plant label during selection, temporary dashed empty
+  soil targets, small seed marker and an explicitly labeled cancel action.
+  Repeated planting still works; Water/Mine still clear seed selection.
+- Growing crop selection says Needs water or Watered; Rest stays accessible.
+- Sale value and net profit lead, with cost and base price secondary.
+- Fixed navigation and disclosure clicks clearing crop selection. Explicit
+  close still clears it. Open disclosures survive same-selection UI refreshes.
+- Farm/close/sale controls have 44px mobile targets. The legacy important
+  close-width rule and general button sizing needed specific overrides.
+
+Actual local Chromium testing with Playwright, portrait touch emulation:
+320x740, 375x812, 390x844, 430x932 (height greater than width throughout).
+At all sizes the primary Farm button was 44px tall and above Rest; close
+controls measured at least 44x44; no horizontal overflow. Main seed-card
+visible text at 390x844 fell from 85 to 33 whitespace-separated words.
+Additional information remained accessible via a disclosure.
+
+Fresh mobile opening: selected seed -> Farm -> plant -> water -> two rests
+-> Day 3 sale. Rest remained available with a selected growing crop, double
+sale submission paid once, reload retained the opening state. Cancellation,
+plant target removal, seeded state, watered state and next-seed 6-day display
+also checked. Desktop opening with Z/X/C/Space, modal focus and reload passed.
+Copied existing-save fixture retained crops, costs, rarity, metadata and
+inventory, with no introductory flag; two further normal 6-day cycles passed.
+Mixed three-crop batch quoted and paid $8.49; rapid double-submit/rest lock
+and reload verification passed. Tapping Market and sale details retained the
+crop quote and its ordinary/market/rarity breakdown. All computed font
+families matched the existing pixel font.
+
+Automated: first-seed display/normal display/old-save checks; trading loop
+parity, rarity, quantity, rounding, state/move/persistence checks; scenery
+checks; message validation (95 entries); syntax checks for changed JS.
+Screenshots record before/after seed, planting, watering and sale screens.
+No new asset or library, no continuous animation loop, no deployment.
+Physical phone testing and broader usability testing with new players remain
+unverified. Browser runs used temporary save contexts, not the user's save.
