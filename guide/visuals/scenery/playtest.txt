@@ -1,0 +1,35 @@
+Weather wallpaper and energy-driven farm banner — 2026-10-07
+
+Desktop wallpaper is now a separate Windows 98 inspired pixel lake scene.
+Rain uses an overcast scene with visible shoreline puddles and ripple rings.
+The banner uses one five-row sprite sheet: morning, midday, afternoon,
+evening and night. A small text label makes its state unambiguous.
+The existing persisted dayEnergySpent drives visual progress, with the energy
+deficit as a legacy fallback; zero energy always shows night. Rest resets
+the day counter. No save schema or gameplay rules changed.
+Rain applies a static local rain layer to the banner; no animation loop,
+particles, timers or new libraries. The farm interface is no longer dimmed
+as a whole, so crop and control contrast stays readable at night.
+
+Actual local Chromium playtest (Playwright, reduced-motion emulation):
+- Five consecutive mining hits: morning -> midday -> afternoon -> evening
+  -> night. Correct sprite positions and visible labels at every phase.
+- Reload while exhausted retained night; Space/rest restored morning.
+- Injected rainy-day save fixture and reloaded: HUD Rain, rainy wallpaper
+  and banner rain layer. Rain also worked with the mono cosmetic palette.
+- 390x844 Farm tab: banner visible, no horizontal overflow, tools above Rest.
+- Fresh touch opening through Day 3 sale: payout, double-submit protection,
+  reload persistence and growing-selection Rest access all passed.
+- Desktop 1280x900 and 1280x720, touch 390x844 and 320x640 checked.
+  Short desktops use a 36px banner. Very short mobile screens omit the
+  decorative banner to preserve board and action space.
+- No browser page errors. Normal mobile opening measured 116 resource
+  entries, approximately 2.38MB encoded resources including existing art/fonts.
+  The dry wallpaper and all five banner phases together are about 159KB;
+  the rainy wallpaper adds about 139KB when needed.
+- Automated scenery checks: phase boundaries, exhaustion, refill retaining
+  spent work, rest reset and legacy fallback. Trading-loop checks and
+  95-entry message catalog validation still pass.
+
+Screenshots accompany these checks. Not tested on a physical phone.
+No publishing or deployment performed.
