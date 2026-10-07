@@ -656,7 +656,7 @@
       "emotion": "money",
       "category": "progress",
       "priority": "normal",
-      "template": "Sold {harvestedCount} selected crop{suffix} for ${totalSaleValue} (profit {profitSign}${totalProfitValue}). {summaryText}"
+      "template": "Sold {harvestedCount} selected crop{suffix} for ${totalSaleValue} ({profitLabel} {profitSign}${totalProfitValue}). {summaryText}"
     },
     {
       "id": "progress.sold_selected_items",
@@ -666,7 +666,7 @@
       "emotion": "money",
       "category": "progress",
       "priority": "normal",
-      "template": "Sold {harvestedCount} selected item{suffix} for ${totalSaleValue} (profit {profitSign}${totalProfitValue}). {summaryText}"
+      "template": "Sold {harvestedCount} selected item{suffix} for ${totalSaleValue} ({profitLabel} {profitSign}${totalProfitValue}). {summaryText}"
     },
     {
       "id": "progress.harvested_item_profit",
@@ -676,7 +676,7 @@
       "emotion": "money",
       "category": "progress",
       "priority": "normal",
-      "template": "Harvested {itemName} for ${saleValue} (profit {profitSign}${profitValue})."
+      "template": "Harvested {itemName} for ${saleValue} ({profitLabel} {profitSign}${profitValue})."
     },
     {
       "id": "commerce.purchased_and_placed_free",
@@ -1009,6 +1009,18 @@
       "template": "Already max rarity!"
     },
     {
+      "id": "progress.fertiliser_quality_resolved",
+      "type": "farm",
+      "icon": "sparkle",
+      "speaker": "player",
+      "emotion": "neutral",
+      "category": "progress",
+      "priority": "normal",
+      "replaceKey": "progress:fertiliser",
+      "replaceScope": "day",
+      "template": "Quality is already fixed. Apply Quality before the crop matures."
+    },
+    {
       "id": "progress.fertiliser_applied",
       "type": "farm",
       "icon": "sprout",
@@ -1031,6 +1043,18 @@
       "replaceKey": "progress:water",
       "replaceScope": "day",
       "template": "Watering progress: {itemName} {wateredDays}/{growDays} days ({daysLeft} left)."
+    },
+    {
+      "id": "chapter.feedback",
+      "type": "progress",
+      "icon": "chat",
+      "speaker": "player",
+      "emotion": "neutral",
+      "category": "progress",
+      "priority": "normal",
+      "template": "{text}",
+      "replaceKey": "chapter-feedback",
+      "replaceScope": "global"
     }
   ]
 }

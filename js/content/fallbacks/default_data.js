@@ -334,6 +334,21 @@ export const DEFAULT_DATA = {
       growDays: 6,
       plantStages: 6,
       goalLocked: true
+    },
+    {
+      id: 33, name: 'Water Retention Fertiliser', type: 'fertiliser', table_key: 'utility', price: 10,
+      description: "Apply to a growing crop for $10 and 1 energy. Each stack keeps it watered for one extra day after watering, for this crop's lifetime. Stacks until enough moisture remains to finish growing.",
+      image: 'items/utility/fertiliser_water.png', goalLocked: false
+    },
+    {
+      id: 34, name: 'Speed Grow Fertiliser', type: 'fertiliser', table_key: 'utility', price: 12,
+      description: "Apply to a growing crop for $12 and 1 energy. Each stack permanently reduces this crop's required watered days by one. Stacks while more than one day remains.",
+      image: 'items/utility/fertiliser_grow.png', goalLocked: false
+    },
+    {
+      id: 35, name: 'Quality Fertiliser', type: 'fertiliser', table_key: 'utility', price: 15,
+      description: 'Apply before maturity for $15 and 1 energy. Each stack shifts 5 percentage points from lower rarity chances toward higher rarities for this crop. Stacks; cannot change quality once revealed.',
+      image: 'items/utility/fertiliser_quality.png', goalLocked: false
     }
   ],
   // Precompute shop fallback from the fallback items. This ensures
@@ -374,6 +389,16 @@ export const DEFAULT_DATA = {
     { itemId: 31, quantity: 100, price: 132, priceSum: 0, daysCount: 0 }
   ],
   goals: [
+    {
+      id: 'market-timing-challenge',
+      name: 'Market Timing',
+      description: 'Optional: earn $5 realised crop profit on at least 2 sale days in 14 days',
+      type: 'economy',
+      optional: true,
+      goal: { metric: 'tradingChallengeWon', operator: '>=', value: 1 },
+      reward: { setFlag: 'market_timing_achieved' },
+      message: 'Market Timing complete! You made $5 trading profit across at least two sale days.'
+    },
     {
       id: 'day-2-watering',
       name: 'Early Riser',
@@ -576,6 +601,7 @@ export const DEFAULT_DATA = {
     }
   ],
   messages: [
+    { id: 'chapter.feedback', type: 'progress', icon: 'chat', speaker: 'player', emotion: 'neutral', category: 'progress', priority: 'normal', template: '{text}', replaceKey: 'chapter-feedback', replaceScope: 'global' },
     {
       id: 'system.fallback_forgot',
       type: 'system',

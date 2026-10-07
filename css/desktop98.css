@@ -198,8 +198,8 @@ button:not(:disabled):active, .button:not(:disabled):active {
 }
 button:disabled { color: var(--theme-text-muted); opacity: .58; }
 button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px dashed var(--theme-accent); outline-offset: 3px; }
-.farm-toolbar { gap: 5px; margin: 8px 0; }
-.tool-button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.farm-toolbar { gap: 5px; margin: 6px 0; max-width: none; }
+.tool-button { height: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .tool-name { font: 11px Tahoma, Arial, sans-serif; }
 .tool-key-label { font: 10px Tahoma, Arial, sans-serif; color: var(--theme-text-muted); }
 .tool-button img { width: 24px; height: 24px; }
@@ -270,19 +270,8 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px dash
   background: #92d7e0;
   clip-path: polygon(43% 0, 57% 0, 57% 20%, 72% 20%, 72% 40%, 100% 40%, 100% 80%, 72% 80%, 72% 100%, 28% 100%, 28% 80%, 0 80%, 0 40%, 28% 40%, 28% 20%, 43% 20%);
 }
-.farm-status-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 7px;
-  color: var(--theme-text-muted);
-  font: 10px/1.4 Tahoma, Arial, sans-serif;
-  padding-top: 6px;
-}
-.farm-status-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.farm-status-legend .pixel-water-drop { background: #287c92; width: 6px; height: 9px; }
 #hud-profile-panel { padding: 6px; gap: 7px; }
+#hud-profile-panel:not(:has(.profile-goal-button)) .profile-goals-info { display: none; }
 .hud-profile-avatar { border: 2px solid #212f31; box-shadow: 1px 1px 0 var(--theme-control-border-hi); image-rendering: pixelated; }
 .profile-energy-info, .player-level-info, .profile-goals-info { background: var(--theme-subtle-bg); padding: 6px; border: 1px solid var(--theme-border); }
 .profile-section-label, .profile-goals-title { font: bold 10px Tahoma, Arial, sans-serif; text-transform: uppercase; letter-spacing: .09em; }
@@ -399,7 +388,7 @@ body.mobile-layout #hud-top-stats > span + span { padding-left: 7px; }
 body.mobile-layout #market-layout { gap: 8px; }
 body.mobile-layout .farm-scenery { display: none; }
 @media (min-height: 740px) {
-  body.mobile-layout .farm-scenery { display: block; height: 36px; margin-bottom: 4px; }
+  body.mobile-layout .farm-scenery { display: block; height: 24px; margin-bottom: 4px; }
 }
 body.mobile-layout #farm-panel { padding: 6px; }
 body.mobile-layout #farm-title { min-height: 24px; margin: 0 0 4px; }
@@ -410,8 +399,8 @@ body.mobile-layout .farm-toolbar { margin: 5px 0 0; min-height: 44px; }
 body.mobile-layout .tool-button { min-height: 44px; gap: 5px; }
 body.mobile-layout .tool-button img { width: 24px; height: 24px; }
 body.mobile-layout .tool-key-label { display: none; }
-body.mobile-layout .farm-status-legend { order: 4; font-size: 9px; gap: 3px; padding-top: 5px; }
 body.mobile-layout #hud-profile-panel { padding: 5px; }
+body.mobile-layout .hud-profile-avatar { width: 52px; max-width: 52px; }
 body.mobile-layout .profile-energy-info, body.mobile-layout .player-level-info { padding: 0; background: transparent; }
 body.mobile-layout #market-table-container { flex: 1 1 auto; min-height: 0; }
 body.mobile-layout #market-table { padding: 6px; }
@@ -429,7 +418,6 @@ body.mobile-layout #mobile-bottom-tabs .tab-button.active { color: var(--header-
 body.mobile-layout #farm-action-button { min-height: 44px; }
 @media (max-width: 350px) {
   body.mobile-layout .tool-name { font-size: 10px; }
-  body.mobile-layout .farm-status-legend { font-size: 8px; }
   body.mobile-layout .insight-chip { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -479,3 +467,91 @@ body.mobile-layout #next-day[data-buy-mode-override='true']::before { content: '
 #grid .grid-cell.plant-target { outline: 2px dashed #fff2c4; outline-offset: -5px; }
 #grid .grid-cell.plant-target::before { content: '+'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff2c4; font-size: 22px; pointer-events: none; }
 #grid .grid-cell.crop-seeded::before { content: ''; position: absolute; width: 3px; height: 3px; left: 35%; top: 40%; background: #efdb9e; box-shadow: 8px 4px #efdb9e, 3px 11px #efdb9e; pointer-events: none; }
+
+/* The farm keeps the same geometry as contextual information changes. */
+body:not(.mobile-layout) #market-layout { grid-template-columns: 120px minmax(280px, 1fr) minmax(280px, 1fr); }
+body:not(.mobile-layout) #farm-panel { overflow: visible; box-sizing: border-box; }
+body:not(.mobile-layout) #grid-container { margin: 0 auto; flex-shrink: 0; }
+/* One scroll area for a long market or goals list; the farm never scrolls. */
+body:not(.mobile-layout) #market { overflow-y: auto; }
+body:not(.mobile-layout) #market-header { max-height: none; overflow: visible; flex: 0 0 auto; }
+body:not(.mobile-layout) #market-table-container,
+body:not(.mobile-layout) #goals-panel,
+body:not(.mobile-layout) #data-panel { overflow: visible; max-height: none; flex: 0 0 auto; }
+#market-table-container { flex: 1 1 auto; min-height: 0; }
+.next-unlock-preview { margin: 8px 0; padding: 9px; border: 1px solid var(--theme-border); border-left: 3px solid var(--theme-accent); background: var(--theme-table-odd); font-size: 12px; line-height: 1.5; }
+.next-unlock-preview p { margin: 5px 0; }
+.trading-challenge summary { min-height: 30px; cursor: pointer; }
+#farm-gesture-hint { margin: 4px 0; color: var(--theme-text-muted); font-size: 11px; line-height: 1.4; }
+#farm-gesture-hint summary { cursor: pointer; padding: 5px; }
+#farm-gesture-hint button { min-width: 28px; min-height: 28px; margin-left: 8px; }
+#farm-gesture-hint:empty { display: none; }
+#farm-notes { display: none; }
+#guidance-panel { padding: 5px 7px; }
+#guidance-panel summary { display: list-item; cursor: pointer; }
+#guidance-objective-text { font-size: 12px; }
+#guidance-objective-chip { float: right; }
+.market-insight-empty { display: none; }
+.market-insight-panel:has(> .market-insight-empty) { display: none; }
+body.mobile-layout { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+body.mobile-layout #market-layout { height: auto; flex: 0 0 auto; overflow: visible; }
+body.mobile-layout #farm-panel { overflow: visible; flex: 0 0 auto; }
+body.mobile-layout #grid-container { flex-shrink: 0; }
+body.mobile-layout[data-active-main-tab='farm'] { height: 100dvh; overflow: hidden; }
+body.mobile-layout[data-active-main-tab='farm'] #market-layout { flex: 1 1 auto; min-height: 0; }
+body.mobile-layout #farm-notes { order: 4; display: flex; align-items: center; gap: 8px; height: 30px; margin-top: 4px; position: relative; }
+body.mobile-layout #farm-notes > details { background: transparent; border: 0; box-shadow: none; margin: 0; padding: 0; min-width: 0; flex: 1; }
+body.mobile-layout #farm-notes summary { font-size: 10px; min-height: 24px; line-height: 24px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+body.mobile-layout #farm-notes #guidance-objective-text { font-size: 10px; font-weight: normal; }
+body.mobile-layout #farm-notes #guidance-objective-chip { display: none; }
+body.mobile-layout #farm-notes #farm-gesture-hint { flex: 0 0 65px; }
+body.mobile-layout #farm-notes > details[open] > .farm-note-content,
+body.mobile-layout #farm-notes > details[open] > p { position: absolute; bottom: calc(100% + 5px); left: 0; right: 0; z-index: 180; margin: 0; padding: 10px; background: var(--theme-table-odd); color: var(--theme-text); border: 1px solid var(--theme-border); box-shadow: 2px 2px 0 var(--desktop-shadow); font-size: 12px; line-height: 1.5; max-height: min(220px, 50dvh); overflow-y: auto; }
+body.mobile-layout #market { height: auto; min-height: 260px; overflow: visible; flex: 0 0 auto; }
+body.mobile-layout #market-table-container,
+body.mobile-layout #goals-panel,
+body.mobile-layout #data-panel { overflow: visible; max-height: none; flex: 0 0 auto; }
+/* Sale and Rest share one stable row above the tabs. */
+body.mobile-layout:has(#farm-action-dock.is-visible) #rest-dock { right: calc(59% + var(--safe-right)); }
+body.mobile-layout #farm-action-dock { left: 43%; right: calc(8px + var(--safe-right)); bottom: calc(8px + var(--safe-bottom) + var(--bottom-bar-height)); }
+body.mobile-layout #farm-action-button { font-size: 11px; line-height: 1.25; padding: 5px 7px; }
+body.mobile-layout #farm-action-button:disabled { opacity: 1; background: var(--theme-surface); color: var(--theme-text-muted); }
+body.mobile-layout .daily-roll-panel, .goal-celebration-panel, .day-summary-panel { max-height: calc(100dvh - 24px); overflow-y: auto; box-sizing: border-box; }
+.daily-roll-quick-option { display: flex; align-items: center; gap: 6px; margin: 8px 0; font-size: 12px; cursor: pointer; }
+.daily-roll-quick-option input[type='checkbox'] { position: static; opacity: 1; appearance: auto; width: 16px; height: 16px; margin: 0; }
+.daily-roll-modal.is-compact .daily-roll-reels { display: none; }
+.daily-roll-modal.is-compact .daily-roll-fatigue-note { margin-bottom: 8px; }
+/* Short landscape uses the width: tools beside the farm and one bottom row. */
+body.compact-farm-layout #market-layout { display: grid; grid-template-columns: 96px minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: 'profile farm'; align-items: start; }
+body.compact-farm-layout[data-active-main-tab='farm'] #market-layout { width: min(100%, calc(var(--grid-size) + 252px)); margin: 0 auto; }
+body.compact-farm-layout #farm-panel { display: grid; grid-template-columns: minmax(0, 1fr) 112px; grid-template-rows: 28px auto; column-gap: 8px; }
+body.compact-farm-layout #farm-title { grid-column: 1 / -1; grid-row: 1; }
+body.compact-farm-layout .farm-scenery { display: none; }
+body.compact-farm-layout #grid-container { grid-column: 1; grid-row: 2; margin: 0 auto; }
+body.compact-farm-layout .farm-toolbar { grid-column: 2; grid-row: 2; align-self: start; flex-direction: column; height: auto; min-height: 0; margin: 0; gap: 3px; }
+body.compact-farm-layout .tool-button { width: 100%; min-height: 32px; height: 32px; flex: 0 0 32px; }
+body.compact-farm-layout #farm-title::after { display: none; }
+body.compact-farm-layout #farm-notes { position: absolute; top: 6px; right: 8px; width: 180px; height: 24px; margin: 0; }
+body.compact-farm-layout #farm-notes summary { color: var(--header-fg); }
+body.compact-farm-layout #farm-notes #farm-gesture-hint { flex: 1; }
+body.compact-farm-layout #farm-notes #guidance-objective-text { display: none; }
+body.compact-farm-layout #farm-notes #guidance-panel summary::after { content: 'Guide'; }
+body.compact-farm-layout #farm-notes #sale-receipt summary { font-size: 0; }
+body.compact-farm-layout #farm-notes #sale-receipt summary::after { content: 'Receipt'; font-size: 10px; }
+body.compact-farm-layout #farm-notes > details[open] > .farm-note-content,
+body.compact-farm-layout #farm-notes > details[open] > p { left: auto; bottom: auto; top: calc(100% + 5px); width: min(320px, 65vw); }
+body.compact-farm-layout #hud-profile-panel { padding: 4px; align-self: start; }
+body.compact-farm-layout #mobile-profile-row { flex-direction: column; gap: 6px; height: auto; overflow: visible; }
+body.compact-farm-layout #mobile-chat-log { display: none; }
+body.compact-farm-layout #mobile-profile-side { width: 100%; flex: 0 0 auto; overflow: visible; }
+body.compact-farm-layout #mobile-profile-side .level-heading-row { display: block; }
+body.compact-farm-layout #market { grid-area: auto; grid-column: 1 / -1; }
+body.compact-farm-layout:not([data-active-main-tab='farm']) #hud-profile-panel { display: none; }
+body.compact-farm-layout #mobile-bottom-tabs { right: 56%; }
+body.compact-farm-layout #rest-dock { left: 46%; right: 8px; bottom: calc(12px + var(--safe-bottom)); }
+body.compact-farm-layout:has(#farm-action-dock.is-visible) #rest-dock { right: 34%; }
+body.compact-farm-layout #farm-action-dock { left: 68%; right: 8px; bottom: calc(12px + var(--safe-bottom)); }
+body.compact-farm-layout #mobile-bottom-tabs .tab-button { font-size: 11px; padding: 4px; }
+@media (max-width: 479px) and (max-height: 520px) {
+  body.mobile-layout[data-active-main-tab='farm'] { height: auto; overflow-y: auto; }
+}

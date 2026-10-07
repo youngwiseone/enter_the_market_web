@@ -3,10 +3,11 @@ import { isProduceItem } from '../content/item_types.js';
 import { buildItemsByIdMap } from '../content/item_index.js';
 import { getCropCycleAnchorPrice } from '../sim/crop_identity.js';
 import { applyDawnSprinklersToFarm, refillSprinklersForRainToFull } from './watering_infrastructure.js';
+import { getPlantGrowthProgressWithFertiliser, persistRetainedWaterProgress } from './fertiliser_controller.js';
 
 const ROLL_MEAN_REVERSION_DAYS = 3;
 
-function applyRainWateringToFarm(farm, dayNumber, itemsById) {
+export function applyRainWateringToFarm(farm, dayNumber, itemsById) {
   if (!farm || typeof farm !== 'object') return;
   if (!Array.isArray(farm.gridItems) || !Array.isArray(farm.gridWateredDay) || !Array.isArray(farm.gridWateredCount)) {
     return;
@@ -16,12 +17,9 @@ function applyRainWateringToFarm(farm, dayNumber, itemsById) {
     if (!itemId) continue;
     const item = itemsById.get(String(itemId));
     if (!item || !isProduceItem(item)) continue;
-    const growDays = Math.max(0, Number(item.growDays) || 0);
-    const wateredCount = Array.isArray(farm.gridWateredCount)
-      ? Math.max(0, Number(farm.gridWateredCount[i]) || 0)
-      : 0;
-    if (growDays > 0 && wateredCount >= growDays) continue;
+    if (getPlantGrowthProgressWithFertiliser({ ...farm, player: { day: dayNumber } }, item, i).isGrown) continue;
     if (farm.gridWateredDay[i] === dayNumber) continue;
+    persistRetainedWaterProgress(farm, i, dayNumber);
     farm.gridWateredDay[i] = dayNumber;
     farm.gridWateredCount[i] = Math.max(0, Number(farm.gridWateredCount[i]) || 0) + 1;
   }
@@ -165,6 +163,13 @@ export function nextDayAction(deps) {
       day: Math.max(1, Number(state.player.day) || 1) + 1
     };
     const itemsById = buildItemsByIdMap(state.items);
+    // Capture earned retained moisture for both farms before any dawn water can
+    // replace the last-water date. Also runs on quiet, dry days.
+    Object.values(state.farms || { active: state }).forEach((farm) => {
+      farm.gridItems?.forEach((itemId, index) => {
+        if (isProduceItem(itemsById.get(String(itemId)))) persistRetainedWaterProgress(farm, index, state.player.day);
+      });
+    });
     let dawnSprinklerSummary = {
       sprinklerCount: 0,
       activeSprinklerCount: 0,

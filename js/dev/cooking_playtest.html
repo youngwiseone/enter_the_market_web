@@ -1,0 +1,43 @@
+<!doctype html><meta charset="utf-8"><title>Cooking chapter disposable local fixtures</title>
+<style>body{font:16px system-ui;max-width:700px;margin:30px auto}button,a{padding:14px;margin:8px;display:inline-block}pre{white-space:pre-wrap}</style>
+<h1>Disposable local cooking fixtures</h1>
+<p>For a dedicated localhost test origin only. Advanced fixture installs only on an empty origin. Farm fixtures work only on that tagged disposable test save. They do not run in the public game.</p>
+<button id="advanced">Advanced legacy save, story unstarted</button>
+<button id="full">Preserve story, fill both farms with mature recipe inputs</button>
+<button id="growing">Preserve story, six-day growing recipe inputs</button>
+<a href="../../index.html">Play fixture</a><pre id="result"></pre>
+<script type="module">
+import { DEFAULT_DATA } from '../content/fallbacks/default_data.js';
+import { createEmptyFarmStateForGrid } from '../state/farm_state.js';
+import { withNewCropIdentity } from '../state/crop_identity.js';
+const local = ['localhost','127.0.0.1'].includes(location.hostname);
+const write = (key,value) => localStorage.setItem(key,JSON.stringify(value));
+const read = key => JSON.parse(localStorage.getItem(key));
+document.getElementById('result').textContent = read('player') ? 'Existing save present; advanced installation is disabled.' : 'Verified empty origin: no player save. Safe to install a new disposable test save.';
+document.getElementById('advanced').disabled = !!read('player');
+const inputs = [4,4,4,2,2,6,5,5,5,4,4,4,6,6,5,4,2,6,5,1,12,5];
+function farms(growing=false) {
+  const make = () => { const f=createEmptyFarmStateForGrid(49); f.gridUnlocked.fill(true);
+    inputs.forEach((id,i)=>{f.gridItems[i]=id;f.gridPlantedDay[i]=read('player')?.day||50;f.gridWateredCount[i]=growing?0:6;f.gridRarity[i]=growing?null:'common';f.gridPurchasePrice[i]=id===1?18:2;f.gridPlacedMeta[i]=withNewCropIdentity({});});
+    if(!growing) for(let i=inputs.length;i<49;i++){f.gridItems[i]=4;f.gridWateredCount[i]=6;f.gridRarity[i]='common';f.gridPurchasePrice[i]=1;f.gridPlacedMeta[i]=withNewCropIdentity({});}
+    return f; };
+  write('farms',{1:make(),2:make()});write('activeFarmId',1);write('secondFarmPurchased',true);write('activeTool','glove');
+}
+async function advanced() {
+  if(!local) throw Error('Local fixtures only');
+  const items=(await fetch('../../data/items.json').then(r=>r.json())).items;
+  const goals=(await fetch('../../data/goals.json').then(r=>r.json())).goals;
+  if (localStorage.getItem('player')) throw Error('An existing save must be preserved; use an empty local origin.');
+  write('etm.disposableCookingFixture',true);
+  write('player',{...DEFAULT_DATA.player,day:50,week:8,cash:30000,playerLevel:25,playerXp:0,energy:20,energyMax:20,welcomeShown:true,theme:'theme-aqua'});
+  write('items',items);write('shop',items.filter(i=>i.type==='produce').map(i=>({itemId:i.id,price:i.price,priceSum:i.price*50,daysCount:50,quantity:999})));
+  write('goals',goals);write('goalsClaimed',Object.fromEntries(goals.map(g=>[g.id,true])));
+  write('unlockedShopItems',Object.fromEntries(items.map(i=>[i.id,true])));write('unlockedTools',{glove:true,watering:true,pickaxe:true});
+  write('goalStats',{harvestCount:100,itemsHarvested:Object.fromEntries(items.filter(i=>i.type==='produce').map(i=>[i.id,3]))});
+  write('inventory',[]);write('store',DEFAULT_DATA.store);farms();
+  document.getElementById('result').textContent='Advanced legacy fixture ready. No cookingChapter field; full mature farms, existing claimed goals and theme.';
+}
+document.getElementById('advanced').onclick=advanced;
+document.getElementById('full').onclick=()=>{if(local && read('etm.disposableCookingFixture')){farms();document.getElementById('result').textContent='Story preserved; farms full.';}};
+document.getElementById('growing').onclick=()=>{if(local && read('etm.disposableCookingFixture')){farms(true);document.getElementById('result').textContent='Story preserved; recipe crops need six watered days.';}};
+</script>

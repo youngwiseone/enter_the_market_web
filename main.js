@@ -1,3 +1,8 @@
+import { createCookingController } from './js/controllers/cooking_controller.js';
+import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js';
+import { normalizeChapter } from './js/state/cooking_chapter.js';
+import { DISH_ITEMS } from './js/content/cooking_chapter.js';
+import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal } from './js/state/chapter_settlement.js';
 /*
  * main.js - client-side logic for Enter The Market (Web)
  *
@@ -68,6 +73,7 @@ import {
   doesConditionMeetAction,
   doesGoalMeetConditionAction,
   evaluateGoalsAction,
+  startTradingChallengeAction,
   getGoalConditionsAction,
   getGoalMetricValueAction
 } from './js/controllers/goals_controller.js';
@@ -258,20 +264,20 @@ import {
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js';
 import { renderMarketAction } from './js/ui/render_market.js';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=81';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js';
 import {
   installSidePanelScrollHandlersAction,
   updateGridSizeAction,
   updateSidePanelScrollAreaAction
-} from './js/ui/layout_controller.js';
+} from './js/ui/layout_controller.js?v=80';
 import {
   showTabDom,
   toggleMessagesPanelDom,
   updateMainTabButtonsDom,
   updateMainViewVisibilityDom
-} from './js/ui/tab_controller.js';
+} from './js/ui/tab_controller.js?v=80';
 import { createUiRuntimeController } from './js/ui/ui_runtime_controller.js';
 import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js';
 import {
@@ -430,6 +436,7 @@ function moveFocusOutsideModal(modalEl) {
 
 function getToolDisplayName(tool) {
   switch (tool) {
+    case 'pot': return 'Cooking pot (V)';
     case TOOL_GLOVE:
       return 'Glove';
     case TOOL_WATERING:
@@ -877,6 +884,7 @@ function addRareGrowthMessage(item, rarity) {
  * DEFAULT_DATA. This function should be called once on page load.
  */
 function initialiseState() {
+  recoverChapterSettlement(localStorage);
   initialiseStateRuntimeAction({
     initialiseStateAction,
     state,
@@ -925,6 +933,11 @@ function initialiseState() {
     clearGoalCelebrationSparkles: sessionRuntimeController.clearGoalCelebrationSparkles,
     setGoalCelebrationOpen: sessionRuntimeController.setGoalCelebrationOpen
   });
+  DISH_ITEMS.forEach(dish => {
+    if (!state.items.some(item => item.id === dish.id)) state.items.push({ ...dish });
+  });
+  const chapter = normalizeChapter(state);
+  if (chapter.potUnlocked) state.unlockedTools.pot = true;
 }
 
 /**
@@ -932,6 +945,7 @@ function initialiseState() {
  * any mutation to player data, shop, inventory, reports, or news.
  */
 function saveState() {
+  refreshChapterJournal(state, localStorage);
   saveStateRuntimeAction({
     trackSaveCall,
     updateNetWorth,
@@ -945,6 +959,7 @@ function saveState() {
     persistLegacyPrimaryGridState,
     saveToStorage
   });
+  finishChapterJournal(state, localStorage);
 }
 
 /**
@@ -1131,6 +1146,7 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   trackActionDuration,
   calculateGoalProgress,
   renderGoalsPanel,
+  startTradingChallenge: () => startTradingChallengeAction({ state, saveState, rerender: renderGoals }),
   updateMainViewVisibilityDom,
   updateMainTabButtonsDom,
   toggleMessagesPanelDom,
@@ -1179,6 +1195,7 @@ function getGoalProgress(goal) {
 
 function renderGoals() {
   uiRuntimeController.renderGoals();
+  chapterUi.render();
 }
 
 function updateMainViewVisibility() {
@@ -1278,7 +1295,7 @@ function playGridItemMoveFx(options) {
   return fxController.playGridItemMove(options);
 }
 
-const profileChatController = createProfileChatController();
+const profileChatController = createProfileChatController({ getCookingOutfit: () => !!state.player?.cookingOutfit });
 const HOLDING_LOT_THRESHOLD = 4;
 const HOLD_BIAS_STREAK_DAYS = 8;
 const HOLD_BIAS_QTY_RANGE = 12;
@@ -1382,6 +1399,7 @@ function getGuidancePayload() {
     GUIDED_FLAGS,
     getPrimaryGuidedState,
     countReadyToHarvestTiles,
+    getGridCellSellSnapshot,
     getBestBuyOpportunity,
     isShopItemUnlocked
   });
@@ -1396,9 +1414,9 @@ function renderGuidancePanel() {
     receipt.hidden = !trade;
     if (trade) {
       const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
-      document.getElementById('sale-receipt-result').textContent = `Sold $${trade.saleValue.toFixed(2)} · ${trade.profit >= 0 ? 'profit' : 'loss'} ${signed(trade.profit)}`;
+      document.getElementById('sale-receipt-result').textContent = `Sold $${trade.saleValue.toFixed(2)} · ${trade.quote?.historicalCostUnknown ? 'known-cost ' : ''}${trade.profit >= 0 ? 'profit' : 'loss'} ${signed(trade.profit)}`;
       const q = trade.quote;
-      document.getElementById('sale-receipt-detail').textContent = `Cost $${trade.cost.toFixed(2)}.${q ? ` Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}.` : ''}`;
+      document.getElementById('sale-receipt-detail').textContent = `Seed + treatments $${trade.cost.toFixed(2)}.${q?.historicalCostUnknown ? ' Older treatment costs are unknown.' : ''}${q ? ` Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}.` : ''}`;
     }
   }
   const keepFarming = document.getElementById('opening-keep-farming');
@@ -1419,6 +1437,7 @@ function getSelectedShopItemInsightData() {
     selectedShopItemId,
     getFreePurchaseCount,
     expectedRarityMultiplier: EXPECTED_RARITY_MULTIPLIER,
+    getActiveFarmSellMultiplier,
     rarityMultipliers: RARITY_MULTIPLIERS
   });
 }
@@ -1487,6 +1506,8 @@ function clearCurrentInfoSelection() {
 
 function renderSelectedItemInsight() {
   renderSelectedItemInsightAction({
+    clearShopSelection,
+    isSellBatchInFlight: !!state.runtimeFlags?.isSellBatchInFlight,
     getBulkSelectedGridInsightData,
     getSelectedGridItemInsightData,
     getSelectedShopItemInsightData,
@@ -1495,6 +1516,7 @@ function renderSelectedItemInsight() {
     sellSelectedGridItem,
     updateGridSize
   });
+  chapterUi.render();
 }
 
 function updateTimeOfDayMood() {
@@ -1772,7 +1794,9 @@ function getBestRollOpportunityText(rollResult) {
 }
 
 function nextDay() {
+  if (Date.now() < (state.runtimeFlags?.chapterInputCooldownUntil || 0)) return;
   if (document.querySelector('.is-open [role="dialog"]') || getIsSellBatchInFlight()) return;
+  cookingController.cancel();
   messageRuntimeController.notePlayerActivity();
   dayMarketRuntimeController.nextDay();
 }
@@ -1907,6 +1931,38 @@ let selectedShopItemId = null;
 let selectionPulseId = null;
 let selectedGridCellIndex = null;
 const selectedGridCellIndices = new Set();
+const chapterCommit = createChapterCommit({ state, storage: localStorage, saveState,
+  rebind: farmId => applyFarmStateToActiveGrid(farmId) });
+function chapterFeedback(text, speaker = 'player', emotion = 'neutral') {
+  chapterUi.note(text);
+  addMessage({ id: 'chapter.feedback', vars: { text }, meta: { speaker, emotion, replaceKey: 'chapter-feedback' } });
+}
+const cookingController = createCookingController({ state, getCellSnapshot: getGridCellSellSnapshot,
+  commit: chapterCommit, registerDayAction, awardCookingXp: amount => awardPlayerXp(amount),
+  onFeedback: text => chapterFeedback(text),
+  onCooked: ({ recipe, index, quote }) => {
+    selectedGridCellIndices.clear(); selectedGridCellIndex = index;
+    chapterUi.note(`${recipe.name} ready · value $${quote.saleValue.toFixed(2)}.`);
+    renderAll();
+    profileChatController.reactCooking();
+    showProfileMessageBubble(`${recipe.name} ready!`);
+    const tile = document.querySelector(`#grid [data-index="${index}"]`);
+    if (tile) tile.classList.add('cooking-reveal');
+    const center = getTileCenter(index);
+    if (center) { spawnRing({ x: center.x, y: center.y, color: '#ffd477' }); showXpGainFeedback(2, center); }
+  }
+});
+const chapterUi = createCookingChapterUi({ state, cooking: cookingController, commit: chapterCommit,
+  getCellSnapshot: getGridCellSellSnapshot, getGrowth: getPlantGrowthState,
+  getSelection: () => selectedGridCellIndices.size ? [...selectedGridCellIndices].sort((a,b) => a-b) : selectedGridCellIndex === null ? [] : [selectedGridCellIndex],
+  clearSelection: () => { selectedGridCellIndices.clear(); selectedGridCellIndex = null; },
+  renderAll, feedback: chapterFeedback, showGoals: () => showTab('goals'),
+  refreshPortrait: () => setChatProfile('player', 'neutral') });
+document.addEventListener('keydown', event => {
+  if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.key === 'Escape' && state.activeTool === 'pot') { cookingController.cancel(); chapterUi.note('Combination cleared. No ingredients spent.'); renderAll(); }
+  if (event.key.toLowerCase() === 'v' && state.unlockedTools.pot && !document.querySelector('.is-open [role="dialog"]')) { event.preventDefault(); setActiveTool('pot'); }
+});
 
 const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFarmPointerRuntimeDeps({
   state,
@@ -1960,7 +2016,13 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFar
   getFreePurchaseCount,
   GUIDED_FLAGS,
   saveState,
-  playGridItemMoveFx
+  playGridItemMoveFx,
+  cookIngredient: index => {
+    const result = cookingController.tap(index);
+    if (result.ok && !result.complete) chapterUi.note('');
+    if (!result.complete) renderMarket();
+    return result.ok;
+  }
 }));
 
 function applyGridActionForIndex(index, options = {}) {
@@ -2075,6 +2137,7 @@ function setActiveFarm(farmId) {
 }
 
 function handleFarmToggleButtonClick() {
+  cookingController.cancel();
   farmUiRuntimeController.handleFarmToggleButtonClick();
 }
 
@@ -2087,7 +2150,10 @@ function updateCursorForTool() {
 }
 
 function setActiveTool(tool) {
+  cookingController.cancel();
+  if (tool === 'pot') { selectedShopItemId = null; selectedGridCellIndex = null; selectedGridCellIndices.clear(); }
   farmUiRuntimeController.setActiveTool(tool);
+  updateGridSize();
 }
 
 function notifyDailyRollClosed() {
@@ -2112,13 +2178,7 @@ function purchaseAndPlaceSelected(cellIndex) {
 }
 
 async function harvestPlant(cellIndex, sellButtonElement = null) {
-  if (getIsSellBatchInFlight()) return;
-  setIsSellBatchInFlight(true);
-  try {
   await gameplayRuntimeController.harvestPlant(cellIndex, sellButtonElement);
-  } finally {
-    setIsSellBatchInFlight(false);
-  }
 }
 
 /**

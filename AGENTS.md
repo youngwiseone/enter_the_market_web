@@ -164,6 +164,16 @@ Recent gameplay/runtime behavior notes:
 
 ## Data Contracts
 
+Cooking chapter modules:
+- `js/content/cooking_chapter.js`: stable recipes, dish IDs 101–103, people and request dialogue.
+- `js/state/cooking_chapter.js`: additive `player.cookingChapter` migration, accepted requests, exact partial delivery, story and bounded restaurant cadence.
+- `js/controllers/cooking_controller.js`: transient exact ingredient selection and synchronous last-tile meal settlement.
+- `js/state/chapter_settlement.js`: recoverable multi-key settlement journal, replayed before initialization and refreshed by subsequent ordinary saves.
+- `js/sim/dish_quote.js`: frozen meal sale quotes, with carried seed/treatment costs and legacy uncertainty.
+- `js/ui/cooking_chapter_ui.js`: Goals request cards, existing selection's Sell/Give split, recipe context and eligible outlines.
+
+Cooking costs one energy and awards two cooking XP through the existing level system. It is neither a harvest nor a sale. Dish sales use the sale sequence but grant no harvest XP/count/produce pressure. Do not apply rarity or Farm 2 bonuses again to frozen dish values. Never remove the journal before every included storage key has persisted. Icons/portraits live under `resources/cooking/`; art provenance is in `guide/cooking_assets.txt`.
+
 - Items: `data/items.json` (`id`, prices, growth, lock state)
 - Goals: `data/goals.json` (`id`, conditions, rewards)
 - News: `data/news.json` (template text with `sku` replacement)

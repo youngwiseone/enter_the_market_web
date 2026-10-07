@@ -1,3 +1,12 @@
+import { getTradingChallengeView, startTradingChallenge } from '../state/trading_challenge.js';
+
+export function startTradingChallengeAction({ state, saveState, rerender }) {
+  if (!startTradingChallenge(state)) return false;
+  if (typeof saveState === 'function') saveState();
+  if (typeof rerender === 'function') rerender();
+  return true;
+}
+
 export function getGoalMetricValueAction(deps) {
   const {
     state,
@@ -9,6 +18,7 @@ export function getGoalMetricValueAction(deps) {
   } = deps;
 
   if (typeof metric !== 'string') return 0;
+  if (metric === 'tradingChallengeWon') return getTradingChallengeView(state).status === 'won' ? 1 : 0;
   if (metric === 'cash') return Number(state.player?.cash) || 0;
   if (metric === 'netWorth') return calculateNetWorth();
   if (metric === 'day') return Number(state.player?.day) || 0;
@@ -135,7 +145,9 @@ export function evaluateGoalsAction(deps) {
     if (state.goalsClaimed[goal.id]) return;
 
     const progress = getGoalProgress(goal);
-    milestonePercents.forEach((percent) => {
+    // Optional challenges present their own live ledger. Their binary success
+    // metric must not emit three percentage messages together at settlement.
+    (goal.optional ? [] : milestonePercents).forEach((percent) => {
       const key = `goalMilestone:${goal.id}:${percent}`;
       if (progress.percent >= percent && !state.goalFlags[key]) {
         state.goalFlags[key] = true;

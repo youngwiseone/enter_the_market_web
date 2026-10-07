@@ -1,6 +1,16 @@
 {
   "goals": [
     {
+      "id": "market-timing-challenge",
+      "name": "Market Timing",
+      "description": "Optional: earn $5 realised crop profit on at least 2 sale days in 14 days",
+      "type": "economy",
+      "optional": true,
+      "goal": { "metric": "tradingChallengeWon", "operator": ">=", "value": 1 },
+      "reward": { "setFlag": "market_timing_achieved" },
+      "message": "Market Timing complete! You made $5 trading profit across at least two sale days."
+    },
+    {
       "id": "day-2-watering",
       "name": "Early Riser",
       "description": "Reach Day 2 to gain watering can",

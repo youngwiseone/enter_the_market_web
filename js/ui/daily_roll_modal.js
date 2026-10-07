@@ -1,6 +1,17 @@
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 
+const QUICK_ROLL_KEY = 'etm.preference.quickMarketRolls';
+export function getQuickRollPreference() {
+  try { return localStorage.getItem(QUICK_ROLL_KEY) === 'true'; } catch { return false; }
+}
+export function setQuickRollPreference(enabled) {
+  try { localStorage.setItem(QUICK_ROLL_KEY, String(!!enabled)); } catch { /* Preference storage is optional. */ }
+}
+export function shouldShowCompactRoll(strength, quickRoll, reduceMotion) {
+  return Number(strength) <= 0 || !!quickRoll || !!reduceMotion;
+}
+
 function createDailyRollSlotNode(item, extraClass = '') {
   const slot = document.createElement('div');
   slot.className = `daily-roll-reel-slot ${extraClass}`.trim();
@@ -269,6 +280,20 @@ export async function showDailyMarketRollModalAction(deps) {
   }
 
   const fatigueClamped = Math.max(0, Math.round(fatiguePercent));
+  const compact = shouldShowCompactRoll(fatigueClamped, getQuickRollPreference(), isReduceMotion());
+  modal.classList.toggle('is-compact', compact);
+  let quickInput = modal.querySelector('[data-quick-roll-preference]');
+  if (!quickInput && continueBtn) {
+    const label = document.createElement('label');
+    label.className = 'daily-roll-quick-option';
+    quickInput = document.createElement('input');
+    quickInput.type = 'checkbox';
+    quickInput.dataset.quickRollPreference = 'true';
+    quickInput.addEventListener('change', () => setQuickRollPreference(quickInput.checked));
+    label.append(quickInput, document.createTextNode(' Quick rolls next time'));
+    continueBtn.parentElement.insertBefore(label, continueBtn);
+  }
+  if (quickInput) quickInput.checked = getQuickRollPreference();
   const fatigueDetail = `Energy used sets today's roll strength. ${fatigueClamped}% roll strength applied this day.`;
   if (fatigueEl) {
     fatigueEl.textContent = `Roll Strength: ${fatigueClamped}%`;
@@ -277,6 +302,9 @@ export async function showDailyMarketRollModalAction(deps) {
   }
   if (fatigueNoteEl) {
     fatigueNoteEl.title = fatigueDetail;
+    fatigueNoteEl.textContent = fatigueClamped === 0
+      ? 'Quiet roll: no extra market impulse. Prices, weather and crop growth still update normally.'
+      : 'Your day’s energy use sets the extra roll strength. Ordinary market changes still apply.';
   }
 
   if (summaryEl) {
@@ -289,6 +317,18 @@ export async function showDailyMarketRollModalAction(deps) {
   setDailyRollOpen(true);
 
   const picks = Array.isArray(rollResult?.picks) ? rollResult.picks : [];
+  if (compact) {
+    if (fatigueClamped > 0) {
+      const seen = new Set();
+      picks.forEach((pick) => {
+        if (seen.has(pick.itemId)) return;
+        seen.add(pick.itemId);
+        renderDailyRollResultChip(summaryEl, pick, rollResult.byItem.get(pick.itemId));
+      });
+    }
+    setDailyRollCanContinue(true);
+    return;
+  }
   if (picks.length === 0) {
     setDailyRollCanContinue(true);
     if (continueBtn) {

@@ -1,3 +1,5 @@
+import { refreshFarmGestureHint } from './farm_gesture_hints.js';
+
 export function renderAllAction(deps) {
   const {
     trackRenderCall,
@@ -36,4 +38,5 @@ export function renderAllAction(deps) {
   updateTabNotificationBadges();
   updateTimeOfDayMood();
   updateGridSize();
+  refreshFarmGestureHint();
 }

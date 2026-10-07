@@ -1,7 +1,7 @@
 export const TOOL_GLOVE = 'glove';
 export const TOOL_WATERING = 'watering';
 export const TOOL_PICKAXE = 'pickaxe';
-export const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE];
+export const TOOL_LIST = [TOOL_GLOVE, TOOL_WATERING, TOOL_PICKAXE, 'pot'];
 
 export const GRID_DIMENSION = 7;
 export const GRID_CELL_COUNT = GRID_DIMENSION * GRID_DIMENSION;

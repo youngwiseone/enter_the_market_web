@@ -26,6 +26,14 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
   - second farm unlock after fully unlocking Farm 1
   - cosmetic themes from milestones
 
+## Cooking chapter
+
+Mina visits through Goals from level 4. Three produce requests lead to her restaurant job and a personal pot gift. The trial opens after the $25,000 milestone and at least eight discovered crops; previously claimed milestones count, and old saves start the story normally. Accepted requests share the farm's existing selection and contextual Sell/Give controls. Partial story donations survive reload, decline and expiry.
+
+The pot is a tool, not a placed station. Choose Garden Soup, Tomato Stew or Pumpkin Mash, then tap their mature ingredients on one farm. The last tap replaces that ingredient with the meal; cancellation costs nothing. Meals remain on the grid, can be sold normally or delivered to Bea and Rowan, and cannot be recooked. Mina returns with occasional larger restaurant produce orders.
+
+Chapter implementation, balance and actual browser results: [guide/cooking_chapter.txt](guide/cooking_chapter.txt). Repeatable local fixture installer: `js/dev/cooking_playtest.html` (use an empty dedicated localhost origin). Focused checks: `node js/dev/tests/cooking_chapter.test.mjs` on Node 22+.
+
 ## Architecture Snapshot
 
 - No framework and no build step.
@@ -115,6 +123,21 @@ node js/dev/tests/trading_loop.test.mjs
 ```
 
 These cover individual/bulk quote and payment parity, mixed crops, rarity/farm modifiers, save detection, the one-time introductory crop, moves, farm switches and retrying after a loss. Browser playtest evidence is recorded in `guide/trading_loop_playtest.txt`, with screenshots under `guide/playtest/`.
+
+Extended playtest regression checks (Node 22 or newer):
+
+```bash
+node js/dev/tests/sale_safety.test.mjs
+node js/dev/tests/growth_costs.test.mjs
+node js/dev/tests/trading_challenge.test.mjs
+node js/dev/tests/ui_flow.test.mjs
+node js/dev/tests/farm_scenery.test.mjs
+node js/dev/tests/clarity.test.mjs
+```
+
+These exercise exact crop/farm settlement, interrupted rewards, retained growth, treatment accounting, mature Quality rejection, the optional trading challenge, and contextual UI. Migration rules are in `guide/growth_cost_migration.txt`. The extended browser results and before/after images are under `guide/playtest/polish/`.
+
+The optional Market Timing challenge starts explicitly from Goals at Level 5. It counts only paid seeds bought and planted during its 14-day window, subtracts recorded seed and consumable costs when sold, and excludes inherited inventory, free seeds, resale, rewards and Farm 2's extra bonus. Missing historical treatment prices remain unknown; quotes disclose known-cost profit instead of inventing past spending.
 
 Message catalog validation:
 

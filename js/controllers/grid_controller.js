@@ -1,4 +1,6 @@
 import { takeIntroCropMeta } from '../state/opening_state.js';
+import { withNewCropIdentity } from '../state/crop_identity.js';
+import { withTradingChallengeCropMeta } from '../state/trading_challenge.js';
 import {
   consumeSeedBuyStreakMessageId,
   shouldSuppressSeedStandardBuyMessage
@@ -9,11 +11,13 @@ import {
   canApplyFertiliserToPlant,
   getFertiliserTypeKeyForItem,
   isFertiliserItem,
-  withAppliedPlantFertiliserMeta
+  withAppliedPlantFertiliserMeta,
+  persistRetainedWaterProgress
 } from './fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
 
 export function purchaseAndPlaceSelectedAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return;
   const {
     state,
     selectedShopItemId,
@@ -100,10 +104,12 @@ export function purchaseAndPlaceSelectedAction(deps) {
     registerDayAction();
     state.player.cash -= baseBuyPrice;
     setSelectedGridCellIndex(cellIndex);
+    persistRetainedWaterProgress(state, cellIndex);
     if (Array.isArray(state.gridPlacedMeta)) {
       state.gridPlacedMeta[cellIndex] = withAppliedPlantFertiliserMeta(
         state.gridPlacedMeta[cellIndex],
-        validation.fertiliserTypeKey || getFertiliserTypeKeyForItem(item)
+        validation.fertiliserTypeKey || getFertiliserTypeKeyForItem(item),
+        baseBuyPrice
       );
     }
     awardPlayerXp(xpRewards.plant);
@@ -171,12 +177,12 @@ export function purchaseAndPlaceSelectedAction(deps) {
   setSelectedGridCellIndex(null);
   if (Array.isArray(state.gridPurchasePrice)) state.gridPurchasePrice[cellIndex] = totalCost;
   if (Array.isArray(state.gridPlacedMeta)) {
-    state.gridPlacedMeta[cellIndex] = isProduce
-      ? takeIntroCropMeta(state, item)
+    state.gridPlacedMeta[cellIndex] = withNewCropIdentity(isProduce
+      ? withTradingChallengeCropMeta(state, takeIntroCropMeta(state, item), { seedCost: totalCost })
       : ensureInfrastructureMetaForPlacedItem(item, {
         tableKey,
         itemType: String(item.type || '').trim().toLowerCase() || 'unknown'
-      });
+      }));
   }
   if (Array.isArray(state.gridRarity)) state.gridRarity[cellIndex] = null;
   if (Array.isArray(state.gridPlantedDay)) {

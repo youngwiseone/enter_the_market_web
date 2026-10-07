@@ -86,7 +86,7 @@ export function attachCoreEventHandlers(deps) {
     dailyRollModal.addEventListener('click', (event) => {
       if (!isDailyRollOpen()) return;
       const target = event.target;
-      if (target instanceof Element && target.closest('#daily-roll-continue')) return;
+      if (target instanceof Element && target.closest('#daily-roll-continue, .daily-roll-quick-option, [data-quick-roll-preference]')) return;
       event.preventDefault();
       if (canContinueDailyRoll()) {
         continueDailyRollModal();

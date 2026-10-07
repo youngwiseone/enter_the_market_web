@@ -17,7 +17,7 @@ export function updateMainViewVisibilityDom(activeMainTab) {
   const isMessages = effectiveTab === 'messages';
 
   if (isMobileLayout) {
-    if (farmPanel) farmPanel.style.display = isFarm ? 'flex' : 'none';
+    if (farmPanel) farmPanel.style.display = isFarm ? '' : 'none';
     if (marketRoot) marketRoot.style.display = isFarm ? 'none' : 'flex';
     if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
     if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';

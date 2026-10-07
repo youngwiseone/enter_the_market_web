@@ -1,8 +1,9 @@
-import { getSaleQuote } from '../sim/sale_quote.js';
+import { getDishSaleQuote } from '../sim/dish_quote.js';
+import { getSaleQuote, getCropCostBasis } from '../sim/sale_quote.js';
 import { getCropCycleOffsetPercent } from '../sim/crop_identity.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { getRefillableTankState, getSprinklerPlacementConfig } from '../controllers/watering_infrastructure.js';
-import { getPlantFertiliserEffectsSummary } from '../controllers/fertiliser_controller.js';
+import { getPlantFertiliserEffectsSummary, isPlantWateredForDay } from '../controllers/fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
 import { getCropAdjustedRarityMultiplier, getCropIdentity, getCropIdentityLabels, getExpectedCropRarityMultiplier } from '../sim/crop_identity.js';
 
@@ -19,7 +20,8 @@ export function getSelectedShopItemInsightDataAction(deps) {
     selectedShopItemId,
     getFreePurchaseCount,
     expectedRarityMultiplier,
-    rarityMultipliers
+    rarityMultipliers,
+    getActiveFarmSellMultiplier = () => 1
   } = deps;
 
   if (!selectedShopItemId) return null;
@@ -61,8 +63,9 @@ export function getSelectedShopItemInsightDataAction(deps) {
   const effectiveCost = freeCount > 0 ? 0 : buyPrice;
   const cropExpectedRarityMultiplier = getExpectedCropRarityMultiplier(item, (rarity) => rarityMultipliers[rarity] || 1, RARITY_ROLLS);
   const guaranteedMultiplier = getCropAdjustedRarityMultiplier(item, 'common', (rarity) => rarityMultipliers[rarity] || 1);
-  const expectedSale = buyPrice * cropExpectedRarityMultiplier;
-  const guaranteedSale = buyPrice * guaranteedMultiplier;
+  const farmMultiplier = getActiveFarmSellMultiplier();
+  const expectedSale = buyPrice * cropExpectedRarityMultiplier * farmMultiplier;
+  const guaranteedSale = buyPrice * guaranteedMultiplier * farmMultiplier;
   const projectedDelta = expectedSale - effectiveCost;
   const guaranteedDelta = guaranteedSale - effectiveCost;
   const marginPct = effectiveCost > 0 ? ((projectedDelta / effectiveCost) * 100) : 0;
@@ -83,7 +86,9 @@ export function getSelectedShopItemInsightDataAction(deps) {
     guaranteedDelta,
     marginPct,
     growthDays: introductoryGrowth ? 2 : Math.max(0, Number(item.growDays) || 0),
-    introductoryGrowth
+    introductoryGrowth,
+    farmMultiplier,
+    farmId: state.activeFarmId || 1
   };
 }
 
@@ -111,6 +116,16 @@ export function getSelectedGridItemInsightDataAction(deps) {
     ? Math.max(0, Number(state.gridPurchasePrice[selectedGridCellIndex]) || 0)
     : 0;
   if (!isProduce) {
+    if (item.type === 'dish') {
+      const quote = getDishSaleQuote(state.gridPlacedMeta?.[selectedGridCellIndex]);
+      if (!quote) return null;
+      return { cellIndex: selectedGridCellIndex, itemName: item.name, isProduce: false,
+        isDish: true, itemType: 'dish', tableKey, quote, rarity: state.gridRarity?.[selectedGridCellIndex],
+        growth: { isGrown: true, daysLeft: 0 }, canSell: true, buyPrice: quote.cost,
+        currentBasePrice: quote.saleValue, sellNow: quote.saleValue, profitNow: quote.profit,
+        tankCapacity: null, tankCurrent: null,
+        recipeId: state.gridPlacedMeta[selectedGridCellIndex].dish.recipeId };
+    }
     const fallbackBase = Math.max(0, Number(item.price) || 0);
     const sellNow = Math.max(0, (buyPrice > 0 ? buyPrice : fallbackBase) * 0.8);
     const placedMeta = Array.isArray(state.gridPlacedMeta) ? state.gridPlacedMeta[selectedGridCellIndex] : null;
@@ -142,9 +157,10 @@ export function getSelectedGridItemInsightDataAction(deps) {
   if (!shopEntry) return null;
   const currentBasePrice = Math.max(0, Number(shopEntry.price) || 0);
   const rarity = growth.isGrown ? (getGridRarity(selectedGridCellIndex) || 'common') : 'unknown';
-  const quote = getSaleQuote({ item, marketPrice: currentBasePrice, buyPrice, rarity: rarity === 'unknown' ? 'common' : rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier() });
+  const costBasis = getCropCostBasis({ buyPrice, placedMeta: state.gridPlacedMeta?.[selectedGridCellIndex] });
+  const quote = getSaleQuote({ item, marketPrice: currentBasePrice, buyPrice, ...costBasis, rarity: rarity === 'unknown' ? 'common' : rarity, getRarityMultiplier, farmMultiplier: getActiveFarmSellMultiplier() });
   const sellNow = growth.isGrown ? quote.saleValue : 0;
-  const profitNow = sellNow - buyPrice;
+  const profitNow = sellNow - quote.cost;
   const fertiliserSummary = getPlantFertiliserEffectsSummary(state, item, selectedGridCellIndex, RARITY_ROLLS);
   return {
     cellIndex: selectedGridCellIndex,
@@ -159,6 +175,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
     rarity,
     growth,
     wateredToday: state.gridWateredDay?.[selectedGridCellIndex] === state.player?.day,
+    waterRetainedToday: isPlantWateredForDay(state, selectedGridCellIndex) && state.gridWateredDay?.[selectedGridCellIndex] !== state.player?.day,
     canSell: growth.isGrown,
     sellNow,
     profitNow,
@@ -166,3 +183,4 @@ export function getSelectedGridItemInsightDataAction(deps) {
     fertiliser: fertiliserSummary
   };
 }
+

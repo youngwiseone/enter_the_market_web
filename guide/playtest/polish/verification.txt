@@ -1,0 +1,161 @@
+Extended playtest implementation and verification — 7 October 2026
+
+Baseline
+The checkout was clean at reviewed commit 072bd56507c048954b532a19c29a9c94f9485ca6.
+There were no intervening changes to reconcile. The existing native modules,
+retro presentation, rarity pricing, farm effects and accelerated opening were
+retained. No deployment or public save was modified.
+
+Implementation commits on codex/extended-playtest-polish:
+  61c68d0 Protect crop settlement, retained growth, and trading cost ledgers
+  280af79 Stabilize responsive farming and polish contextual feedback
+Browser fixtures, screenshots, this report and README validation commands are
+recorded in a separate final evidence commit.
+
+Changes
+Sale snapshots carry originating farm and exact placement instance identity.
+Queued settlement validates both, freezes quotes, and rejects conflicting farm,
+move, planting, repeat-sale and Rest actions. A paid bulk step synchronously
+updates crop removal, cash, counters, challenge profit, harvest XP, goal rewards
+and persistence before awaiting its travel effect. Single sales retain their
+payment-after-travel behavior. Reload leaves unpaid crops available to retry.
+
+Retention records completed moisture days before the last watering date changes
+and at dawn on both farms. Known crop costs include actual paid seed and treatment
+spending. Older treatment prices stay unknown and are explicitly disclosed.
+Mature/resolved Quality applications fail before cash or energy changes.
+See ../../growth_cost_migration.txt for the precise migration rules.
+
+Farm 2 estimates include its multiplier and label current-price assumptions.
+Ready-crop advice ranks actual sellable holdings. Fertiliser details explain
+application cost, energy, duration and stacking instead of showing resale value.
+The Goals area previews the next useful unlock and offers an optional challenge.
+Contextual gesture hints retire after successful use. Rest stays separate from
+Cancel planting; quiet rolls immediately show a recap, with a saved quick-roll
+preference and accessible checkbox. Selection/receipts no longer resize the farm.
+Short screens can scroll, including dialogs; sale and Rest share one mobile row.
+
+Automated checks
+All seven commands passed with bundled Node 24.19.0:
+  node js/dev/tests/trading_loop.test.mjs
+  node js/dev/tests/sale_safety.test.mjs
+  node js/dev/tests/growth_costs.test.mjs
+  node js/dev/tests/trading_challenge.test.mjs
+  node js/dev/tests/ui_flow.test.mjs
+  node js/dev/tests/farm_scenery.test.mjs
+  node js/dev/tests/clarity.test.mjs
+  node js/dev/validate_messages.cjs  (96 message entries)
+
+This Windows sandbox needed --preserve-symlinks --preserve-symlinks-main for
+Node file access. Node's module-detection warnings are unrelated to browser
+runtime behavior. Node 22+ is recommended; Node 20 needs module-mode configuration.
+
+Syntax checked all 96 .js files with:
+  $taskJsFiles = rg --files -g '*.js'
+  foreach ($taskFile in $taskJsFiles) {
+    Get-Content -Raw -LiteralPath $taskFile | node --input-type=module --check
+    if ($LASTEXITCODE -ne 0) { throw "Failed: $taskFile" }
+  }
+git diff --check passed after removing excess trailing blank lines.
+
+Focused coverage
+- Exact farm/crop identity, same-type replacements, frozen quotes, repeated
+  input, origin-array replacement, and sale/Rest/move locks.
+- Interruptions at each bulk step, reload/retry, paid cash/XP/goal consistency,
+  final feedback interruption, and interrupted single sale before payment.
+- Retention migration and monotonic growth, rain/manual/sprinkler daily dedupe,
+  movement, farm switching, actual treatment prices and historical-cost limits.
+- Mature Quality payment rejection and valid prematurity stacking.
+- Farm-aware estimates, ready-holdings guidance, stable geometry, hints,
+  compact rolls, preference click/keyboard behavior and treatment disclosure.
+- Challenge entry, inherited/free/unknown-cost exclusions, losses, Farm 2
+  parity, exact-crop dedupe, deadlines, harmless retry and one-time rewards.
+- Existing pricing parity, opening safeguards, rarity persistence, farm scenery
+  and first-seed versus ordinary-seed growth.
+
+Browser protocol
+Used real in-app browser controls against local Python HTTP servers. Port 8000
+was used only to inspect the original layout. Disposable isolated origins
+127.0.0.1:8017 (fresh) and :8018 (legacy) were used for mutations. The fixture
+page js/dev/tests/browser_fixture.html is restricted to those two local ports,
+refuses creation when ANY known game-save key already exists, and never clears
+storage. Existing player storage was preserved. Browser tests did not change
+game state through the console or browser evaluation.
+
+Observed browser results
+1. Fresh buy/water/grow/sell: manually watered introductory Carrot on Days 1 and
+   2; it matured on Day 3, retained Rare rarity through reload, and sold for
+   $1.92 against $1 seed cost. Cash $100.92, one item sold, Level 2. A subsequent
+   paid Carrot displayed ordinary six-watered-day growth, preserving the
+   one-time opening. Drag mining spent energy and retired its hint.
+2. Legacy Day 9 retention crop showed one day remaining before and after
+   manual rewatering; energy was spent without reversing growth. Mature Common
+   Lettuce rejected Quality with unchanged cash/energy and a brief explanation.
+   The treatment-cost quote included $10 paid retention in its loss.
+3. Interrupted a real seven-crop mixed-rarity bulk sale after two payments by
+   reloading: cash rose from $1000 to $1009.36, sold count 20 to 22, XP 1 to 13,
+   and only indices 7 and 8 were removed. Rest keyboard input did not advance
+   Day 9; farm switch was disabled during settlement. Farm 2's matching unripe
+   crop was still present after reload. The remaining crops could be sold later.
+4. Moved the mature retained crop to another empty plot, switched farms and
+   reloaded: maturity, original cost, cached rarity and known-cost disclosure
+   remained. Farm 2 shop estimates showed its doubled sale assumption.
+5. Bought two Common Corn on Day 9, arranged irrigation, watered/refilled and
+   grew them over six dawns. Irrigation plus occasional rain allowed repeated
+   zero-action days. Compact zero-strength recaps still changed prices/weather
+   and advanced growth. Held the first harvest from Day 15 ($9.67 quote) to
+   Day 16 ($9.12), demonstrating downside, then sold for $1.12 profit.
+6. Reinvested into two $7.60 Corn on Day 16. Held the second original Common
+   Corn until Day 19 and sold for $10.19 ($2.19 profit). Refilled the sprinkler,
+   then grew the reinvestment through Day 22. A Common reinvested Corn sold for
+   $9.47 ($1.86 profit), completing the challenge with $5.17 across three sale
+   days. Only three paid crop sales were needed; the target is not a cash-balance
+   grind and did not need rare crops or Farm 2's subsidy. An inherited Onion
+   sold during this window contributed nothing. One-time goal XP and completion
+   persisted through reload. A fourth reinvested Corn happened to become Rare;
+   it was not needed to meet the target. No broad economy rebalance was made.
+7. Completed another five-crop mixed-rarity batch (four Onion, one Corn):
+   $30.68 payment, $53 known seed/treatment costs, $22.32 loss, sold count +5,
+   XP +30, all five exact crops removed. The grid remained 365px square.
+8. Drag planted two paid Carrots in adjacent empty plots. Rain already watered
+   their soil; a manual drag correctly reported already watered, spent no more
+   energy and left six growth days remaining (no duplicate daily progress).
+9. Quick-roll checkbox was checked/unchecked without closing the recap, then
+   retained its setting through reload. Browser testing caught and fixed the
+   old single-sale wrapper lock, modal checkbox bubbling and hidden-checkbox
+   styling. No application console errors were reported in final legacy play.
+
+Layout evidence
+Before screenshots are from the original build; after screenshots use the
+updated isolated saves, so crop contents and days differ. They compare layout,
+not identical economic state.
+- before-500-selected.png, before-500-farm.png
+- before-845-landscape.png
+- after-500-selected.png, after-615-selected.png
+- after-845-landscape.png, after-845-market.png, after-845-dialog.png
+- after-desktop.png, after-compact-goals.png
+- after-fresh.png, after-challenge.png, after-bulk-receipt.png
+
+The selected farm is 365x365 at both 500x762 and 615x762, versus the previously
+shrinking selection layout. At 845x382 it is 280x280 with usable page scrolling;
+tools, Farm 2, market details and recap Continue were reachable. At 1400x900 the
+grid is 570x570 at x162/y293 both with and without selected details, independent
+of the receipt. A 700x450 viewport checked constrained-space behavior equivalent
+to reduced CSS space at zoom. Desktop farm and market panels scroll independently.
+
+Limits and remaining risks
+- Physical phone touch was not tested. Desktop mouse dragging, click controls,
+  keyboard paths and resized portrait/landscape browser layouts were exercised.
+- The in-app browser's Ctrl-minus shortcut did not change its scale. Actual
+  browser zoom remains unverified; reduced viewport checks are not a claim of
+  true zoom testing. Cross-browser Safari/Firefox behavior was not tested.
+- Cross-farm corruption and partial-batch missing XP were source-confirmed risks
+  in the report. This run deliberately interrupted the fixed implementation;
+  it did not corrupt the preserved original save to reproduce the old failure.
+- Historical treatment payments and previously erased retention progress cannot
+  be recovered exactly. Migration preserves known facts instead of guessing.
+- Persistence still uses the existing synchronous multiple localStorage keys;
+  normal reloads are covered, but disk/storage failure or browser termination
+  inside the synchronous save calls is not an atomic storage journal guarantee.
+- The challenge was tuned against the recorded small crop cycles, not a broad
+  statistical balance study. Failure remains harmless and free play stays open.

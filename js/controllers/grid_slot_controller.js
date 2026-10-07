@@ -1,10 +1,12 @@
 import { takeIntroCropMeta } from '../state/opening_state.js';
+import { withNewCropIdentity } from '../state/crop_identity.js';
 import { isProduceItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { ensureInfrastructureMetaForPlacedItem } from './watering_infrastructure.js';
 import {
   canApplyFertiliserToPlant,
   isFertiliserItem,
-  withAppliedPlantFertiliserMeta
+  withAppliedPlantFertiliserMeta,
+  persistRetainedWaterProgress
 } from './fertiliser_controller.js';
 import { RARITY_ROLLS } from '../sim/rarity.js';
 
@@ -16,6 +18,7 @@ export function getGridUnlockCostAction(state) {
 }
 
 export function purchaseGridSlotAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return;
   const {
     state,
     index,
@@ -54,6 +57,7 @@ export function purchaseGridSlotAction(deps) {
 }
 
 export function placeItemOnGridAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return;
   const {
     state,
     itemId,
@@ -106,10 +110,14 @@ export function placeItemOnGridAction(deps) {
     }
     if (!consumeEnergy(1, 'apply fertiliser')) return;
     registerDayAction();
+    const fertiliserEntry = state.inventory?.find((entry) => entry.itemId === itemId);
+    const amountPaid = Number.isFinite(fertiliserEntry?.avgCost) ? fertiliserEntry.avgCost : null;
+    persistRetainedWaterProgress(state, cellIndex);
     if (Array.isArray(state.gridPlacedMeta)) {
       state.gridPlacedMeta[cellIndex] = withAppliedPlantFertiliserMeta(
         state.gridPlacedMeta[cellIndex],
-        validation.fertiliserTypeKey
+        validation.fertiliserTypeKey,
+        amountPaid
       );
     }
     awardPlayerXp(xpRewards.plant);
@@ -151,12 +159,12 @@ export function placeItemOnGridAction(deps) {
     state.gridPurchasePrice[cellIndex] = perUnitCost;
   }
   if (Array.isArray(state.gridPlacedMeta)) {
-    state.gridPlacedMeta[cellIndex] = isProduceItem(item)
+    state.gridPlacedMeta[cellIndex] = withNewCropIdentity(isProduceItem(item)
       ? takeIntroCropMeta(state, item)
       : ensureInfrastructureMetaForPlacedItem(item, {
         tableKey: getNormalizedItemTableKey(item),
         itemType: String(item.type || '').trim().toLowerCase() || 'unknown'
-      });
+      }));
   }
   if (Array.isArray(state.gridRarity)) {
     state.gridRarity[cellIndex] = null;
@@ -201,6 +209,7 @@ export function placeItemOnGridAction(deps) {
 }
 
 export function removeItemFromGridAction(deps) {
+  if (deps.state.runtimeFlags?.isSellBatchInFlight || deps.state.runtimeFlags?.isRestInProgress) return;
   const {
     state,
     cellIndex,

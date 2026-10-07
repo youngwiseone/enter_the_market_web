@@ -1,3 +1,5 @@
+import { installFarmGestureHint, rememberFarmGesture, refreshFarmGestureHint } from './farm_gesture_hints.js';
+
 export function stopFarmPointerInteractionAction(farmPointerState) {
   farmPointerState.active = false;
   farmPointerState.pointerId = null;
@@ -13,11 +15,46 @@ export function installFarmPointerHandlersAction(deps) {
     farmPointerState,
     applyGridActionForIndex,
     stopFarmPointerInteraction,
-    shouldPromoteStartToBulk
+    shouldPromoteStartToBulk,
+    state,
+    getSelectedShopItemId,
+    getSelectedGridCellIndex
   } = deps;
 
   const grid = document.getElementById('grid');
   if (!grid) return false;
+  if (state) installFarmGestureHint(() => {
+    const shopItemId = getSelectedShopItemId?.();
+    const item = state.items?.find((candidate) => candidate.id === shopItemId);
+    const selected = getSelectedGridCellIndex?.();
+    return {
+      tool: state.activeTool,
+      shopItemId,
+      shopItemType: item?.type || 'produce',
+      selectedMature: Number.isInteger(selected) && !!state.gridRarity?.[selected],
+      hasGrowingCrops: !!state.gridItems?.some((id, index) => id && !state.gridRarity?.[index] && state.items?.find((candidate) => candidate.id === id)?.type === 'produce'),
+      hasLockedTiles: !!state.gridUnlocked?.some((unlocked) => !unlocked)
+    };
+  });
+  const applyAction = (index, mode) => {
+    if (!state) return applyGridActionForIndex(index, { mode });
+    const previous = {
+      itemId: state.gridItems?.[index],
+      wateredDay: state.gridWateredDay?.[index],
+      hits: state.gridMiningHits?.[index],
+      unlocked: state.gridUnlocked?.[index],
+      selected: getSelectedGridCellIndex?.()
+    };
+    const result = applyGridActionForIndex(index, { mode });
+    if (mode === 'drag') {
+      if (!previous.itemId && state.gridItems?.[index]) rememberFarmGesture('plant');
+      if (state.gridWateredDay?.[index] !== previous.wateredDay) rememberFarmGesture('water');
+      if (state.gridMiningHits?.[index] !== previous.hits || state.gridUnlocked?.[index] !== previous.unlocked) rememberFarmGesture('mine');
+    }
+    if (Number.isInteger(previous.selected) && previous.selected !== index && previous.itemId == null && state.gridItems?.[index] && !state.gridItems?.[previous.selected]) rememberFarmGesture('move');
+    refreshFarmGestureHint();
+    return result;
+  };
 
   grid.addEventListener('pointerdown', (event) => {
     if (isFarmActionBlocked()) return;
@@ -31,7 +68,7 @@ export function installFarmPointerHandlersAction(deps) {
     farmPointerState.startIndex = index;
     farmPointerState.didPromoteStartToBulk = false;
     farmPointerState.suppressClickUntil = Date.now() + 260;
-    applyGridActionForIndex(index, { mode: 'tap' });
+    applyAction(index, 'tap');
     if (typeof grid.setPointerCapture === 'function') {
       try {
         grid.setPointerCapture(event.pointerId);
@@ -59,12 +96,12 @@ export function installFarmPointerHandlersAction(deps) {
       && shouldPromoteStartToBulk(farmPointerState.startIndex, index)
     ) {
       // First move turns the starting tapped cell into bulk selection.
-      applyGridActionForIndex(farmPointerState.startIndex, { mode: 'drag' });
+      applyAction(farmPointerState.startIndex, 'drag');
       farmPointerState.didPromoteStartToBulk = true;
     }
     if (farmPointerState.processedIndices.has(index)) return;
     farmPointerState.processedIndices.add(index);
-    applyGridActionForIndex(index, { mode: 'drag' });
+    applyAction(index, 'drag');
     event.preventDefault();
   }, { passive: false });
 

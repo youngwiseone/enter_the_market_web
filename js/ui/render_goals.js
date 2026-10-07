@@ -1,3 +1,7 @@
+import { FARM_TWO_PURCHASE_COST, GRID_CELL_COUNT } from '../sim/constants.js';
+import { getQuickRollPreference, setQuickRollPreference } from './daily_roll_modal.js';
+import { getTradingChallengeView } from '../state/trading_challenge.js';
+
 function getGoalMetricCategory(metric) {
   if (typeof metric !== 'string' || !metric) return 'other';
   if (metric === 'harvestCount' || metric.startsWith('itemsHarvested.')) return 'harvest';
@@ -133,7 +137,8 @@ export function renderGoalsPanel(deps) {
     formatPlaytime,
     getAlwaysShowGridItemInfo,
     setAlwaysShowGridItemInfo,
-    rerender
+    rerender,
+    startTradingChallenge
   } = deps;
 
   const container = document.getElementById('goals-content');
@@ -165,12 +170,55 @@ export function renderGoalsPanel(deps) {
     rerender();
   };
   optionsRow.appendChild(itemInfoToggle);
+  const quickRoll = document.createElement('button');
+  quickRoll.type = 'button';
+  quickRoll.className = 'button';
+  quickRoll.style.marginLeft = '4px';
+  const quickOn = getQuickRollPreference();
+  quickRoll.textContent = `Quick market rolls: ${quickOn ? 'On' : 'Off'}`;
+  quickRoll.setAttribute('aria-pressed', String(quickOn));
+  quickRoll.title = 'Show the settled market results immediately. Days, prices and growth still advance normally.';
+  quickRoll.onclick = () => { setQuickRollPreference(!quickOn); rerender(); };
+  optionsRow.appendChild(quickRoll);
   container.appendChild(optionsRow);
 
   const goalsTitle = document.createElement('div');
   goalsTitle.className = 'panel-title';
   goalsTitle.textContent = 'Goals';
   container.appendChild(goalsTitle);
+  const upcoming = getNextMeaningfulUnlock(state);
+  if (upcoming) {
+    const preview = document.createElement('div');
+    preview.className = 'next-unlock-preview';
+    const title = document.createElement('strong');
+    title.textContent = `${upcoming.title} · ${upcoming.requirement}`;
+    const detail = document.createElement('p');
+    detail.textContent = upcoming.detail;
+    preview.append(title, detail);
+    container.appendChild(preview);
+  }
+  const challenge = getTradingChallengeView(state);
+  const challengeCard = document.createElement('details');
+  challengeCard.className = 'next-unlock-preview trading-challenge';
+  const challengeTitle = document.createElement('summary');
+  challengeTitle.textContent = `Optional: Market Timing · ${challenge.status === 'won' ? 'Complete' : challenge.status === 'active' ? `$${challenge.profit.toFixed(2)}/${challenge.targetProfit} · ${challenge.saleDays}/${challenge.targetSaleDays} sale days` : challenge.status === 'locked' ? `Level ${challenge.minLevel}` : challenge.status === 'expired' ? 'Try again' : 'Ready to start'}`;
+  const challengeRules = document.createElement('p');
+  challengeRules.textContent = `Earn $${challenge.targetProfit} of realised crop trading profit across ${challenge.targetSaleDays} sale days within ${challenge.windowDays} days. Only paid seeds bought and planted during the window count. Costs are attributed when sold: sale-time market value and rarity less actual seed and treatment spending. Unsold crops, existing crops or inventory, free seeds, unknown older treatment costs, Farm 2's bonus, rewards and resale do not count. No penalty if time runs out. Completion earns an achievement and goal XP.`;
+  challengeCard.append(challengeTitle, challengeRules);
+  if (challenge.status === 'active' || challenge.status === 'expired') {
+    const windowNote = document.createElement('p');
+    windowNote.textContent = `Window: Day ${challenge.startDay} through Day ${challenge.endDay}, inclusive.`;
+    challengeCard.appendChild(windowNote);
+  }
+  if ((challenge.status === 'available' || challenge.status === 'expired') && typeof startTradingChallenge === 'function') {
+    const startButton = document.createElement('button');
+    startButton.type = 'button';
+    startButton.className = 'button';
+    startButton.textContent = challenge.status === 'expired' ? 'Start a fresh window' : `Start ${challenge.windowDays}-day challenge`;
+    startButton.onclick = () => startTradingChallenge();
+    challengeCard.appendChild(startButton);
+  }
+  container.appendChild(challengeCard);
 
   const playtimeRow = document.createElement('div');
   playtimeRow.style.margin = '4px 0 6px';
@@ -223,7 +271,7 @@ export function renderGoalsPanel(deps) {
     return bProgress - aProgress;
   });
 
-  const filteredGoals = goals.filter((goal) => goalMatchesFilter(goal, currentGoalFilter, getGoalConditions));
+  const filteredGoals = goals.filter((goal) => !goal.optional && goalMatchesFilter(goal, currentGoalFilter, getGoalConditions));
   filteredGoals.forEach((goal) => {
     const row = document.createElement('tr');
     row.dataset.goalId = goal.id || '';
@@ -266,4 +314,16 @@ export function renderGoalsPanel(deps) {
     const highlightedRow = table.querySelector(`tr[data-goal-id="${highlightedGoalId}"]`);
     if (highlightedRow) highlightedRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
+}
+
+export function getNextMeaningfulUnlock(state) {
+  const level = Math.max(1, Number(state.player?.playerLevel) || 1);
+  if (level < 10) return { title: 'Next feature: crop treatments', requirement: `Level ${level}/10`, detail: 'One-crop treatments can retain water, shorten growth or improve unresolved rarity. Each application costs cash and energy.' };
+  if (level < 20) return { title: 'Next feature: irrigation', requirement: `Level ${level}/20`, detail: 'Sprinklers water adjacent growing crops at dawn. Arrange your plots around them; refill their tanks or use rain.' };
+  if (!state.secondFarmPurchased) {
+    const farm = Number(state.activeFarmId || 1) === 1 ? state : state.farms?.[1];
+    const cleared = farm?.gridUnlocked?.filter(Boolean).length || 0;
+    return { title: 'Next feature: Farm 2', requirement: `${cleared}/${GRID_CELL_COUNT} Farm 1 plots · $${FARM_TWO_PURCHASE_COST.toFixed(0)}`, detail: 'Clear every Farm 1 plot, then buy Farm 2 with the farm button. Its crops sell for 2× value, with a separate growing space.' };
+  }
+  return null;
 }

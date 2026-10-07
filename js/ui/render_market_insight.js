@@ -40,9 +40,11 @@ export function renderSelectedItemInsightAction(deps) {
     getSelectedGridItemInsightData,
     getSelectedShopItemInsightData,
     clearCurrentInfoSelection,
+    clearShopSelection,
     sellBulkSelectedGridItems,
     sellSelectedGridItem,
-    updateGridSize
+    updateGridSize,
+    isSellBatchInFlight = false
   } = deps;
 
   const bulkInsight = getBulkSelectedGridInsightData();
@@ -76,7 +78,8 @@ export function renderSelectedItemInsightAction(deps) {
     if (!farmDock || !farmButton) return;
     farmDock.classList.add('is-visible');
     farmButton.textContent = label;
-    farmButton.disabled = !!disabled;
+    farmButton.disabled = !!disabled || (isSellAction && isSellBatchInFlight);
+    if (isSellAction && isSellBatchInFlight) farmButton.textContent = 'Selling…';
     if (isSellAction) {
       farmButton.dataset.sellActionButton = 'true';
     } else {
@@ -89,7 +92,7 @@ export function renderSelectedItemInsightAction(deps) {
   if (isMobileLayout && isFarmVisible) {
     if (bulkInsight && bulkInsight.count > 0) {
       setFarmActionButton(
-        `Sell for $${bulkInsight.totalSale.toFixed(2)} (profit ${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)})`,
+        `Sell $${bulkInsight.totalSale.toFixed(2)} · ${bulkInsight.cells?.some((cell) => cell.quote?.historicalCostUnknown) ? 'known-cost profit' : 'profit'} ${bulkInsight.totalProfit >= 0 ? '+' : '−'}$${Math.abs(bulkInsight.totalProfit).toFixed(2)}`,
         () => sellBulkSelectedGridItems(farmButton),
         false,
         true
@@ -97,19 +100,24 @@ export function renderSelectedItemInsightAction(deps) {
     } else if (gridInsight) {
       if (gridInsight.canSell) {
         setFarmActionButton(
-          `Sell for $${gridInsight.sellNow.toFixed(2)} (profit ${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)})`,
+          `Sell $${gridInsight.sellNow.toFixed(2)} · ${gridInsight.quote?.historicalCostUnknown ? 'known-cost profit' : 'profit'} ${gridInsight.profitNow >= 0 ? '+' : '−'}$${Math.abs(gridInsight.profitNow).toFixed(2)}`,
           () => sellSelectedGridItem(farmButton),
           false,
           true
         );
       } else {
         setFarmActionButton(
-          `${gridInsight.itemName} · ${gridInsight.growth.daysLeft}d left · ${gridInsight.wateredToday ? 'Watered ✓' : 'Needs water'}`,
+          `${gridInsight.itemName} · ${gridInsight.growth.daysLeft}d left · ${gridInsight.wateredToday ? 'Watered ✓' : gridInsight.waterRetainedToday ? 'Moisture retained' : 'Needs water'}`,
           null,
           true,
           false
         );
       }
+    } else if (shopInsight) {
+      setFarmActionButton(`Cancel ${shopInsight.isProduce ? 'planting' : 'placement'} · ${shopInsight.itemName}`, () => {
+        if (typeof clearShopSelection === 'function') clearShopSelection();
+        else clearCurrentInfoSelection();
+      });
     } else {
       clearFarmActionButton();
     }
@@ -141,8 +149,8 @@ export function renderSelectedItemInsightAction(deps) {
       metricGrid.className = 'market-insight-grid';
       const rows = [
         ['Total Sell Now', `$${bulkInsight.totalSale.toFixed(2)}`, ''],
-        ['Bulk Profit', `${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)}`, bulkInsight.totalProfit >= 0 ? 'good' : 'bad'],
-        ['Total Bought', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
+        [bulkInsight.cells?.some((cell) => cell.quote?.historicalCostUnknown) ? 'Known-cost profit' : 'Bulk Profit', `${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)}`, bulkInsight.totalProfit >= 0 ? 'good' : 'bad'],
+        ['Seed + treatments', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
         ['Energy Cost', '0', 'good']
       ];
       rows.forEach(([label, value, tone]) => {
@@ -177,10 +185,17 @@ export function renderSelectedItemInsightAction(deps) {
       compositionChip.className = 'insight-chip';
       compositionChip.textContent = bulkInsight.itemBreakdown.join(', ');
       chipRow.appendChild(compositionChip);
+      if (bulkInsight.cells?.some((cell) => cell.quote?.historicalCostUnknown)) {
+        const limitation = document.createElement('p');
+        limitation.className = 'market-context';
+        limitation.textContent = 'Older treatment costs are unknown for some selected crops. Profit uses recorded costs only.';
+        panel.appendChild(limitation);
+      }
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
       sellButton.className = 'button';
-      sellButton.textContent = `Sell Selected (${bulkInsight.count})`;
+      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : `Sell Selected (${bulkInsight.count})`;
+      sellButton.disabled = isSellBatchInFlight;
       sellButton.dataset.sellActionButton = 'true';
       sellButton.addEventListener('click', () => {
         sellBulkSelectedGridItems(sellButton);
@@ -191,15 +206,18 @@ export function renderSelectedItemInsightAction(deps) {
     }
 
     if (gridInsight) {
-      panel.appendChild(createInsightHeader(`${gridInsight.itemName} selected tile`, clearCurrentInfoSelection));
+      panel.appendChild(createInsightHeader(gridInsight.itemName, clearCurrentInfoSelection));
       appendMarketContext(panel, gridInsight);
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
-      const rows = gridInsight.isProduce ? [
+      const rows = gridInsight.isDish ? [
+        ['Meal value', `$${gridInsight.sellNow.toFixed(2)}`, ''],
+        ['Ingredient costs', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
+        [gridInsight.quote?.historicalCostUnknown ? 'Known-cost profit' : 'Net profit', `${gridInsight.profitNow >= 0 ? '+' : '−'}$${Math.abs(gridInsight.profitNow).toFixed(2)}`, gridInsight.profitNow >= 0 ? 'good' : 'bad'],
+        ['Recipe quality', gridInsight.rarity, '']
+      ] : gridInsight.isProduce ? [
         ['Sell Now', gridInsight.canSell ? `$${gridInsight.sellNow.toFixed(2)}` : 'Not ready', gridInsight.canSell ? '' : 'bad'],
-        ['Net profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : ''],
-        ['Seed cost', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
-        ['Market Base', `$${gridInsight.currentBasePrice.toFixed(2)}`, '']
+        [gridInsight.quote?.historicalCostUnknown ? 'Known-cost profit' : 'Net profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : '−'}$${Math.abs(gridInsight.profitNow).toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : '']
       ] : [
         ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
         ['Base Price', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
@@ -220,6 +238,18 @@ export function renderSelectedItemInsightAction(deps) {
         metricGrid.appendChild(metric);
       });
       panel.appendChild(metricGrid);
+      if (gridInsight.isProduce) {
+        const costNote = document.createElement('p');
+        costNote.className = 'market-context';
+        costNote.textContent = `Seed + treatments $${(gridInsight.quote?.cost ?? gridInsight.buyPrice).toFixed(2)}${gridInsight.canSell && gridInsight.rarity ? ' · ' + gridInsight.rarity : ''}`;
+        panel.appendChild(costNote);
+      }
+      if (gridInsight.quote?.historicalCostUnknown) {
+        const limitation = document.createElement('p');
+        limitation.className = 'market-context';
+        limitation.textContent = 'Older treatment costs are unknown. Profit subtracts only recorded seed and treatment spending.';
+        panel.appendChild(limitation);
+      }
       if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
         const details = document.createElement('details');
         details.className = 'sale-breakdown';
@@ -285,7 +315,7 @@ export function renderSelectedItemInsightAction(deps) {
           qualityChip.className = 'insight-chip';
           const mythicPct = Number(gridInsight.fertiliser.qualityMythicPercent);
           qualityChip.textContent = Number.isFinite(mythicPct)
-            ? `Quality: Mythic ${mythicPct.toFixed(0)}%`
+            ? `Quality: Mythic ${mythicPct.toFixed(2)}%`
             : `Quality: +${Number(gridInsight.fertiliser.qualityStacks) * 5}% upward shift`;
           chipRow.appendChild(qualityChip);
         }
@@ -316,22 +346,32 @@ export function renderSelectedItemInsightAction(deps) {
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
       sellButton.className = 'button';
-      sellButton.textContent = gridInsight.canSell ? `Sell Selected ($${gridInsight.sellNow.toFixed(2)})` : 'Sell Selected (Locked)';
-      sellButton.disabled = !gridInsight.canSell;
+      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : gridInsight.canSell ? `Sell Selected ($${gridInsight.sellNow.toFixed(2)})` : 'Sell Selected (Locked)';
+      sellButton.disabled = !gridInsight.canSell || isSellBatchInFlight;
       if (gridInsight.canSell) {
         sellButton.dataset.sellActionButton = 'true';
       }
       sellButton.addEventListener('click', () => {
         sellSelectedGridItem(sellButton);
       });
-      chipRow.appendChild(sellButton);
-      panel.appendChild(chipRow);
+      const actionRow = document.createElement('div');
+      actionRow.className = 'market-insight-row';
+      actionRow.appendChild(sellButton);
+      panel.appendChild(actionRow);
       const profile = document.createElement('details');
       profile.className = 'crop-outlook-details';
       const profileTitle = document.createElement('summary');
-      profileTitle.textContent = 'Crop traits';
+      profileTitle.textContent = gridInsight.isProduce ? 'Crop details' : 'Item details';
       profile.appendChild(profileTitle);
-      if (gridInsight.isProduce && (gridInsight.identityLabels || gridInsight.identitySummary)) panel.appendChild(profile);
+      profile.appendChild(chipRow);
+      if (gridInsight.isDish) {
+        const recipeNote = document.createElement('p');
+        recipeNote.className = 'market-context';
+        recipeNote.textContent = 'Meal value is fixed at 115% of base ingredient values, with their crop quality and farm bonuses included once. Market peaks may favour selling ingredients. Meal quality is descriptive; it adds no second bonus.'
+          + (gridInsight.quote?.historicalCostUnknown ? ' Older ingredient treatment costs are unknown; profit uses recorded costs only.' : '');
+        profile.appendChild(recipeNote);
+      }
+      panel.appendChild(profile);
       if (gridInsight.isProduce && gridInsight.identityLabels) {
         const identityRow = document.createElement('div');
         identityRow.className = 'market-insight-row';
@@ -372,13 +412,19 @@ export function renderSelectedItemInsightAction(deps) {
 
     if (!shopInsight.isProduce) {
       panel.appendChild(createInsightHeader(`${shopInsight.itemName} usage`, clearCurrentInfoSelection));
+      const isFertiliser = String(shopInsight.itemType || '') === 'fertiliser';
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
-      const rows = [
+      const rows = isFertiliser ? [
+        ['Per application', `$${shopInsight.buyPrice.toFixed(2)}`, ''],
+        ['Application', '1 energy', ''],
+        ['Lasts for', 'This crop', ''],
+        ['Target', 'Growing crop', '']
+      ] : [
         ['Buy Price', `$${shopInsight.buyPrice.toFixed(2)}`, ''],
         ['Resale (80%)', `$${shopInsight.resaleValue.toFixed(2)}`, ''],
         ['Net on Sell', `${shopInsight.projectedDelta >= 0 ? '+' : ''}$${shopInsight.projectedDelta.toFixed(2)}`, shopInsight.projectedDelta >= 0 ? 'good' : 'bad'],
-        ['Placement', String(shopInsight.itemType || '') === 'fertiliser' ? 'Apply to planted crops' : 'Select then place on grid', '']
+        ['Placement', 'Select then place on grid', '']
       ];
       rows.forEach(([label, value, tone]) => {
         const metric = document.createElement('div');
@@ -415,7 +461,7 @@ export function renderSelectedItemInsightAction(deps) {
       chipRow.appendChild(typeChip);
       const resaleChip = document.createElement('span');
       resaleChip.className = 'insight-chip';
-      resaleChip.textContent = `Resale rate: ${shopInsight.resaleRatePct || 80}%`;
+      resaleChip.textContent = isFertiliser ? 'Consumed on application · adds to crop cost' : `Resale rate: ${shopInsight.resaleRatePct || 80}%`;
       chipRow.appendChild(resaleChip);
       if (String(shopInsight.itemType || '') === 'sprinkler') {
         const dawnChip = document.createElement('span');
@@ -482,7 +528,7 @@ export function renderSelectedItemInsightAction(deps) {
     panel.appendChild(outlook);
     const growthNote = document.createElement('p');
     growthNote.className = 'market-context';
-    growthNote.textContent = `${shopInsight.introductoryGrowth ? 'Only your first carrot grows in 2 watered days. Normal carrots take 6. ' : ''}Estimates use today’s price and average rarity. Prices at harvest can rise or fall; market rolls, weather and selling pressure affect the result.`;
+    growthNote.textContent = `${shopInsight.introductoryGrowth ? 'Only your first carrot grows in 2 watered days. Normal carrots take 6. ' : ''}Farm ${shopInsight.farmId || 1}${Number(shopInsight.farmMultiplier) > 1 ? ' · 2× sale value' : ''}. Estimates use today’s price and average rarity, before any future treatments. Prices at harvest can rise or fall; these returns are not guaranteed.`;
     outlook.appendChild(growthNote);
     const metricGrid = document.createElement('div');
     metricGrid.className = 'market-insight-grid';
