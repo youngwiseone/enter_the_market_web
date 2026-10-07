@@ -259,20 +259,20 @@ import {
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js';
 import { renderMarketAction } from './js/ui/render_market.js';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=80';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js';
 import {
   installSidePanelScrollHandlersAction,
   updateGridSizeAction,
   updateSidePanelScrollAreaAction
-} from './js/ui/layout_controller.js';
+} from './js/ui/layout_controller.js?v=80';
 import {
   showTabDom,
   toggleMessagesPanelDom,
   updateMainTabButtonsDom,
   updateMainViewVisibilityDom
-} from './js/ui/tab_controller.js';
+} from './js/ui/tab_controller.js?v=80';
 import { createUiRuntimeController } from './js/ui/ui_runtime_controller.js';
 import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js';
 import {

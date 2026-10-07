@@ -1,6 +1,6 @@
 <!doctype html><meta charset="utf-8"><title>Isolated playtest fixture</title>
 <h1>Isolated playtest fixture</h1>
-<p>Use only on the disposable localhost playtest ports 8017 and 8018. Existing game saves are never cleared.</p>
+<p>Use only on the disposable localhost playtest ports 8017, 8018 and 8023. Existing game saves are never cleared.</p>
 <button id="load">Create legacy two-farm fixture</button>
 <a href="../../../index.html">Play game</a>
 <button id="inspect">Read saved fixture</button><pre id="result"></pre>
@@ -9,7 +9,7 @@ import { DEFAULT_DATA } from '../../content/fallbacks/default_data.js';
 import { createEmptyFarmStateForGrid } from '../../state/farm_state.js';
 import { SAVE_EVIDENCE_KEYS } from '../../state/opening_state.js';
 const result = document.getElementById('result');
-const safe = ['8017','8018'].includes(location.port) && location.hostname === '127.0.0.1';
+const safe = ['8017','8018','8023'].includes(location.port) && location.hostname === '127.0.0.1';
 document.getElementById('load').onclick = async () => {
   if (!safe || SAVE_EVIDENCE_KEYS.some(key => localStorage.getItem(key) !== null)) {
     result.textContent = 'Fixture creation refused: this namespace already has a save or is not an isolated test port.';

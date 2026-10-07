@@ -3482,11 +3482,13 @@
                 <div id="farm-title" class="panel-title">Farm 1</div>
                 <div class="farm-scenery" aria-hidden="true"></div>
                 <div id="desktop-chat-log" aria-live="polite"></div>
-                <div id="guidance-panel" aria-live="polite">
-                    <div class="guidance-heading"><strong id="guidance-objective-text"></strong><span id="guidance-objective-chip"></span></div>
+                <details id="guidance-panel" aria-live="polite">
+                    <summary class="guidance-heading"><strong id="guidance-objective-text"></strong><span id="guidance-objective-chip"></span></summary>
+                    <div class="farm-note-content">
                     <p id="guidance-hint-text"></p>
                     <button id="opening-keep-farming" type="button" hidden>Keep farming</button>
-                </div>
+                    </div>
+                </details>
                 <details id="sale-receipt" class="sale-breakdown" hidden aria-live="polite"><summary id="sale-receipt-result"></summary><p id="sale-receipt-detail"></p></details>
                 <div class="farm-toolbar" aria-label="Farm tools">
                     <button class="tool-button active" data-tool="glove" title="Gloves">
@@ -3505,11 +3507,7 @@
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
                 </div>
-                <div class="farm-status-legend" aria-label="Crop status key">
-                    <span><i class="pixel-water-drop" aria-hidden="true"></i> Watered today</span>
-                    <span>3d = growth days left</span>
-                    <span>✓ Ready</span>
-                </div>
+                <div id="farm-notes" aria-label="Farm information"></div>
         </div>
         <div id="market">
                 <div id="market-header" class="panel market-header">
@@ -3652,7 +3650,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=78"></script>
+    <script type="module" src="main.js?v=80"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

@@ -27,14 +27,18 @@ export function installFarmGestureHint(getContext) {
   if (!farm) return;
   let hint = document.getElementById('farm-gesture-hint');
   if (!hint) {
-    hint = document.createElement('div');
+    hint = document.createElement('details');
     hint.id = 'farm-gesture-hint';
     farm.appendChild(hint);
   }
   refreshHint = () => {
     const context = getGestureHintContext(getContext());
     hint.replaceChildren();
-    if (!context || readUnderstood()[context.id]) return;
+    if (!context || readUnderstood()[context.id]) { hint.open = false; return; }
+    const summary = document.createElement('summary');
+    summary.textContent = 'Controls';
+    const content = document.createElement('div');
+    content.className = 'farm-note-content';
     const text = document.createElement('span');
     text.textContent = context.text;
     const dismiss = document.createElement('button');
@@ -42,7 +46,8 @@ export function installFarmGestureHint(getContext) {
     dismiss.textContent = '×';
     dismiss.setAttribute('aria-label', 'Dismiss control hint');
     dismiss.onclick = () => rememberFarmGesture(context.id);
-    hint.append(text, dismiss);
+    content.append(text, dismiss);
+    hint.append(summary, content);
   };
   refreshHint();
   document.addEventListener('click', () => window.requestAnimationFrame(refreshHint));

@@ -1,0 +1,60 @@
+Minimal UI follow-up — 8 October 2026
+
+The farm now fits its available width and height, accounting for permanent
+title/scenery/chat/tool chrome and the stable bottom controls. It has no internal
+scroll area. Selecting crops, opening receipts and changing guidance do not enter
+the size calculation. A hidden mobile farm keeps its size when viewing Market.
+
+Removed the permanent watered/growth/ready legend and the empty hint-row space.
+Guidance, receipts and contextual controls use compact disclosures. Their mobile
+details open as optional popovers, so reading them does not shrink the farm or
+move its buttons. Portrait shows the full grid with tools directly beneath it.
+Short landscape uses a compact farm window, a tool rail and one bottom row for
+navigation and actions. Very short wide windows use the same arrangement. An
+exceptionally narrow AND short window can scroll the page to keep controls
+reachable, rather than creating a scrollbar inside the farm.
+
+The desktop market has one scroll area for its long list; its header, selected
+details and table no longer each scroll independently. Selected-crop panels show
+sale value, signed profit, actual cost and Sell directly, with treatment status
+and crop traits under Crop details. Empty preview prompts and empty goal summaries
+do not consume space. Prices, accounting, growth and save contracts are unchanged.
+
+Browser checks
+Used isolated local origins 127.0.0.1:8022 for the fresh opening and :8023 for
+the guarded legacy fixture. The earlier preview retained cached modules, so the
+new origins and updated entry/affected UI module versions ensured current code.
+No existing player's save was cleared or migrated for these checks.
+
+- 500x762: 318px square grid, full seven rows and tools visible, document height
+  762px, zero scroll areas in the farm view. Mature selection and an expanded
+  receipt both kept the grid at 318px. A real fixture sale completed correctly.
+- 615x762: 317px square grid with the full farm and controls, document height
+  762px. The small difference comes from responsive HUD font sizes.
+- 845x382: 192px square grid, all seven rows, tools beside it, page height 382px
+  and no farm/page scroll area. Market-to-Farm round trip kept 192px. Switched to
+  Farm 2's immature crop and back. Guidance opened and closed without resizing.
+- 1400x382: same compact arrangement; page height 382px, grid 192px and tool
+  rail above the bottom controls.
+- 350x700: grid 288px, page height 700px, toolbar bottom 539px, Rest top 586px.
+- 1400x900: grid 532px, bottom 817px, Rest top 832px. Full farm visible with
+  selected information; the only scrolling content element was the market.
+- Final browser console inspection reported no application warnings/errors.
+
+Screenshots
+  portrait-selected.png
+  portrait-receipt.png
+  landscape-selected.png
+  desktop-selected.png
+The previous layout is recorded in ../polish/after-*.png for comparison.
+
+Validation
+  node js/dev/tests/ui_flow.test.mjs
+  node js/dev/validate_messages.cjs   (96 entries)
+  Syntax: all 96 .js files via node --input-type=module --check on file contents
+  git diff --check
+All passed. Node file access used --preserve-symlinks --preserve-symlinks-main in
+this Windows sandbox, with the bundled Node 24 runtime.
+
+Physical touch and true browser zoom were not tested. Existing sales/growth
+regressions were retained; this follow-up changes presentation and sizing only.

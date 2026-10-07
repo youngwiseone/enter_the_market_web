@@ -18,13 +18,13 @@ assert.equal(shouldShowCompactRoll(15, true, false), true);
 assert.equal(shouldShowCompactRoll(15, false, true), true);
 assert.equal(shouldShowCompactRoll(15, false, false), false);
 
-for (const [viewportWidth, viewportHeight, panelWidth] of [[500, 762, 470], [615, 762, 585], [845, 382, 815], [350, 700, 320]]) {
-  const context = { mobile: true, viewportWidth, viewportHeight, panelWidth };
+for (const [panelWidth, availableHeight] of [[470, 318], [585, 318], [600, 192], [320, 270], [560, 510]]) {
+  const context = { panelWidth, availableHeight };
   const initial = getStableGridSize(context);
-  assert.ok(initial >= 280 && initial <= panelWidth);
+  assert.ok(initial <= panelWidth && initial <= availableHeight);
   assert.equal(getStableGridSize({ ...context, receiptHeight: 180, selectionHeight: 100, guidanceHeight: 220 }), initial);
 }
-assert.equal(getStableGridSize({ mobile: false, viewportWidth: 1400, viewportHeight: 900, panelWidth: 560 }), 560);
+assert.equal(getStableGridSize({ panelWidth: 560, availableHeight: 510 }), 510);
 
 const state = { activeFarmId: 2, player: { energy: 8 }, goalFlags: { selected: true, planted: true, harvest: true, rest: true, profit: true }, gridItems: [2, 6], items: [{ id: 2, name: 'Tomato' }, { id: 6, name: 'Onion' }], shop: [{ itemId: 2, price: 5, priceSum: 3, daysCount: 1 }, { itemId: 6, price: 2.2, priceSum: 2, daysCount: 1 }] };
 const snapshots = index => index === 1 ? { isProduce: true, sellNow: 4.4 } : null;
