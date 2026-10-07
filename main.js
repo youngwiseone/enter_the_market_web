@@ -1392,6 +1392,7 @@ function renderGuidancePanel() {
   const receipt = document.getElementById('sale-receipt');
   const trade = state.player?.lastTrade;
   if (receipt) {
+    receipt.ontoggle = () => updateGridSize();
     receipt.hidden = !trade;
     if (trade) {
       const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;

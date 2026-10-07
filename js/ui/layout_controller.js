@@ -25,6 +25,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
   const getOuterHeight = (node) => {
     if (!node) return 0;
     const style = window.getComputedStyle(node);
+    if (style.display === 'none') return 0;
     return node.offsetHeight + parsePx(style.marginTop) + parsePx(style.marginBottom);
   };
   const getVisibleTop = (node) => {
@@ -58,7 +59,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
   const farmVerticalPadding = parsePx(farmPanelStyle.paddingTop) + parsePx(farmPanelStyle.paddingBottom);
   const farmTitle = document.getElementById('farm-title');
   const farmToolbar = farmPanel.querySelector('.farm-toolbar');
-  const farmChrome = Math.max(0, farmVerticalPadding + getOuterHeight(farmTitle) + getOuterHeight(farmToolbar));
+  const farmChrome = Math.max(0, farmVerticalPadding + getOuterHeight(farmTitle) + getOuterHeight(farmToolbar) + getOuterHeight(document.getElementById('guidance-panel')) + getOuterHeight(document.getElementById('sale-receipt')) + getOuterHeight(document.getElementById('desktop-chat-log')));
   const desktopMinimumTarget = Math.floor(window.innerWidth / 3.2);
   const parentWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
   const panelInnerWidth = Math.max(140, farmPanel.clientWidth - farmHorizontalPadding);
