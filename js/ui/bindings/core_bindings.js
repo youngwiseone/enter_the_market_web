@@ -135,6 +135,9 @@ export function attachCoreEventHandlers(deps) {
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (target.closest('[data-sell-action-button="true"]')) return;
+    // Navigation and quote disclosures inspect the current crop rather than
+    // deselecting it. The explicit close button still clears selection itself.
+    if (target.closest('[data-main-tab], [data-insight-panel], #market-insight-panel, #farm-action-dock')) return;
     const gridCell = target.closest('.grid-cell');
     if (gridCell) {
       const indexText = gridCell.getAttribute('data-index');

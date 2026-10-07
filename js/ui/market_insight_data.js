@@ -66,6 +66,7 @@ export function getSelectedShopItemInsightDataAction(deps) {
   const projectedDelta = expectedSale - effectiveCost;
   const guaranteedDelta = guaranteedSale - effectiveCost;
   const marginPct = effectiveCost > 0 ? ((projectedDelta / effectiveCost) * 100) : 0;
+  const introductoryGrowth = item.id === 4 && !!state.player?.openingTrade?.carrotAvailable && !state.player.openingTrade.completed;
   return {
     isProduce: true,
     tableKey,
@@ -80,7 +81,9 @@ export function getSelectedShopItemInsightDataAction(deps) {
     guaranteedSale,
     projectedDelta,
     guaranteedDelta,
-    marginPct
+    marginPct,
+    growthDays: introductoryGrowth ? 2 : Math.max(0, Number(item.growDays) || 0),
+    introductoryGrowth
   };
 }
 
@@ -155,6 +158,7 @@ export function getSelectedGridItemInsightDataAction(deps) {
     currentBasePrice,
     rarity,
     growth,
+    wateredToday: state.gridWateredDay?.[selectedGridCellIndex] === state.player?.day,
     canSell: growth.isGrown,
     sellNow,
     profitNow,

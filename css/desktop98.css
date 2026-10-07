@@ -460,3 +460,22 @@ body[class] #hud-cash, body[class] #hud-networth { animation: none; text-shadow:
 body, body *, body *::before, body *::after {
   font-family: var(--game-font) !important;
 }
+
+/* Clear action hierarchy, with optional detail rather than a wall of estimates. */
+.market-context > span { display: block; }
+.market-context > span:first-child { color: var(--theme-text); font-weight: bold; }
+.seed-summary .metric-value { font-size: 15px; }
+.seed-farm-action { display: block; width: calc(100% - 16px); margin: 8px; min-height: 44px; font-weight: bold; }
+body.mobile-layout .market-insight-panel .seed-farm-action { min-height: 44px; }
+body.mobile-layout .market-insight-panel .market-insight-close { min-width: 44px !important; width: 44px; min-height: 44px; height: 44px; }
+body.mobile-layout .market-insight-panel button[data-sell-action-button='true'] { min-height: 44px; }
+.crop-outlook-details { margin: 8px; border-top: 1px solid var(--theme-border); }
+.crop-outlook-details > summary { padding: 8px 2px; cursor: pointer; }
+.crop-outlook-details .market-context { margin: 4px 0 8px; }
+.crop-outlook-details .market-insight-grid { padding: 0; }
+body.mobile-layout .crop-outlook-details > summary { min-height: 44px; box-sizing: border-box; display: list-item; align-content: center; }
+body.mobile-layout .market-insight-close { min-width: 44px; min-height: 44px; }
+body.mobile-layout #next-day[data-buy-mode-override='true']::before { content: '×'; }
+#grid .grid-cell.plant-target { outline: 2px dashed #fff2c4; outline-offset: -5px; }
+#grid .grid-cell.plant-target::before { content: '+'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff2c4; font-size: 22px; pointer-events: none; }
+#grid .grid-cell.crop-seeded::before { content: ''; position: absolute; width: 3px; height: 3px; left: 35%; top: 40%; background: #efdb9e; box-shadow: 8px 4px #efdb9e, 3px 11px #efdb9e; pointer-events: none; }

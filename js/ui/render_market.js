@@ -34,12 +34,6 @@ function getAverageDelta(entry) {
   return (currentPrice - averagePrice) / averagePrice;
 }
 
-function getPriceBandLabel(avgDelta) {
-  if (avgDelta <= -0.05) return 'Discounted';
-  if (avgDelta >= 0.05) return 'Premium';
-  return 'Fair Price';
-}
-
 function compareMarketRows(left, right, sortKey, sortDirection) {
   const leftName = String(left?.item?.name || '').toLowerCase();
   const rightName = String(right?.item?.name || '').toLowerCase();
@@ -574,6 +568,10 @@ export function renderMarketAction(deps) {
   if (selectedShopItemId && !isShopItemUnlocked(selectedShopItemId)) {
     setSelectedShopItemId(null);
   }
+  const selectedSeed = selectedShopItemId && isShopItemUnlocked(selectedShopItemId)
+    ? state.items.find(item => item.id === selectedShopItemId)
+    : null;
+  const isPlantingSeed = !!selectedSeed && isProduceTypedItem(selectedSeed);
 
   const selectedGridCellIndex = getSelectedGridCellIndex();
   if (
@@ -673,7 +671,7 @@ export function renderMarketAction(deps) {
   } else {
     const produceHint = document.createElement('div');
     produceHint.className = 'market-subtable-note';
-    produceHint.textContent = 'Select then place on grid. Produce uses market pricing and shifts each day.';
+    produceHint.textContent = 'Tap seed → plant on cleared soil.';
     tableHost.appendChild(produceHint);
     const table = document.createElement('table');
     table.className = 'zebra-table';
@@ -681,8 +679,8 @@ export function renderMarketAction(deps) {
     [
       { label: 'Img', sortKey: null },
       { label: 'Item', sortKey: MARKET_SORT_KEYS.NAME },
-      { label: 'Price', sortKey: MARKET_SORT_KEYS.PRICE },
-      { label: '%', sortKey: MARKET_SORT_KEYS.PERCENT }
+      { label: 'Seed cost', sortKey: MARKET_SORT_KEYS.PRICE },
+      { label: 'Vs avg', sortKey: MARKET_SORT_KEYS.PERCENT }
     ].forEach(({ label, sortKey }) => {
       const th = document.createElement('th');
       if (!sortKey) {
@@ -744,7 +742,6 @@ export function renderMarketAction(deps) {
         const avgDelta = getAverageDelta(entry);
         const avgDeltaPct = Math.abs(avgDelta * 100).toFixed(0);
         const avgDeltaSigned = `${avgDelta >= 0 ? '+' : '-'}${avgDeltaPct}%`;
-        const priceBandLabel = getPriceBandLabel(avgDelta);
 
         const priceCell = document.createElement('td');
         const freeCount = getFreePurchaseCount(item.id);
@@ -768,15 +765,15 @@ export function renderMarketAction(deps) {
 
         const percentCell = document.createElement('td');
         const trendChip = document.createElement('span');
-        trendChip.className = `insight-chip market-price-trend ${avgDelta <= -0.05 ? 'good' : (avgDelta >= 0.05 ? 'bad' : '')}`.trim();
+        trendChip.className = 'insight-chip market-price-trend';
         if (avgDelta <= -0.05) {
-          trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
+          trendChip.textContent = `↓ Below (${avgDeltaSigned})`;
           trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% below average market price`;
         } else if (avgDelta >= 0.05) {
-          trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
+          trendChip.textContent = `↑ Above (${avgDeltaSigned})`;
           trendChip.title = `${Math.abs(avgDelta * 100).toFixed(0)}% above average market price`;
         } else {
-          trendChip.textContent = `${priceBandLabel} (${avgDeltaSigned})`;
+          trendChip.textContent = `≈ Near (${avgDeltaSigned})`;
           trendChip.title = 'Near average market price';
         }
         percentCell.appendChild(trendChip);
@@ -865,6 +862,7 @@ export function renderMarketAction(deps) {
     const unlocked = Array.isArray(state.gridUnlocked) ? state.gridUnlocked[i] : false;
     if (unlocked) {
       cell.classList.add('revealed');
+      if (isPlantingSeed && !state.gridItems?.[i]) cell.classList.add('plant-target');
     }
 
     const hideItemVisualForMove = i === moveHiddenFromIndex || i === moveHiddenToIndex;
@@ -891,6 +889,7 @@ export function renderMarketAction(deps) {
         img.alt = it.name;
         cell.appendChild(img);
         if (isProduceGridItem) {
+          if (!growth.isGrown && Number(state.gridWateredCount?.[i] || 0) === 0) cell.classList.add('crop-seeded');
           const status = document.createElement('span');
           status.className = 'crop-state';
           const watered = state.gridWateredDay?.[i] === state.player.day;

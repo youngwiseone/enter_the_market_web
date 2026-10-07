@@ -92,7 +92,8 @@ function setMobileRestButtonState(deps, selectedItem, priceText) {
 
   if (selectedItem && isMobileLayout && isFarmVisible) {
     const itemName = String(selectedItem.name || 'item');
-    restButton.textContent = `Buy ${itemName} (${priceText}) - tap to cancel`;
+    const action = String(selectedItem.type || '').toLowerCase() === 'produce' ? 'planting' : 'placement';
+    restButton.textContent = `Cancel ${action} · ${itemName} ${priceText}`;
     restButton.title = 'Tap to cancel selected item';
     restButton.onclick = (event) => {
       if (event) event.preventDefault();
@@ -123,6 +124,9 @@ function renderBuyModeHudAction(deps) {
 
   const selectedShopItemId = typeof getSelectedShopItemId === 'function' ? getSelectedShopItemId() : null;
   const selectedItem = getBuyModeItem(state, selectedShopItemId);
+  document.body?.classList.toggle('is-placing-item', !!selectedItem);
+  const tendLabel = document.querySelector('[data-tool="glove"] .tool-name');
+  if (tendLabel) tendLabel.textContent = selectedItem ? (String(selectedItem.type || '').toLowerCase() === 'produce' ? 'Plant' : 'Place') : 'Tend';
   const profile = document.getElementById('chat-profile');
 
   if (!selectedItem) {

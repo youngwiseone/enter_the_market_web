@@ -153,10 +153,10 @@ export function getGuidancePayloadAction(deps) {
     if (opening.completed && opening.payoffDismissed && !state.goalsClaimed?.['tomato-first-harvest']) return { objective: 'Next milestone: Tomato Starter', hint: 'Harvest one Tomato to earn two free Tomato seeds. Keep growing to unlock it; mine a second tile when you want more room.', progressText: '0/1 Tomato', chipClass: '' };
     if (!opening.completed) {
       const index = state.gridItems?.findIndex(Boolean) ?? -1;
-      if (index < 0) return { objective: 'Plant your first carrot', hint: opening.carrotAvailable ? 'Choose Carrot in the market, then tap the cleared centre tile. This first carrot needs just two watered growth days.' : 'Plant another carrot in the free tile. Normal carrots need six watered growth days; compare prices before selling.', progressText: 'Plant', chipClass: '' };
+      if (index < 0) return { objective: 'Plant your first carrot', hint: opening.carrotAvailable ? 'Market → Carrot → cleared soil. First crop: 2 watered days.' : 'Plant again → 6 watered days. Compare prices before selling.', progressText: 'Plant', chipClass: '' };
       const ready = countReadyToHarvestTiles() > 0;
       const watered = state.gridWateredDay?.[index] === state.player.day;
-      return { objective: ready ? 'Inspect today’s price: sell or wait' : watered ? 'Rest to grow and see new prices' : 'Water your carrot', hint: ready ? 'Select the crop for its sale quote. Waiting keeps the crop safe, but occupies this growing space.' : watered ? 'Rest advances growth and changes prices. The next price is uncertain.' : 'Choose the watering can, then tap your crop. Water once each growing day.', progressText: ready ? 'Sell or wait' : watered ? 'Rest' : 'Water', chipClass: '' };
+      return { objective: ready ? 'Inspect today’s price: sell or wait' : watered ? 'Rest to grow and see new prices' : 'Water your carrot', hint: ready ? 'Tap crop → compare price. Hold = tile stays occupied.' : watered ? 'Rest → growth + new prices.' : 'Water → tap crop. Once per day.', progressText: ready ? 'Sell or wait' : watered ? 'Rest' : 'Water', chipClass: '' };
     }
   }
   const guided = getPrimaryGuidedState();

@@ -4,7 +4,11 @@ function appendMarketContext(panel, insight) {
   const note = document.createElement('p');
   note.className = 'market-context';
   const relative = context.relative;
-  note.textContent = `Today: ${relative > 3 ? 'above' : relative < -3 ? 'below' : 'near'} the average ($${context.average.toFixed(2)}). Price cycle ${context.cycleChange > 0 ? 'leans upward' : context.cycleChange < 0 ? 'leans downward' : 'is flat'} next day; market rolls, weather and selling pressure can change the result.`;
+  const today = document.createElement('span');
+  today.textContent = `${relative >= 5 ? '↑ Above' : relative <= -5 ? '↓ Below' : '≈ Near'} average · average $${context.average.toFixed(2)}`;
+  const next = document.createElement('span');
+  next.textContent = `Next cycle ${context.cycleChange > 0 ? '↗ rising' : context.cycleChange < 0 ? '↘ falling' : '→ flat'} · price uncertain`;
+  note.append(today, next);
   panel.appendChild(note);
 }
 
@@ -20,6 +24,7 @@ function createInsightHeader(titleText, clearCurrentInfoSelection) {
   close.className = 'button market-insight-close';
   close.textContent = 'x';
   close.title = 'Close info';
+  close.setAttribute('aria-label', 'Close crop info');
   close.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -99,7 +104,7 @@ export function renderSelectedItemInsightAction(deps) {
         );
       } else {
         setFarmActionButton(
-          `Growing (${gridInsight.growth.daysLeft} day${gridInsight.growth.daysLeft === 1 ? '' : 's'} left)`,
+          `${gridInsight.itemName} · ${gridInsight.growth.daysLeft}d left · ${gridInsight.wateredToday ? 'Watered ✓' : 'Needs water'}`,
           null,
           true,
           false
@@ -135,9 +140,9 @@ export function renderSelectedItemInsightAction(deps) {
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = [
-        ['Total Bought', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
         ['Total Sell Now', `$${bulkInsight.totalSale.toFixed(2)}`, ''],
         ['Bulk Profit', `${bulkInsight.totalProfit >= 0 ? '+' : ''}$${bulkInsight.totalProfit.toFixed(2)}`, bulkInsight.totalProfit >= 0 ? 'good' : 'bad'],
+        ['Total Bought', `$${bulkInsight.totalBuy.toFixed(2)}`, ''],
         ['Energy Cost', '0', 'good']
       ];
       rows.forEach(([label, value, tone]) => {
@@ -191,10 +196,10 @@ export function renderSelectedItemInsightAction(deps) {
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = gridInsight.isProduce ? [
-        ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
-        ['Market Base', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
         ['Sell Now', gridInsight.canSell ? `$${gridInsight.sellNow.toFixed(2)}` : 'Not ready', gridInsight.canSell ? '' : 'bad'],
-        ['Profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : '']
+        ['Net profit', gridInsight.canSell ? `${gridInsight.profitNow >= 0 ? '+' : ''}$${gridInsight.profitNow.toFixed(2)}` : '-', gridInsight.canSell ? (gridInsight.profitNow >= 0 ? 'good' : 'bad') : ''],
+        ['Seed cost', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
+        ['Market Base', `$${gridInsight.currentBasePrice.toFixed(2)}`, '']
       ] : [
         ['Bought For', `$${gridInsight.buyPrice.toFixed(2)}`, ''],
         ['Base Price', `$${gridInsight.currentBasePrice.toFixed(2)}`, ''],
@@ -320,6 +325,13 @@ export function renderSelectedItemInsightAction(deps) {
         sellSelectedGridItem(sellButton);
       });
       chipRow.appendChild(sellButton);
+      panel.appendChild(chipRow);
+      const profile = document.createElement('details');
+      profile.className = 'crop-outlook-details';
+      const profileTitle = document.createElement('summary');
+      profileTitle.textContent = 'Crop traits';
+      profile.appendChild(profileTitle);
+      if (gridInsight.isProduce && (gridInsight.identityLabels || gridInsight.identitySummary)) panel.appendChild(profile);
       if (gridInsight.isProduce && gridInsight.identityLabels) {
         const identityRow = document.createElement('div');
         identityRow.className = 'market-insight-row';
@@ -335,7 +347,7 @@ export function renderSelectedItemInsightAction(deps) {
           chip.textContent = label;
           identityRow.appendChild(chip);
         });
-        panel.appendChild(identityRow);
+        profile.appendChild(identityRow);
       }
       if (gridInsight.isProduce && gridInsight.identitySummary) {
         const summaryRow = document.createElement('div');
@@ -344,9 +356,8 @@ export function renderSelectedItemInsightAction(deps) {
         summaryChip.className = 'insight-chip';
         summaryChip.textContent = gridInsight.identitySummary;
         summaryRow.appendChild(summaryChip);
-        panel.appendChild(summaryRow);
+        profile.appendChild(summaryRow);
       }
-      panel.appendChild(chipRow);
       return;
     }
 
@@ -435,12 +446,44 @@ export function renderSelectedItemInsightAction(deps) {
       return;
     }
 
-    panel.appendChild(createInsightHeader(`${shopInsight.itemName} outlook`, clearCurrentInfoSelection));
+    panel.appendChild(createInsightHeader(`${shopInsight.itemName} seed`, clearCurrentInfoSelection));
     appendMarketContext(panel, shopInsight);
+    const quick = document.createElement('div');
+    quick.className = 'market-insight-grid seed-summary';
+    for (const [label, value] of [
+      ['Seed cost', shopInsight.effectiveCost === 0 ? 'Free' : `$${shopInsight.effectiveCost.toFixed(2)}`],
+      [shopInsight.introductoryGrowth ? 'First carrot' : 'Growth', `${shopInsight.growthDays} watered days`]
+    ]) {
+      const metric = document.createElement('div');
+      metric.className = 'market-insight-metric';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'metric-label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = 'metric-value';
+      valueEl.textContent = value;
+      metric.append(labelEl, valueEl);
+      quick.appendChild(metric);
+    }
+    panel.appendChild(quick);
+    if (isMobileLayout) {
+      const farm = document.createElement('button');
+      farm.type = 'button';
+      farm.className = 'button seed-farm-action';
+      farm.textContent = 'Go to Farm →';
+      farm.addEventListener('click', () => document.getElementById('tab-farm-mobile')?.click());
+      panel.appendChild(farm);
+    }
+    const outlook = document.createElement('details');
+    outlook.className = 'crop-outlook-details';
+    const outlookTitle = document.createElement('summary');
+    outlookTitle.textContent = 'Price estimates & crop details';
+    outlook.appendChild(outlookTitle);
+    panel.appendChild(outlook);
     const growthNote = document.createElement('p');
     growthNote.className = 'market-context';
-    growthNote.textContent = `Normal growth: ${shopInsight.marketContext?.growDays || 0} watered days. Sale estimates use today’s price; the price at maturity can rise or fall.`;
-    panel.appendChild(growthNote);
+    growthNote.textContent = `${shopInsight.introductoryGrowth ? 'Only your first carrot grows in 2 watered days. Normal carrots take 6. ' : ''}Estimates use today’s price and average rarity. Prices at harvest can rise or fall; market rolls, weather and selling pressure affect the result.`;
+    outlook.appendChild(growthNote);
     const metricGrid = document.createElement('div');
     metricGrid.className = 'market-insight-grid';
     const rows = [
@@ -462,7 +505,7 @@ export function renderSelectedItemInsightAction(deps) {
       metric.appendChild(valueEl);
       metricGrid.appendChild(metric);
     });
-    panel.appendChild(metricGrid);
+    outlook.appendChild(metricGrid);
 
     const chipRow = document.createElement('div');
     chipRow.className = 'market-insight-row';
@@ -481,7 +524,7 @@ export function renderSelectedItemInsightAction(deps) {
       freeChip.textContent = `${shopInsight.freeCount} free purchase${shopInsight.freeCount === 1 ? '' : 's'} remaining`;
       chipRow.appendChild(freeChip);
     }
-    panel.appendChild(chipRow);
+    outlook.appendChild(chipRow);
     if (shopInsight.identityLabels) {
       const identityRow = document.createElement('div');
       identityRow.className = 'market-insight-row';
@@ -497,7 +540,7 @@ export function renderSelectedItemInsightAction(deps) {
         chip.textContent = label;
         identityRow.appendChild(chip);
       });
-      panel.appendChild(identityRow);
+      outlook.appendChild(identityRow);
     }
     if (shopInsight.identitySummary) {
       const summaryRow = document.createElement('div');
@@ -506,9 +549,22 @@ export function renderSelectedItemInsightAction(deps) {
       summaryChip.className = 'insight-chip';
       summaryChip.textContent = shopInsight.identitySummary;
       summaryRow.appendChild(summaryChip);
-      panel.appendChild(summaryRow);
+      outlook.appendChild(summaryRow);
     }
   }
 
-  panels.forEach((panel) => renderIntoPanel(panel));
+  const selectionKey = bulkInsight && bulkInsight.count > 0
+    ? `batch:${bulkInsight.cells.map(cell => cell.cellIndex).join(',')}`
+    : gridInsight ? `crop:${gridInsight.cellIndex}` : shopInsight ? `seed:${shopInsight.itemName}` : 'empty';
+  panels.forEach((panel) => {
+    // Layout refreshes should not close a disclosure the player is reading.
+    const openDetails = panel.dataset.insightSelection === selectionKey
+      ? new Set(Array.from(panel.querySelectorAll('details[open] > summary'), summary => summary.textContent))
+      : new Set();
+    renderIntoPanel(panel);
+    panel.dataset.insightSelection = selectionKey;
+    panel.querySelectorAll('details').forEach(detail => {
+      detail.open = openDetails.has(detail.querySelector('summary')?.textContent);
+    });
+  });
 }
