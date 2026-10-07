@@ -44,7 +44,7 @@ body.default:not([class*="theme-"]), body.theme-default {
   --tone-neutral-fg: #655438;
   --tone-neutral-bg: #eee8d8;
   --tone-neutral-border: #a39774;
-  background: #315b60 url('../resources/ui/desktop-meadow.webp') center / cover no-repeat;
+  background: #315b60 url('../resources/ui/desktop-lake.webp') center / cover no-repeat;
 }
 body {
   font-family: 'Pixelated MS Sans Serif', 'MS Sans Serif', Tahoma, Arial, sans-serif;
@@ -112,12 +112,46 @@ body[class] .panel {
 #farm-title::after { position: static; inset: auto; animation: none; background: none; transform: none; content: '7 × 7'; font: 11px Tahoma, sans-serif; opacity: .8; }
 #farm-panel { padding: 7px; }
 .farm-scenery {
+  position: relative;
   height: 50px;
-  background: #576d84 url('../resources/ui/desktop-meadow.webp') center 63% / cover no-repeat;
+  background: #576d84 url('../resources/ui/farm-daylight.webp') center 0% / 100% 500% no-repeat;
   border: 1px solid var(--theme-control-border-lo);
   box-shadow: inset 1px 1px 0 #fff7;
   margin-bottom: 7px;
 }
+.farm-scenery::after {
+  content: 'Morning';
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  padding: 2px 5px;
+  color: #fffdf4;
+  background: #202f70;
+  font-size: 10px;
+  line-height: 1.2;
+  border: 1px solid #fff8;
+}
+body[data-time-of-day='midday'] .farm-scenery { background-position-y: 25%; }
+body[data-time-of-day='midday'] .farm-scenery::after { content: 'Midday'; }
+body[data-time-of-day='afternoon'] .farm-scenery { background-position-y: 50%; }
+body[data-time-of-day='afternoon'] .farm-scenery::after { content: 'Afternoon'; }
+body[data-time-of-day='evening'] .farm-scenery { background-position-y: 75%; }
+body[data-time-of-day='evening'] .farm-scenery::after { content: 'Evening'; }
+body[data-time-of-day='night'] .farm-scenery { background-position-y: 100%; }
+body[data-time-of-day='night'] .farm-scenery::after { content: 'Night'; }
+body[class][data-weather='rain'] {
+  background-image: url('../resources/ui/desktop-lake-rain.webp');
+}
+/* Rain stays local to the scenery; no idle animation or full-screen effects. */
+body[data-weather='rain'] .farm-scenery::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(115deg, transparent 0 19px, #c8dcec66 20px, transparent 22px 39px), #20395133;
+  pointer-events: none;
+}
+/* Keep interface and crops readable instead of tinting the whole farm window. */
+body[data-time-of-day] #farm-panel { filter: none; }
 #desktop-chat-log, body:not(.mobile-layout) #desktop-chat-log, body.mobile-layout #mobile-chat-log {
   background: #223d3b;
   border: 1px solid #112f2e;
@@ -364,6 +398,9 @@ body.mobile-layout #hud-top-stats { min-height: 28px; margin-bottom: 8px; gap: 8
 body.mobile-layout #hud-top-stats > span + span { padding-left: 7px; }
 body.mobile-layout #market-layout { gap: 8px; }
 body.mobile-layout .farm-scenery { display: none; }
+@media (min-height: 740px) {
+  body.mobile-layout .farm-scenery { display: block; height: 36px; margin-bottom: 4px; }
+}
 body.mobile-layout #farm-panel { padding: 6px; }
 body.mobile-layout #farm-title { min-height: 24px; margin: 0 0 4px; }
 body.mobile-layout #guidance-panel { padding: 6px 7px; margin: 5px 0; }
@@ -416,7 +453,7 @@ body[class] .goal-celebration-panel {
 }
 body[class] #hud-cash, body[class] #hud-networth { animation: none; text-shadow: none; }
 @media (max-height: 760px) and (min-width: 901px) {
-  .farm-scenery { display: none; }
+  .farm-scenery { height: 36px; }
 }
 
 /* Keep controls, chart labels and every cosmetic in the same pixel font. */

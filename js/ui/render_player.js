@@ -1,4 +1,5 @@
 import { resolveResourcePath } from '../content/resource_paths.js';
+import { getFarmSceneryPhase } from './farm_scenery_state.js';
 
 function getHudWeatherVisual(state) {
   const weatherId = String(state?.weather?.id || '').trim().toLowerCase();
@@ -210,12 +211,7 @@ export function renderPlayerLevelStatusAction(deps) {
 
 export function updateTimeOfDayMoodAction(state) {
   if (!document.body || !state.player) return;
-  const max = Math.max(1, Number(state.player.energyMax) || 1);
-  const energy = Math.max(0, Math.min(max, Number(state.player.energy) || 0));
-  const ratio = energy / max;
-  let mood = 'midday';
-  if (ratio >= 0.67) mood = 'morning';
-  else if (ratio <= 0.33) mood = 'night';
+  const mood = getFarmSceneryPhase(state);
   document.body.setAttribute('data-time-of-day', mood);
 }
 
