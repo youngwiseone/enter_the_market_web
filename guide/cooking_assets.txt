@@ -1,0 +1,97 @@
+COOKING CHAPTER ART — generated with built-in image_gen, 8 October 2026
+
+References inspected before generation:
+resources/items/produce/carrot.png: 32x32 RGBA, transparent; small centred
+silhouette, hard pixel edges, dark outline, bright crop colour, simple shading.
+resources/tools/watering_can.png: 30x30 RGBA, transparent; blue-grey palette,
+dark outline, compact 3/4 view. Existing tool states are primarily button states.
+resources/profiles/player.png and player_excited.png: 800x800 RGB, neon green
+on black, framed close-up anime girl, stepped pixel lines and CRT scanlines.
+Other existing portraits range 800x800–1024x1024, unlike tiny coloured items.
+
+Final resources/cooking files:
+pot.png / pot_selected.png / pot_disabled.png: 30x30 RGBA.
+soup.png / stew.png / mash.png: 32x32 RGBA.
+mina.png / mina_happy.png; rowan.png / rowan_happy.png;
+bea.png / bea_happy.png; player_cooking.png / player_cooking_happy.png:
+800x800 palette PNG. Existing files were never overwritten.
+
+Each distinct asset and expression received its own built-in generation/edit
+call. Original outputs remain in Codex generated_images. Generated item alpha
+was preserved, thresholded to binary pixel alpha, cropped to the visible object,
+nearest-neighbour resized to max 26px extent for tools / 28px for dishes,
+centred in native transparent canvases, reduced to a 16-colour palette without
+dithering, and saved as optimized PNG. Portraits were nearest-neighbour resized
+to match the 800px reference, retaining black frames and CRT scanlines, and
+palette optimized to 32 shades without dithering to remove subpixel colour noise.
+No interpolation, blur, fabricated transparency, stock assets or traced art.
+
+Prompt set (templates below are expanded with each exact subject):
+
+PLAYER NEUTRAL (reference player.png; edit / identity-preserve):
+Create cooking-outfit neutral variant of EXACTLY this recognisable girl: same
+face, eyes, long black hair, side ponytail, pose, black and neon green monochrome
+CRT pixel-art style, black square background and thin neon green border. Change
+only her clothing to a simple chef apron with neck strap and small chef cap,
+keeping her recognisable hairstyle visible. Crisp pixel-stepped lines, no soft
+gradients, no text. Match reference frame scale. Neutral gentle expression.
+
+PORTRAIT TEMPLATE (reference player.png; new original character):
+Use case: stylized-concept. Asset: game dialogue portrait. Subject: [SUBJECT].
+Match the reference player's square portrait: neon lime green and pure black
+monochrome pixel-art anime close-up bust, thin lime rectangular border with black
+margins, coarse pixel-stepped sharp lines and subtle horizontal CRT scanlines,
+simple two tone shading, no other colours, no text. Preserve framed head scale
+and restrained style. Entirely original character, distinguish from player.
+MINA: friendly aspiring cook woman with short wavy bob, small chef cap and
+neckerchief, kindly attentive neutral expression.
+ROWAN: young courier man with messy short hair and a simple courier cap,
+shoulder strap, lively attentive neutral expression.
+BEA: middle-aged gardener woman with round glasses, hair bun and straw gardening
+hat, warm attentive neutral expression.
+
+ITEM TEMPLATE (reference carrot.png):
+Use case: stylized-concept. Asset: tiny 32x32 game item sprite. Subject: [SUBJECT].
+Match reference carrot/tool item style. True hard edged pixel art designed on
+32x32 pixel grid, each pixel appears as large square block in generated image;
+minimal compact silhouette centred, empty transparent margins. Limited 8-colour
+palette, dark 1-pixel outline, 2-tone shading. Transparent background, no text,
+no blur, no gradients, no shadow outside object, no large illustration.
+POT: small squat steel cooking pot with two side handles and lid, charcoal
+outline, muted blue grey metal and single ivory highlight.
+SOUP: small cream ceramic bowl of carrot and potato soup, orange broth with two
+recognisable orange carrot chunks and golden potato cubes.
+STEW: small terracotta bowl of tomato and onion stew, red broth with tomato
+chunks and ivory onion crescents.
+MASH: small ivory plate of pumpkin garlic mash, golden orange mash with three
+ivory garlic pieces and tiny green garnish.
+
+EXPRESSION EDITS (respective neutral portrait as edit target):
+Player: Edit only neutral face to warm happy smiling success expression, slightly
+open smiling mouth, cheerful eyes. Preserve EXACT same girl, face identity,
+hairstyle side ponytail, small chef cap, apron, pose, frame, neon green and black
+CRT pixel art, square format and all clothing. No new objects, no text.
+Mina: cheerful wide smile after successful restaurant trial, happy smiling eyes;
+preserve short wavy bob, small chef cap/scarf, framed bust and all clothing.
+Rowan: warm relieved smile after good meal, happy eyes; preserve young male
+courier, messy hair, cap, shoulder strap, framed bust and all clothing.
+Bea: warm joyful smiling expression after meal, smiling eyes and soft open
+smile; preserve gardening woman, glasses, hat, bun, apron and framed bust.
+All: neon green monochrome CRT pixel style unchanged, no extra objects/text.
+
+POT STATE EDITS (pot.png as target, transparent background):
+Selected: brighten steel highlight and add subtle one-pixel golden edge touching
+silhouette. Disabled: same pot muted grey with restrained contrast. Preserve
+exact silhouette, lid, handles and hard edged 32-pixel sprite design,
+transparency, no added text/background/glow/blur.
+
+QA: All 14 original outputs inspected visually. Final native sprites and
+nearest-neighbour enlarged versions inspected together with all portrait pairs
+in guide/cooking_assets_contact_sheet.png. Soup, red stew and orange mash have
+distinct silhouettes, colours and ingredient marks at grid size. Pot states
+retain matching silhouettes; selected is brighter, disabled neutral grey.
+Player retains the original side ponytail, face and frame; cooking outfit has
+apron straps and small cap; happy reaction retains outfit and identity. Mina's
+bob, Rowan's cap/strap and Bea's glasses/gardener hat remain distinct across
+expressions. Native icons use binary alpha and bounded palettes. Browser layout
+and reaction timing are integration concerns tested separately.
