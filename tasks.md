@@ -7,16 +7,16 @@ These are tasks I am still planning, do not work on unless instructed.
 - Fix themes in game to all be more readable.
 - Show all days of week, highlighting current and include icons.
 - Add animals.
-- Add other tabs you unlock by helping villagers to reopen their stores (and replace the farmer and dodgy merchant) planned stores are software cosmetics, furniture shop, landscaping, crafting, maybe pet store. Have stories you need to complete to unlock each of these store tabs.
+- Add other villagers you meet, and give them small stories with choices you can make to help them or just ignore them and they leave. Completing a story path rewards you with some item in the game that you can equip to customise your seed character (like a hat or ears). Just decorates the profile box, similar to something like discord/steam profile cosmetics.
 - Add recipes into the game you can craft that will regain energy, can be use as compost on plants to make them more profitable/increase rare chance, gain exp, etc. Click then click on another product to combine.
 - Buy more grid/farms + icone to purchase new ones (added 1 but more and tabs for them would be nicer)
 - Player avatar frames unlocked with levels (found in shop)
-- Select and combine items with each other to produce cooked food, or into a pot/saucepan to cook items to sell for higher prices (avg the rarity of items used to get cooked food rarity). Store the crafted items back on grid.
-- add fishing which gives items you can't sell but that affect the market e.g. x2 effect on a plant you are farming. But the physical items take space on grid.
+- Select and combine items with each other to produce cooked food, or into a pot/saucepan to cook items to sell for higher prices (avg the rarity of items used to get cooked food rarity) Minigame need to play while cooking in order not to burn. Like a legend of zelda breath of the wild feel. Store the crafted items back on grid.
+- add fishing which gives items you can't sell but that affect the market (e.g. x2 effect on a plant you are farming.), or fish you can combine to make reciepe. But make sure these physical items always take space on grid.
 - Introduce rotating market “featured crop” bonuses (daily/weekly) to create short-term goals and variety in planting decisions.
 - give a hint at what the next unlock will give the player (what seed is next)
 - maybe add prestige for over lvl 99?
-- Add events like festivals, metorite landing, thunderstorm, items switching etc. Random days. Exciting gameplay.
+- Add events like festivals, metorite landing, thunderstorm, items switching etc. Random days. take inspiration from games like stardew valley events/weather/luck.
 
 # Bigger Tasks
 
@@ -231,3 +231,4 @@ MVP scope:
 - Convert crops into higher-value goods (juice, preserves, feed, oils).
 - Processing actions consume energy and time/day turns.
 - Strong synergy with NPC trades and pet feeding.
+- To be honest, this could be instead the cooking system mentioned ealier similar to legend of zelda breath of the wild. Maybe do that instead?
