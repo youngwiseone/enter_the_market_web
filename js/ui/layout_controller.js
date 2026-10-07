@@ -51,6 +51,18 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
     body.classList.toggle('mobile-layout', isMobileLayout);
   }
 
+  // On desktop the contextual note belongs beside the market, leaving the farm
+  // roomy. Keep the same node and controls next to the farm on touch layouts.
+  const guidance = document.getElementById('guidance-panel');
+  const marketHeader = document.getElementById('market-header');
+  if (guidance) {
+    if (isMobileLayout && guidance.parentElement !== farmPanel) {
+      farmPanel.insertBefore(guidance, document.getElementById('sale-receipt'));
+    } else if (!isMobileLayout && marketHeader && guidance.parentElement !== marketHeader) {
+      marketHeader.insertBefore(guidance, document.getElementById('market-insight-panel'));
+    }
+  }
+
   const layoutHeight = Math.max(280, (marketLayout ? marketLayout.clientHeight : window.innerHeight) - 8);
   const farmPanelStyle = window.getComputedStyle(farmPanel);
   const bodyStyle = body ? window.getComputedStyle(body) : null;
@@ -59,7 +71,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
   const farmVerticalPadding = parsePx(farmPanelStyle.paddingTop) + parsePx(farmPanelStyle.paddingBottom);
   const farmTitle = document.getElementById('farm-title');
   const farmToolbar = farmPanel.querySelector('.farm-toolbar');
-  const farmChrome = Math.max(0, farmVerticalPadding + getOuterHeight(farmTitle) + getOuterHeight(farmToolbar) + getOuterHeight(document.getElementById('guidance-panel')) + getOuterHeight(document.getElementById('sale-receipt')) + getOuterHeight(document.getElementById('desktop-chat-log')));
+  const farmChrome = Math.max(0, farmVerticalPadding + getOuterHeight(farmTitle) + getOuterHeight(farmToolbar) + (guidance && farmPanel.contains(guidance) ? getOuterHeight(guidance) : 0) + getOuterHeight(document.getElementById('sale-receipt')) + getOuterHeight(document.getElementById('desktop-chat-log')) + getOuterHeight(farmPanel.querySelector('.farm-scenery')) + getOuterHeight(farmPanel.querySelector('.farm-status-legend')));
   const desktopMinimumTarget = Math.floor(window.innerWidth / 3.2);
   const parentWidth = gridContainer.parentElement ? gridContainer.parentElement.clientWidth : window.innerWidth;
   const panelInnerWidth = Math.max(140, farmPanel.clientWidth - farmHorizontalPadding);
@@ -96,7 +108,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
   }
   const maxGridSize = isMobileLayout
     ? Math.floor(Math.min(maxByWidth, availableGridByHeight))
-    : Math.floor(Math.min(window.innerWidth * 0.58, window.innerHeight * 0.78));
+    : Math.floor(Math.min(maxByWidth, availableGridByHeight, window.innerWidth * 0.58, window.innerHeight * 0.78));
   const lowerBound = Math.min(minGridSize, maxGridSize);
   const upperBound = Math.max(minGridSize, maxGridSize);
   const constrainedBySpace = Math.floor(Math.min(maxByWidth, availableGridByHeight));

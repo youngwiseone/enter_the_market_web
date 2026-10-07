@@ -894,8 +894,10 @@ export function renderMarketAction(deps) {
           const status = document.createElement('span');
           status.className = 'crop-state';
           const watered = state.gridWateredDay?.[i] === state.player.day;
-          status.textContent = growth.isGrown ? '✓' : watered ? '💧' : String(growth.daysLeft);
-          status.title = growth.isGrown ? 'Ready to sell or hold' : watered ? 'Watered today' : `${growth.daysLeft} watered growth days left`;
+          status.textContent = growth.isGrown ? '✓' : `${growth.daysLeft}d`;
+          if (watered && !growth.isGrown) status.classList.add('is-watered');
+          status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left${watered ? '; watered today' : '; needs water today'}`;
+          status.setAttribute('aria-label', status.title);
           cell.appendChild(status);
           if (growth.isGrown && !getGridRarity(i)) cell.classList.add('crop-just-ready');
         }

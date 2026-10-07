@@ -3434,8 +3434,13 @@
         body.mobile-layout .market-insight-close { min-width: 44px; min-height: 44px; }
         @media (prefers-reduced-motion: reduce) { .crop-just-ready { animation: none; } }
     </style> 
+    <link rel="stylesheet" href="css/desktop98.css">
 </head>
-<body>    
+<body>
+    <header id="desktop-titlebar">
+        <span class="desktop-brand"><img data-versioned-src="resources/items/produce/carrot.png" alt=""><span>Enter The Market</span></span>
+        <span class="desktop-tagline">A LITTLE FARM. A MOVING MARKET.</span>
+    </header>
     <div id="hud-top-stats" class="panel">
         <span id="hud-day">Day 1</span>
         <span id="hud-cash">$0.00</span>
@@ -3475,6 +3480,7 @@
             <!-- Side container holds the grid -->
                 <!-- Interactive grid area. -->
                 <div id="farm-title" class="panel-title">Farm 1</div>
+                <div class="farm-scenery" aria-hidden="true"></div>
                 <div id="desktop-chat-log" aria-live="polite"></div>
                 <div id="guidance-panel" aria-live="polite">
                     <div class="guidance-heading"><strong id="guidance-objective-text"></strong><span id="guidance-objective-chip"></span></div>
@@ -3484,13 +3490,13 @@
                 <details id="sale-receipt" class="sale-breakdown" hidden aria-live="polite"><summary id="sale-receipt-result"></summary><p id="sale-receipt-detail"></p></details>
                 <div class="farm-toolbar" aria-label="Farm tools">
                     <button class="tool-button active" data-tool="glove" title="Gloves">
-                        <img data-versioned-src="resources/tools/glove.png" alt="Gloves">
+                        <img data-versioned-src="resources/tools/glove.png" alt="Gloves"><span class="tool-name">Tend</span>
                     </button>
                     <button class="tool-button" data-tool="watering" title="Watering can">
-                        <img data-versioned-src="resources/tools/watering_can.png" alt="Watering can">
+                        <img data-versioned-src="resources/tools/watering_can.png" alt="Watering can"><span class="tool-name">Water</span>
                     </button>
                     <button class="tool-button" data-tool="pickaxe" title="Pickaxe">
-                        <img data-versioned-src="resources/tools/pickaxe.png" alt="Pickaxe">
+                        <img data-versioned-src="resources/tools/pickaxe.png" alt="Pickaxe"><span class="tool-name">Mine</span>
                     </button>
                     <button id="farm-toggle-button" class="tool-button tool-button-farm" title="Farm 2">
                         <span class="tool-label">Farm 2</span>
@@ -3498,6 +3504,11 @@
                 </div>
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
+                </div>
+                <div class="farm-status-legend" aria-label="Crop status key">
+                    <span><i class="pixel-water-drop" aria-hidden="true"></i> Watered today</span>
+                    <span>3d = growth days left</span>
+                    <span>✓ Ready</span>
                 </div>
         </div>
         <div id="market">
