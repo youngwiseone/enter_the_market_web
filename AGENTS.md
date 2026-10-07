@@ -216,3 +216,11 @@ node js/dev/validate_messages.cjs
 - Keep `js/ui/*` responsible for DOM/event/render concerns, and treat state mutation as runtime/controller-owned unless explicitly intentional.
 
 Use this file as the canonical module map. Keep `task.md` for short-term planning only.
+
+## Save Compatibility and Opening Safeguards
+
+The game uses multiple unversioned localStorage keys, including both farms and legacy grid data. Preserve item IDs and ordering: changing the first saved/default item can trigger the inventory/shop reset in state_initializer.js. An old save missing a tutorial flag is not a fresh game. Grant opening exceptions only when all known game-save keys are absent; an explicit reset may also start the opening.
+
+The first carrot's one-time two-watered-day override lives in gridPlacedMeta.introductoryGrowDays. Keep that metadata with the crop through persistence, moves and farm switches. Player.openingTrade tracks eligibility; preserve rarity and immediate full-state rarity saves so refresh cannot reroll it. Ordinary carrots retain their existing growth time.
+
+Refine and reuse the existing cash-travel effects, particles, XP feedback, reduced-motion support and market-roll skipping. Preserve bulk-sale locking against double submission, save each paid bulk step, and keep GitHub Pages-relative asset paths. Do not publish or deploy without approval.

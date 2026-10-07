@@ -1,0 +1,52 @@
+Enter The Market trading-loop refinement — 7 October 2026
+
+Scope and implementation
+- Shared pure sale calculator for individual insight, bulk snapshots and individual payments. Crop rarity-profile and active-farm modifiers now agree. Preserved the original unrounded payment precision; UI rounds to cents. Batch totals are sums of the exact per-crop quotes, not sums of rounded display values.
+- New storage namespaces only: one cleared centre tile, an available watering can and a one-time two-watered-day carrot. Normal carrots remain six days. No content IDs, item order, default prices, rarity odds or market formula changed.
+- Intro follows real crop/watering/rest/ready state in the existing guidance panel. Suppressed competing opening stuck tips, daily tips and unlock announcements. First profitable trade has cost/sale/profit and Keep farming; loss feedback invites another price window. Next objective points to the existing Tomato Starter milestone.
+- Routine level rewards stay in existing message/HUD/XP feedback. Milestones defer while rest/another dialog is active. Modal focus trap/restoration covers recap, milestone and feedback dialogs. Keyboard controls ignore editing targets and dialogs. Rest cannot mutate the day during selling.
+- Mature/growing selections retain mobile Rest access. Sale result and optional value decomposition are tap-accessible. Price position is based on the real accumulated market average; directional cycle hints use actual cycle offsets and explicitly acknowledge roll/weather/pressure uncertainty. Qualified price-dependent profit estimates and labeled price cycles separately from growth.
+- Existing Data chart gets a visible-window average for a single crop, explanatory caption and tap-accessible recent daily values. Farm tiles have readiness/watered/days-left symbols. Reused local action FX, mining crack sprites, particles, cash travel and XP feedback; removed whole-grid mining nudge. Shorter market-roll presentation with existing skip; reduced motion avoids the spin. No runtime dependency, sound or artwork added.
+- Each paid bulk step is persisted; XP uses actual produce sold, not stale prepared batch quantity.
+
+Baseline reproduction
+Browser served unchanged Git HEAD sources in an isolated profile (source response overrides); this tested the local repository baseline, not a live public deployment.
+- Ten successful mining hits, first planting on Day 3, six watered/rain growth cycles, ready on Day 9.
+- Two dialogs open together during one mining/rest progression; focus was next-day behind the dialogs.
+- Controlled uncommon carrot at market price 0.9066666667: individual $1.39, bulk $1.36. Same snapshot after correction: both $1.39.
+- Before opening and sale screenshots included. Random market outcomes mean exact sale amounts vary per run.
+
+Browser playtests actually completed
+Chromium 153 / Playwright; local Python HTTP server; isolated ephemeral profiles.
+- Desktop 1280x900: fresh plant/water/rest/price selection/sale on Day 3. Common $1.09, uncommon $1.39 and mythic about $3.05 in different runs. Displayed quote matched the paid amount to cents. Payoff and eligibility survived reload.
+- One rest dialog at a time in the fresh loop; keyboard focus inside recap and Tab stayed inside; focus restored on close. Z/X/C and Space exercised. An injected editable input suppressed shortcuts.
+- Copied baseline Day 9 save: crop IDs, cost, rarity, metadata and inventory unchanged; no opening flag granted. Two subsequent full normal six-day carrot cycles completed. Original browser storage was not accessed or overwritten.
+- Mobile emulation 390x844 with touch input: plant through sale, selected growing crop still had reachable Rest. Rest height 44px; farm tools 44px; navigation 40px. No horizontal page overflow. Tested normal and reduced motion. Rapid double sale paid only once. Reload retained used introductory eligibility.
+- Mixed browser batch: Carrot x2 + Tomato x1 (uncommon, mythic, rare), cost $4.00; preview and payment $8.49. Double submission and Space during sale did not duplicate payment or advance day. Reload retained payment.
+- Interrupted the same three-crop batch after 60ms: one crop paid ($1.38 displayed), two crops remained. Reload cash agreed with exactly the removed crop's quote.
+- Three mining hits showed saved crack progression. Existing full clear was exercised in baseline.
+- Mobile chart: tap reveals actual daily prices and average label; no page overflow. Reduced-motion idle check found zero running DOM animations in this fixture. No game page errors in the mobile and bulk runs.
+
+Automated verification
+node js/dev/tests/trading_loop.test.mjs
+- All four actual rarity multipliers, individual/bulk/payout parity, primary and 1.25 farm modifiers.
+- Mixed-crop/mixed-item quantities, deterministic cell order, batch rounding, removal and repeated stale submission.
+- Fresh-save evidence across legacy/current keys; one-time introductory metadata; JSON reload and normal crop growth.
+- Actual crop move action and farm switch retain override and rarity; loss followed by profitable retry restores payoff.
+node js/dev/validate_messages.cjs — passed, 95 catalog entries. Fixed pre-existing validator context missing resolveResourcePath.
+node --check — passed all 92 .js files; .mjs test executes successfully.
+
+Loading and performance
+Mobile reload observed 110–111 resource entries, about 2.17–2.20 MB of encoded response bodies, 107–108 local entries. This includes the existing art/module load; it is not a controlled network benchmark or wire-transfer measurement. Existing localhost Cloudflare analytics CORS noise remains. Screenshots are documentation assets and are not requested by the game. Added only small native JS modules; no runtime package or continuous render loop added. No real-device FPS, throttled CPU or memory profiling was performed.
+
+Second refinement pass
+Playtest exposed the Day 2 watering lock, which was incompatible with the proposed Day 1 action sequence: granted watering only in the explicitly new opening. Fixed hidden Keep farming styling, ensured sale retry reopens the payoff, shortened recap spin, added post-sale receipt, and persisted paid batch steps after interruption. Added chart values/average and daily price arrows. Retested fresh desktop, mobile normal/reduced motion, legacy cycles, mixed bulk selling and interrupted reload.
+
+Balance concerns and remaining verification
+- First sale moved from Day 9 to Day 3 in these runs, not a measured population average. Starting watering and a cleared tile reduce opening friction; subsequent mining still takes ten hits and ordinary carrots six growth days.
+- Common crops retain their existing 1.2 multiplier; rare/mythic bonuses can outweigh a weak market. Correcting bulk quotes slightly raises their payouts to the existing individual-sale formula. No broader economy tuning attempted.
+- Real phones, Safari/Firefox, narrow 320px screens, long sessions, all late-game progression/cosmetics/sprinkler combinations and live GitHub Pages are unverified. Farm switch/move preservation was verified through production functions, not a late-game browser unlock playthrough. Loss retry was tested with controlled state, not a naturally losing fresh browser harvest.
+- No publishing/deployment performed.
+
+Save compatibility safeguard
+The game uses multiple unversioned localStorage keys, including both farms and legacy grid data. Changing the first saved/default item can trigger an inventory/shop reset: preserve IDs and ordering. Never treat a missing tutorial flag as evidence of a fresh game. The introductory crop override is persisted in gridPlacedMeta and stays with the crop through reload, moves and farm switches; preserve rarity and its immediate full-state saves to prevent refresh rerolls. Reuse cash-travel effects, particles, XP feedback, reduced motion and market-roll skipping. Preserve bulk-sale locking and GitHub Pages-relative asset paths. These rules were added to the end of AGENTS.md.

@@ -108,6 +108,14 @@ Basic validation after edits:
 $files = Get-ChildItem -Recurse -File -Include *.js; foreach ($f in $files) { node --check $f.FullName }
 ```
 
+Focused trading-loop checks (Node 22 or newer):
+
+```bash
+node js/dev/tests/trading_loop.test.mjs
+```
+
+These cover individual/bulk quote and payment parity, mixed crops, rarity/farm modifiers, save detection, the one-time introductory crop, moves, farm switches and retrying after a loss. Browser playtest evidence is recorded in `guide/trading_loop_playtest.txt`, with screenshots under `guide/playtest/`.
+
 Message catalog validation:
 
 ```bash

@@ -16,7 +16,7 @@ function parseProfileImageMap(filePath) {
   if (!match) {
     throw new Error('Could not find PROFILE_IMAGES export in profile_chat_controller.js');
   }
-  const context = { PROFILE_IMAGES: null };
+  const context = { PROFILE_IMAGES: null, resolveResourcePath: value => `resources/${value}` };
   vm.createContext(context);
   vm.runInContext(`PROFILE_IMAGES = ${match[1]};`, context);
   return context.PROFILE_IMAGES;
