@@ -29,7 +29,7 @@ export function renderAllAction(deps) {
   renderData();
   renderSelectedItemInsight();
   const goalsEl = document.getElementById('goals-panel');
-  if (goalsEl && window.getComputedStyle(goalsEl).display !== 'none') {
+  if (goalsEl && (window.getComputedStyle(goalsEl).display !== 'none' || !document.getElementById('presentation-options')?.hasChildNodes())) {
     renderGoals();
   }
 

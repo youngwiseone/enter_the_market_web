@@ -52,7 +52,10 @@ export function createCookingChapterUi(deps) {
       card.dataset.requestId = offer.id;
       const img = make('img', 'chapter-portrait'); img.src = resolveResourcePath(offer.portrait); img.alt = offer.speaker; img.width = 72; img.height = 72;
       const copy = make('div', 'chapter-card-copy');
-      copy.append(make('strong', '', `${offer.speaker} · ${offer.name || offer.title}`), make('p', '', offer.dialogue));
+      copy.append(make('strong', '', `${offer.speaker} · ${offer.name || offer.title}`));
+      const dialogue = make('details', 'request-dialogue');
+      dialogue.append(make('summary', '', 'Read dialogue'), make('p', '', offer.dialogue));
+      copy.append(dialogue);
       if (offer.kind === 'gift') {
         copy.append(button('Receive Mina’s pot & recipes', () => transact(() => { const result = claimPot(state); if (result.ok) feedback('Mina’s pot is yours. Select Cook to make your first Garden Soup.', 'mina', 'excited'); })));
       } else {
@@ -89,7 +92,7 @@ export function createCookingChapterUi(deps) {
     document.querySelectorAll('.chapter-delivery, .give-action-button').forEach(el => el.remove());
     document.querySelectorAll('.chapter-split').forEach(el => el.classList.remove('chapter-split'));
     const c = normalizeChapter(state);
-    if (!c.active || state.activeTool === 'pot') return;
+    if (!c.active) return;
     const targetId = `${c.active.id}:${c.active.acceptedDay}`;
     const { cells, preview, indices } = selectionPreview();
     const text = `${c.active.speaker}: ${requestText(c.active)}. Selected eligible: ${preview.eligibleCount}/${indices.length}. ${preview.reason}`;
@@ -121,15 +124,21 @@ export function createCookingChapterUi(deps) {
     if (!host) return;
     host.replaceChildren();
     host.hidden = state.activeTool !== 'pot';
-    if (host.hidden) return;
+    if (host.hidden) {
+      const appearance = document.getElementById('appearance-options');
+      if (appearance && normalizeChapter(state).potUnlocked) appearance.replaceChildren(button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); })));
+      return;
+    }
     const pending = cooking.getPending(), recipe = pending.recipe;
     const row = make('div', 'cooking-recipe-row');
     const select = make('select'); select.setAttribute('aria-label', 'Choose recipe'); select.id = 'cooking-recipe';
     RECIPES.forEach(r => { const option = make('option', '', r.name); option.value = r.id; option.selected = r.id === recipe.id; select.append(option); });
     select.onchange = () => { cooking.chooseRecipe(select.value); lastFeedback = ''; renderAll(); };
-    row.append(select, button('Cancel', () => { cooking.cancel(); lastFeedback = 'Combination cleared. No ingredients spent.'; renderAll(); }));
+    row.append(select, button('Clear combination', () => { cooking.cancel(); lastFeedback = 'Combination cleared. No ingredients spent.'; renderAll(); }));
     const outfit = button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); }));
-    row.append(outfit); host.append(row);
+    const appearance = document.getElementById('appearance-options');
+    if (appearance) appearance.replaceChildren(outfit);
+    host.append(row);
     const names = recipe.ingredients.map(id => name(id)).join(' + ');
     const nextIsFinal = pending.cells.length === recipe.ingredients.length - 1;
     host.append(make('p', '', `${names} · ${pending.cells.length}/${recipe.ingredients.length}. ${nextIsFinal ? `Next valid tap makes ${recipe.name} here.` : 'Tap mature ingredients on this farm.'} 1 energy · +2 cooking XP.`));
@@ -150,8 +159,9 @@ export function createCookingChapterUi(deps) {
           : `Need mature ${remaining.map(name).join(' + ')}. Nothing spent.`));
       } else host.append(make('p', 'chapter-requirements', `Next: ${remaining.map(name).join(' + ')}.`));
     }
-    else if (!lastFeedback) host.append(make('p', '', 'Cancel/Escape or switch tools/farms: no cost.'));
+    else if (!lastFeedback) host.append(make('p', '', 'Clear combination/Escape or switch tools/farms: no cost.'));
     if (lastFeedback) host.append(make('p', 'chapter-outcome', lastFeedback));
+    const instructions = make('details'); instructions.append(make('summary', '', 'Cooking details'), make('p', '', 'Choose a recipe once, then tap its mature ingredients on this farm. The last ingredient becomes the meal. Each meal costs 1 energy and gives 2 cooking XP. Clear combination spends nothing. Sell or Give the finished meal, or tap ingredients for the next batch.')); host.append(instructions);
   }
   function highlight() {
     const c = normalizeChapter(state), pending = cooking.getPending();

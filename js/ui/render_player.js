@@ -28,13 +28,15 @@ function renderItemsSoldHud(el, totalItemsSold, weatherVisual) {
   el.textContent = '';
 
   if (weatherVisual?.src) {
+    const day = document.getElementById('hud-day');
+    if (day) { day.title = weatherVisual.alt; day.setAttribute('aria-label', `${day.textContent}. ${weatherVisual.alt}`); }
     const icon = document.createElement('img');
     icon.className = 'hud-weather-icon';
     icon.src = weatherVisual.src;
     icon.alt = '';
     icon.setAttribute('aria-hidden', 'true');
     icon.title = weatherVisual.alt || '';
-    el.appendChild(icon);
+    if (day) { day.querySelector('.hud-weather-icon')?.remove(); day.appendChild(icon); }
   }
 
   const text = document.createElement('span');

@@ -462,9 +462,9 @@ export function renderDataAction(deps) {
   });
   graphCard.appendChild(groupBar);
 
-  if (selectedSeries.length > 0) {
-    graphCard.appendChild(renderActiveSeriesSummary(selectedSeries, previousSnapshot));
-  }
+  const legend = selectedSeries.length > 0 ? renderActiveSeriesSummary(selectedSeries, previousSnapshot) : document.createElement('div');
+  legend.classList.add('data-compact-legend');
+  graphCard.appendChild(legend);
 
   const graphSurface = document.createElement('div');
   graphSurface.className = 'data-graph-surface';

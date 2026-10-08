@@ -147,7 +147,9 @@ export function renderGoalsPanel(deps) {
   const optionsTitle = document.createElement('div');
   optionsTitle.className = 'panel-title';
   optionsTitle.textContent = 'Options';
-  container.appendChild(optionsTitle);
+  const optionsHost = document.getElementById('presentation-options') || container;
+  optionsHost.replaceChildren();
+  optionsHost.appendChild(optionsTitle);
 
   const optionsRow = document.createElement('div');
   optionsRow.style.margin = '4px 0 8px';
@@ -180,7 +182,7 @@ export function renderGoalsPanel(deps) {
   quickRoll.title = 'Show the settled market results immediately. Days, prices and growth still advance normally.';
   quickRoll.onclick = () => { setQuickRollPreference(!quickOn); rerender(); };
   optionsRow.appendChild(quickRoll);
-  container.appendChild(optionsRow);
+  optionsHost.appendChild(optionsRow);
 
   const goalsTitle = document.createElement('div');
   goalsTitle.className = 'panel-title';

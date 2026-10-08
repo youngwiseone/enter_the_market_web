@@ -3434,19 +3434,15 @@
         body.mobile-layout .market-insight-close { min-width: 44px; min-height: 44px; }
         @media (prefers-reduced-motion: reduce) { .crop-just-ready { animation: none; } }
     </style> 
-    <link rel="stylesheet" href="css/desktop98.css">
-    <link rel="stylesheet" href="css/cooking.css?v=81">
+    <link rel="stylesheet" href="css/desktop98.css?v=85">
+    <link rel="stylesheet" href="css/cooking.css?v=85">
+    <link rel="stylesheet" href="css/workspace.css?v=85">
 </head>
 <body>
     <header id="desktop-titlebar">
         <span class="desktop-brand"><img data-versioned-src="resources/items/produce/carrot.png" alt=""><span>Enter The Market</span></span>
-        <span class="desktop-tagline">A LITTLE FARM. A MOVING MARKET.</span>
+        <details id="game-options"><summary>Options</summary><div class="options-popup"><div id="presentation-options"></div><strong>Appearance</strong><div id="appearance-options"></div><button id="options-cosmetics" type="button">Themes &amp; cosmetics</button></div></details>
     </header>
-    <div id="hud-top-stats" class="panel">
-        <span id="hud-day">Day 1</span>
-        <span id="hud-cash">$0.00</span>
-        <span id="hud-networth">Items Sold: 0</span>
-    </div>
     <div id="market-layout">
         <!-- Farmer's Market content consists of a single unified table and a 7x7 farm. The farm sits on the left and the market table on the right. -->
         <div id="hud-profile-panel" class="panel">
@@ -3454,6 +3450,12 @@
             <div id="mobile-profile-row">
                 <img id="chat-profile" class="hud-profile-avatar" data-versioned-src="resources/profiles/player.png" alt="player neutral">
                 <div id="mobile-profile-side">
+    <div id="hud-top-stats" class="panel">
+        <span id="hud-day">Day 1</span>
+        <span id="hud-cash">$0.00</span>
+
+    </div>
+
                     <div class="profile-energy-info">
                         <div class="profile-section-label">Energy</div>
                         <div id="energy-bar" class="progress-indicator profile-energy-bar" role="progressbar" aria-valuemin="0"></div>
@@ -3508,7 +3510,7 @@
                         <img src="resources/cooking/pot.png" alt="Cooking pot"><span class="tool-name">Cook</span>
                     </button>
                 </div>
-                <div id="cooking-context" class="market-insight-panel" hidden aria-live="polite"></div>
+
                 <button id="chapter-farm-hint" class="chapter-farm-hint" type="button" hidden></button>
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
@@ -3523,9 +3525,10 @@
                         <button id="tab-data" data-main-tab="data" class="tab-button" role="tab" aria-selected="false">Data</button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
+                    <section id="current-action" aria-label="Current action"><div id="cooking-context" class="market-insight-panel" hidden aria-live="polite"></div>
                     <div id="market-insight-panel" class="market-insight-panel" aria-live="polite">
                         <div id="market-insight-empty" class="market-insight-empty">Select an item to preview expected return.</div>
-                    </div>
+                    </div></section>
                 </div>
         <div id="market-table-container" class="panel">
             <div id="market-table"></div>
@@ -3536,6 +3539,7 @@
             <button id="reset-game" class="button" style="margin-top: 8px;">Reset Game</button>
         </div>
         <div id="data-panel" class="panel">
+            <div class="data-summary-row"><strong id="hud-networth">Items Sold: 0</strong></div>
             <div id="data-content"></div>
         </div>
         <div id="market-insight-panel-mobile-market" class="market-insight-panel panel mobile-insight-panel" data-insight-panel="mobile-market" aria-live="polite"></div>
@@ -3657,7 +3661,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=81"></script>
+    <script type="module" src="main.js?v=85"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
