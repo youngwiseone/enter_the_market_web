@@ -137,7 +137,7 @@ export function attachCoreEventHandlers(deps) {
     if (target.closest('[data-sell-action-button="true"]')) return;
     // Navigation and quote disclosures inspect the current crop rather than
     // deselecting it. The explicit close button still clears selection itself.
-    if (target.closest('[data-main-tab], [data-insight-panel], #market-insight-panel, #farm-action-dock')) return;
+    if (target.closest('[data-main-tab], .market-table-switcher-button, [data-insight-panel], #current-action, #market-insight-panel, #farm-action-dock, #game-options, #chat-profile')) return;
     const gridCell = target.closest('.grid-cell');
     if (gridCell) {
       const indexText = gridCell.getAttribute('data-index');
@@ -213,6 +213,7 @@ export function attachCoreEventHandlers(deps) {
         return;
       }
       if (!desktopShortcuts || isTextInputTarget) return;
+      if (target instanceof Element && target.closest('button, a, summary, [role="button"], [contenteditable]')) return;
       const summaryModal = document.getElementById('day-summary-modal');
       const isDaySummaryOpen = !!(summaryModal && summaryModal.classList.contains('is-open'));
       if (isDaySummaryOpen) return;

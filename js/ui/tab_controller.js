@@ -1,4 +1,11 @@
+const pageScrollPositions = new Map();
+let previousVisibleTab = null;
+
 export function updateMainViewVisibilityDom(activeMainTab) {
+  if (previousVisibleTab && previousVisibleTab !== activeMainTab) pageScrollPositions.set(previousVisibleTab, window.scrollY || 0);
+  const switched = previousVisibleTab !== activeMainTab;
+  previousVisibleTab = activeMainTab;
+  if (switched && typeof window.scrollTo === 'function') window.requestAnimationFrame(() => window.scrollTo(0, pageScrollPositions.get(activeMainTab) || 0));
   const isMobileLayout = !!(document.body && document.body.classList.contains('mobile-layout'));
   const effectiveTab = (!isMobileLayout && activeMainTab === 'farm') ? 'market' : activeMainTab;
   if (document.body) {
@@ -17,7 +24,7 @@ export function updateMainViewVisibilityDom(activeMainTab) {
   const isMessages = effectiveTab === 'messages';
 
   if (isMobileLayout) {
-    if (farmPanel) farmPanel.style.display = isFarm ? '' : 'none';
+    if (farmPanel) farmPanel.style.display = (isFarm || isMessages) ? '' : 'none';
     if (marketRoot) marketRoot.style.display = isFarm ? 'none' : 'flex';
     if (marketTable) marketTable.style.display = isMarket ? 'block' : 'none';
     if (goalsPanel) goalsPanel.style.display = isGoals ? 'block' : 'none';

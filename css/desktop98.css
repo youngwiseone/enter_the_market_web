@@ -512,7 +512,6 @@ body.mobile-layout #market-table-container,
 body.mobile-layout #goals-panel,
 body.mobile-layout #data-panel { overflow: visible; max-height: none; flex: 0 0 auto; }
 /* Sale and Rest share one stable row above the tabs. */
-body.mobile-layout:has(#farm-action-dock.is-visible) #rest-dock { right: calc(59% + var(--safe-right)); }
 body.mobile-layout #farm-action-dock { left: 43%; right: calc(8px + var(--safe-right)); bottom: calc(8px + var(--safe-bottom) + var(--bottom-bar-height)); }
 body.mobile-layout #farm-action-button { font-size: 11px; line-height: 1.25; padding: 5px 7px; }
 body.mobile-layout #farm-action-button:disabled { opacity: 1; background: var(--theme-surface); color: var(--theme-text-muted); }
@@ -549,7 +548,6 @@ body.compact-farm-layout #market { grid-area: auto; grid-column: 1 / -1; }
 body.compact-farm-layout:not([data-active-main-tab='farm']) #hud-profile-panel { display: none; }
 body.compact-farm-layout #mobile-bottom-tabs { right: 56%; }
 body.compact-farm-layout #rest-dock { left: 46%; right: 8px; bottom: calc(12px + var(--safe-bottom)); }
-body.compact-farm-layout:has(#farm-action-dock.is-visible) #rest-dock { right: 34%; }
 body.compact-farm-layout #farm-action-dock { left: 68%; right: 8px; bottom: calc(12px + var(--safe-bottom)); }
 body.compact-farm-layout #mobile-bottom-tabs .tab-button { font-size: 11px; padding: 4px; }
 @media (max-width: 479px) and (max-height: 520px) {

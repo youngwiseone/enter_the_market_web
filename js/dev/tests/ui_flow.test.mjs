@@ -50,7 +50,7 @@ assert.equal(getNextMeaningfulUnlock({ player: { playerLevel: 20 }, secondFarmPu
 // same turn, with no slot animation timers. No simulation dependency is invoked.
 function node() {
   const children = [];
-  return { children, classList: { add() {}, remove() {}, toggle() {} }, appendChild: child => children.push(child), append: (...items) => children.push(...items), setAttribute() {}, querySelector: () => null, querySelectorAll: () => [], style: {}, dataset: {}, addEventListener() {}, parentElement: { insertBefore() {} }, innerHTML: '', textContent: '' };
+  return { children, classList: { add() {}, remove() {}, toggle() {} }, prepend: (...items) => children.unshift(...items), appendChild: child => children.push(child), append: (...items) => children.push(...items), setAttribute() {}, querySelector: () => null, querySelectorAll: () => [], style: {}, dataset: {}, addEventListener() {}, parentElement: { insertBefore() {} }, innerHTML: '', textContent: '' };
 }
 const ids = ['daily-roll-modal', 'daily-roll-results', 'daily-roll-fatigue', 'daily-roll-fatigue-note', 'daily-roll-day-summary-subtitle', 'daily-roll-day-summary-sold', 'daily-roll-day-summary-sales', 'daily-roll-continue', 'daily-roll-reel', 'daily-roll-track'];
 const nodes = new Map(ids.map(id => [id, node()]));
@@ -130,3 +130,15 @@ assert.match(treatmentText, /Consumed on application/);
 assert.match(treatmentText, /Stacks before maturity/);
 assert.doesNotMatch(treatmentText, /Resale/);
 console.log('Consumable treatment usage, duration, stacking and upfront energy/cash disclosure checks passed.');
+
+// Focused buttons own Space; the global Rest shortcut must leave them alone.
+keyHandlers.length = 0;
+let rested = 0;
+attachCoreEventHandlers({ state: {}, isDailyRollOpen: () => false, isGoalCelebrationOpen: () => false, installFarmPointerHandlers: noop, nextDay: () => { rested += 1; } });
+const focusedButton = new Element();
+focusedButton.closest = selector => selector.includes('button') ? focusedButton : null;
+const buttonSpace = { target: focusedButton, key: ' ', code: 'Space', preventDefault() { this.prevented = true; }, stopPropagation: noop };
+keyHandlers.forEach(handler => handler(buttonSpace));
+assert.equal(rested, 0);
+assert.equal(buttonSpace.prevented, undefined);
+console.log('Focused button Space preserves native activation without resting.');

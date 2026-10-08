@@ -3,10 +3,12 @@
 <h1>Disposable local cooking fixtures</h1>
 <p>For a dedicated localhost test origin only. Advanced fixture installs only on an empty origin. Farm fixtures work only on that tagged disposable test save. They do not run in the public game.</p>
 <button id="advanced">Advanced legacy save, story unstarted</button>
+<button id="workspace">Empty-origin UI workspace fixture (pot and visitors)</button>
 <button id="full">Preserve story, fill both farms with mature recipe inputs</button>
 <button id="growing">Preserve story, six-day growing recipe inputs</button>
 <a href="../../index.html">Play fixture</a><pre id="result"></pre>
 <script type="module">
+import { normalizeChapter } from '../state/cooking_chapter.js';
 import { DEFAULT_DATA } from '../content/fallbacks/default_data.js';
 import { createEmptyFarmStateForGrid } from '../state/farm_state.js';
 import { withNewCropIdentity } from '../state/crop_identity.js';
@@ -37,6 +39,17 @@ async function advanced() {
   write('inventory',[]);write('store',DEFAULT_DATA.store);farms();
   document.getElementById('result').textContent='Advanced legacy fixture ready. No cookingChapter field; full mature farms, existing claimed goals and theme.';
 }
+document.getElementById('workspace').disabled = !!read('player');
+document.getElementById('workspace').onclick = async () => {
+  if (!local || localStorage.getItem('player')) return;
+  await advanced();
+  const player = read('player');
+  const chapter = normalizeChapter({ player, items: read('items'), goalStats: read('goalStats') });
+  chapter.stage = 4; chapter.potUnlocked = true; chapter.cookedCount = 1;
+  write('player', player);
+  document.getElementById('result').textContent = 'UI fixture ready: unlocked pot and mature ingredients.';
+};
+
 document.getElementById('advanced').onclick=advanced;
 document.getElementById('full').onclick=()=>{if(local && read('etm.disposableCookingFixture')){farms();document.getElementById('result').textContent='Story preserved; farms full.';}};
 document.getElementById('growing').onclick=()=>{if(local && read('etm.disposableCookingFixture')){farms(true);document.getElementById('result').textContent='Story preserved; recipe crops need six watered days.';}};

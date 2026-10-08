@@ -22,7 +22,7 @@ function createInsightHeader(titleText, clearCurrentInfoSelection) {
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'button market-insight-close';
-  close.textContent = 'x';
+  close.textContent = 'Clear';
   close.title = 'Close info';
   close.setAttribute('aria-label', 'Close crop info');
   close.addEventListener('click', (event) => {
@@ -608,6 +608,30 @@ export function renderSelectedItemInsightAction(deps) {
       ? new Set(Array.from(panel.querySelectorAll('details[open] > summary'), summary => summary.textContent))
       : new Set();
     renderIntoPanel(panel);
+    const tool = document.querySelector?.('.farm-toolbar [data-tool].active');
+    if (tool && !shopInsight) {
+      const active = document.createElement('p'); active.className = 'active-tool-summary';
+      const kind = tool.getAttribute('data-tool');
+      active.textContent = `Tool: ${tool.textContent.trim()}${kind === 'watering' ? ' · Tap a growing crop to water; 1 energy.' : kind === 'pickaxe' ? ' · Tap locked soil to mine.' : ''}`;
+      panel.prepend(active);
+    }
+    if (shopInsight) {
+      const paid = document.createElement('div');
+      paid.className = 'active-commitment';
+      const applying = shopInsight.itemType === 'fertiliser';
+      const cost = shopInsight.effectiveCost ?? shopInsight.buyPrice;
+      paid.textContent = `${applying ? 'Apply' : shopInsight.isProduce ? 'Plant' : 'Place'} ${shopInsight.itemName} · ${cost === 0 ? 'Free' : '$' + cost.toFixed(2)} per use${applying ? ' · 1 energy' : ''}${shopInsight.freeCount ? ' · ' + shopInsight.freeCount + ' free remaining' : ''}. `;
+      const cancel = document.createElement('button');
+      cancel.type = 'button'; cancel.textContent = applying ? 'Cancel application' : shopInsight.isProduce ? 'Cancel planting' : 'Cancel placement';
+      cancel.onclick = clearShopSelection || clearCurrentInfoSelection;
+      paid.append(cancel); panel.prepend(paid);
+    }
+    if (bulkInsight?.cells?.length) {
+      const names = document.createElement('p'); names.className = 'selection-names';
+      names.textContent = bulkInsight.cells.map(cell => cell.itemName || cell.item?.name || 'Item').join(' · ');
+      panel.prepend(names);
+    }
+
     panel.dataset.insightSelection = selectionKey;
     panel.querySelectorAll('details').forEach(detail => {
       detail.open = openDetails.has(detail.querySelector('summary')?.textContent);

@@ -1,5 +1,5 @@
 import { createCookingController } from './js/controllers/cooking_controller.js';
-import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js';
+import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=85';
 import { normalizeChapter } from './js/state/cooking_chapter.js';
 import { DISH_ITEMS } from './js/content/cooking_chapter.js';
 import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal } from './js/state/chapter_settlement.js';
@@ -228,8 +228,8 @@ import {
   setCreatorSignatureNodeState,
   setLicenseNoteNodeState
 } from './js/ui/creator_license.js';
-import { attachCoreEventHandlers } from './js/ui/bindings/core_bindings.js';
-import { calculateGoalProgress, renderGoalsPanel } from './js/ui/render_goals.js';
+import { attachCoreEventHandlers } from './js/ui/bindings/core_bindings.js?v=85';
+import { calculateGoalProgress, renderGoalsPanel } from './js/ui/render_goals.js?v=85';
 import { copyFeedbackTextAction, setFeedbackModalOpenDom } from './js/ui/feedback_controller.js';
 import {
   buildFeedbackStringAction,
@@ -245,7 +245,7 @@ import {
   renderHUDAction,
   renderPlayerLevelStatusAction,
   updateTimeOfDayMoodAction
-} from './js/ui/render_player.js';
+} from './js/ui/render_player.js?v=85';
 import {
   continueDailyRollModalAction,
   continueDaySummaryModalAction,
@@ -262,22 +262,22 @@ import {
   getSelectedGridItemInsightDataAction,
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
-import { renderDataAction } from './js/ui/render_data.js';
+import { renderDataAction } from './js/ui/render_data.js?v=85';
 import { renderMarketAction } from './js/ui/render_market.js';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=81';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=85';
 import { createMessagesController } from './js/ui/messages_controller.js';
-import { renderAllAction } from './js/ui/render_root.js';
+import { renderAllAction } from './js/ui/render_root.js?v=85';
 import {
   installSidePanelScrollHandlersAction,
   updateGridSizeAction,
   updateSidePanelScrollAreaAction
-} from './js/ui/layout_controller.js?v=80';
+} from './js/ui/layout_controller.js?v=85';
 import {
   showTabDom,
   toggleMessagesPanelDom,
   updateMainTabButtonsDom,
   updateMainViewVisibilityDom
-} from './js/ui/tab_controller.js?v=80';
+} from './js/ui/tab_controller.js?v=85';
 import { createUiRuntimeController } from './js/ui/ui_runtime_controller.js';
 import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js';
 import {
@@ -1958,8 +1958,14 @@ const chapterUi = createCookingChapterUi({ state, cooking: cookingController, co
   clearSelection: () => { selectedGridCellIndices.clear(); selectedGridCellIndex = null; },
   renderAll, feedback: chapterFeedback, showGoals: () => showTab('goals'),
   refreshPortrait: () => setChatProfile('player', 'neutral') });
+document.querySelector('#game-options > summary')?.addEventListener('click', () => renderGoals());
+document.getElementById('options-cosmetics')?.addEventListener('click', () => {
+  uiRuntimeController.setCurrentMarketTableView('cosmetics');
+  document.getElementById('game-options').open = false;
+  showTab('market');
+});
 document.addEventListener('keydown', event => {
-  if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.target.closest('input, textarea, select, button, a, summary, [contenteditable="true"]')) return;
   if (event.key === 'Escape' && state.activeTool === 'pot') { cookingController.cancel(); chapterUi.note('Combination cleared. No ingredients spent.'); renderAll(); }
   if (event.key.toLowerCase() === 'v' && state.unlockedTools.pot && !document.querySelector('.is-open [role="dialog"]')) { event.preventDefault(); setActiveTool('pot'); }
 });
@@ -2018,8 +2024,12 @@ const farmPointerRuntimeController = createFarmPointerRuntimeController(buildFar
   saveState,
   playGridItemMoveFx,
   cookIngredient: index => {
+    if (state.items.find(item => item.id === state.gridItems[index])?.type === 'dish') {
+      selectedGridCellIndices.clear(); selectedGridCellIndex = index;
+      renderMarket(); return true;
+    }
     const result = cookingController.tap(index);
-    if (result.ok && !result.complete) chapterUi.note('');
+    if (result.ok && !result.complete) { chapterUi.note(''); selectedGridCellIndices.clear(); selectedGridCellIndex = null; }
     if (!result.complete) renderMarket();
     return result.ok;
   }

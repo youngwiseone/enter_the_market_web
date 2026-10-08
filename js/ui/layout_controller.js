@@ -30,23 +30,24 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
     || window.matchMedia('(max-height: 500px)').matches
     || (isTouchViewport && window.matchMedia('(max-width: 1100px)').matches);
   body.classList.toggle('mobile-layout', mobile);
-  const compactLandscape = mobile && window.innerWidth >= 480 && window.innerHeight <= 500;
+  const compactLandscape = false; // Narrow/short screens scroll; never add a recipe column.
   body.classList.toggle('compact-farm-layout', compactLandscape);
-  root.style.setProperty('--bottom-bar-height', mobile && !compactLandscape ? '62px' : '0px');
-  const guidance = document.getElementById('guidance-panel');
-  const receipt = document.getElementById('sale-receipt');
+  root.style.setProperty('--bottom-bar-height', mobile ? '62px' : '0px');
+  const notes = document.getElementById('farm-notes');
+  ['guidance-panel', 'sale-receipt', 'farm-gesture-hint'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && notes && el.parentElement !== notes) notes.appendChild(el);
+  });
+  const action = document.getElementById('current-action');
   const marketHeader = document.getElementById('market-header');
-  const farmNotes = document.getElementById('farm-notes');
-  const gestureHint = document.getElementById('farm-gesture-hint');
-  if (mobile) {
-    if (guidance && farmNotes && guidance.parentElement !== farmNotes) farmNotes.appendChild(guidance);
-    if (receipt && farmNotes && receipt.parentElement !== farmNotes) farmNotes.appendChild(receipt);
-    if (gestureHint && farmNotes && gestureHint.parentElement !== farmNotes) farmNotes.appendChild(gestureHint);
-  } else if (marketHeader) {
-    if (guidance && guidance.parentElement !== marketHeader) marketHeader.insertBefore(guidance, document.getElementById('market-insight-panel'));
-    if (receipt && receipt.parentElement !== marketHeader) marketHeader.appendChild(receipt);
-    if (gestureHint && gestureHint.parentElement !== marketHeader) marketHeader.appendChild(gestureHint);
+  if (action) {
+    const parent = mobile ? farmPanel : marketHeader;
+    if (parent && action.parentElement !== parent) parent.appendChild(action);
   }
+  const mobileInsight = document.getElementById('market-insight-panel-mobile-market');
+  const market = document.getElementById('market');
+  const table = document.getElementById('market-table-container');
+  if (mobileInsight && market && table && mobileInsight.nextElementSibling !== table) market.insertBefore(mobileInsight, table);
   if (!farmPanel.clientWidth) {
     updateSidePanelScrollArea();
     resizeFxCanvas();
@@ -55,17 +56,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
   const number = (value) => Number.parseFloat(value) || 0;
   const style = window.getComputedStyle(farmPanel);
   const panelWidth = farmPanel.clientWidth - number(style.paddingLeft) - number(style.paddingRight) - 4 - (compactLandscape ? 120 : 0);
-  const grid = document.getElementById('grid-container');
-  const gridTop = grid.getBoundingClientRect().top;
-  const toolbar = farmPanel.querySelector('.farm-toolbar');
-  // Reserve the same toolbar and note row even when a crop is selected, a
-  // receipt is expanded, or there is no contextual hint to show.
-  const afterGrid = mobile && !compactLandscape
-    ? (toolbar?.getBoundingClientRect().height || 44) + 44
-    : number(style.paddingBottom) + 4;
-  const dockTop = document.getElementById('rest-dock')?.getBoundingClientRect().top || window.innerHeight - 60;
-  const frameBottom = mobile ? dockTop - 8 : document.getElementById('market-layout').getBoundingClientRect().bottom;
-  const size = getStableGridSize({ panelWidth, availableHeight: frameBottom - gridTop - afterGrid });
+  const size = getStableGridSize({ panelWidth, availableHeight: mobile ? panelWidth : 460 });
   root.style.setProperty('--grid-size', size + 'px');
   root.style.setProperty('--messages-height', '0px');
   updateSidePanelScrollArea();

@@ -1,0 +1,27 @@
+UI workspace update - 9 October 2026
+
+Implemented shared contextual action rendering, width-led mobile board sizing,
+reserved scrollbar space, scrollable short screens, compact portrait/status HUD,
+fixed mobile navigation and Rest, Options with existing preferences and appearance,
+compact metrics/legends, explicit paid commitments and separate Clear combination.
+Cooking retains the recipe, selects finished dishes for Sell/Give, and clears old
+meal inspection when the next ingredient batch starts. Requests keep dialogue in
+Goals disclosures. Mobile details open over the game; portrait Messages overlays
+retain the farm. Every page remembers its own page scroll position.
+
+Browser checks used the isolated tagged fixture at 127.0.0.1:18764.
+1280x800 desktop: cooked soup with two taps; focused Clear combination + Space
+kept Day 50. Board stayed 458px through cooking (document-space coordinates).
+390x844 portrait: Tend/Water/Mine/Cook all measured [18,213.09375,338,338]
+for board x/document-y/width/height. Rest stayed [266,792,100,44].
+740x390 landscape: board 580px, page scrolls, no horizontal overflow or third
+recipe column. Give completed Bea's soup request, added $8, and left Rest at
+[616,338,100,44]. A subsequent two-tap soup retained Garden Soup as the recipe.
+Growing fixture: Water Retention charged $10 once, and the action panel continued
+to show Apply, $10 per use, 1 energy and Cancel application above Carrot status.
+Options exposed Item Info, Quick market rolls, apron and Themes & cosmetics.
+
+Validation: all JS syntax; UI flow (including focused button Space), cooking,
+trading loop, sale safety, and 97-entry message catalog passed.
+Physical phone testing and actual browser zoom testing remain unverified.
+No deployment performed.
