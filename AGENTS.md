@@ -192,6 +192,8 @@ Rules:
 
 ## Contributor Workflow
 
+- Work directly on `main` and push completed changes to `origin/main`. Do not create another branch or pull request unless the user explicitly requests one.
+
 1. Make small isolated changes.
 2. Keep save compatibility in mind before changing persisted shape.
 3. Validate JS syntax:
