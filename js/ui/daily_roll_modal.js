@@ -1,3 +1,4 @@
+import { getAppliedRollImpactPercent } from '../sim/daily_roll.js';
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 
@@ -55,7 +56,7 @@ function triggerDailyRollLandingEffects(reelEl, reduceMotion, hitCount = 1) {
 
 function renderDailyRollResultChip(summaryEl, pick, itemEffect) {
   if (!summaryEl || !pick) return;
-  const impactPct = Number(itemEffect?.adjustedImpactPct) || 0;
+  const impactPct = getAppliedRollImpactPercent(itemEffect?.adjustedImpactPct);
   const sign = impactPct >= 0 ? '+' : '';
   const stackCount = Math.max(1, Number(itemEffect?.hits) || 1);
   const trendClass = impactPct >= 0 ? 'positive' : 'negative';
@@ -223,6 +224,36 @@ export function continueDaySummaryModalAction(setDaySummaryOpen) {
   setDaySummaryOpen(false);
 }
 
+function renderMarketBulletin(moves, day) {
+  const title = document.getElementById('market-bulletin-title');
+  const list = document.getElementById('market-bulletin-list');
+  const headline = document.getElementById('market-bulletin-headline');
+  if (!title || !list || !headline) return;
+  title.textContent = `The Market Gazette · Day ${day}`;
+  list.replaceChildren();
+  const lead = moves?.[0];
+  if (!lead) {
+    headline.textContent = 'Prices hold steady at dawn.';
+    return;
+  }
+  headline.textContent = lead.changeCents > 0
+    ? `${lead.itemName} opens higher`
+    : lead.changeCents < 0 ? `${lead.itemName} opens lower` : `${lead.itemName} holds its opening price`;
+  const money = (value) => `$${value.toFixed(2)}`;
+  const signedCents = (value) => `${value < 0 ? '−' : '+'}${money(Math.abs(value) / 100)}`;
+  moves.forEach((move) => {
+    const row = document.createElement('li');
+    const name = document.createElement('strong');
+    name.textContent = move.itemName;
+    const prices = document.createElement('span');
+    prices.textContent = `${money(move.previous)} → ${money(move.current)}`;
+    const cause = document.createElement('small');
+    cause.textContent = `Cycle & weather ${signedCents(move.cycleCents)} · Roll ${signedCents(move.rollCents)}`;
+    row.append(name, prices, cause);
+    list.append(row);
+  });
+}
+
 export async function showDailyMarketRollModalAction(deps) {
   const {
     rollResult,
@@ -269,9 +300,9 @@ export async function showDailyMarketRollModalAction(deps) {
     continueBtn.setAttribute('aria-disabled', 'false');
   }
 
-  if (daySummarySubtitleEl) {
-    daySummarySubtitleEl.textContent = `Day ${Math.max(1, Number(daySummary?.day) || 1)} wrap-up`;
-  }
+  const marketDay = Math.max(1, Number(daySummary?.day) || 1);
+  if (daySummarySubtitleEl) daySummarySubtitleEl.textContent = `Stall takings · Day ${marketDay}`;
+  renderMarketBulletin(daySummary?.marketBulletin, marketDay + 1);
   if (daySummarySoldEl) {
     daySummarySoldEl.textContent = String(Math.max(0, Number(daySummary?.itemsSold) || 0));
   }
@@ -339,8 +370,8 @@ export async function showDailyMarketRollModalAction(deps) {
   }
 
   const totalDurationMs = isReduceMotion() ? 0 : 1100;
-  const emitIntervalMs = Math.max(60, Math.floor(totalDurationMs / Math.max(1, picks.length)));
-  const spinSlowdownStartMs = isReduceMotion() ? 1700 : 2500;
+  const emitIntervalMs = Math.max(1, Math.floor(totalDurationMs / picks.length));
+  const spinSlowdownStartMs = totalDurationMs * 0.72;
   const fastSpinIntervalMs = isReduceMotion() ? 55 : 24;
   const finalSpinIntervalMs = isReduceMotion() ? 95 : 92;
   const finalPick = picks[picks.length - 1];
@@ -350,7 +381,7 @@ export async function showDailyMarketRollModalAction(deps) {
   let wasSkipped = false;
 
   const emitPickEffects = (pick) => {
-    const pickImpact = Number(pick?.impactPct) || 0;
+    const rawImpact = Number(pick?.impactPct) || 0;
     const current = emittedByItem.get(pick.itemId) || {
       itemId: pick.itemId,
       itemName: pick.itemName,
@@ -358,7 +389,9 @@ export async function showDailyMarketRollModalAction(deps) {
       adjustedImpactPct: 0
     };
     current.hits += 1;
-    current.adjustedImpactPct += pickImpact;
+    const appliedBefore = getAppliedRollImpactPercent(current.adjustedImpactPct);
+    current.adjustedImpactPct += rawImpact;
+    const pickImpact = getAppliedRollImpactPercent(current.adjustedImpactPct) - appliedBefore;
     emittedByItem.set(pick.itemId, current);
     triggerDailyRollLandingEffects(reelEl, isReduceMotion(), Math.max(1, Number(current.hits) || 1));
     if (summaryEl) {

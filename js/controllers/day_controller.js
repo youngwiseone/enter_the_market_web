@@ -1,3 +1,4 @@
+import { buildMarketBulletin } from '../sim/market_bulletin.js';
 import { WEATHER_IDS, rollWeatherId, normalizeWeatherId } from '../sim/weather.js';
 import { isProduceItem } from '../content/item_types.js';
 import { buildItemsByIdMap } from '../content/item_index.js';
@@ -266,6 +267,7 @@ export function nextDayAction(deps) {
       .map((event) => Number(event?.targetIndex))
       .filter((index) => Number.isInteger(index));
 
+    const baselinePrices = new Map();
     state.shop.forEach((entry) => {
       if (!isShopItemUnlocked(entry.itemId)) return;
       ensureShopEntryMarketFields(entry);
@@ -274,6 +276,7 @@ export function nextDayAction(deps) {
       const item = state.items.find((it) => it.id === entry.itemId);
       if (!item || !isProduceItem(item)) return;
       entry.price = getCropCycleAnchorPrice(item, state.player.day, state.weather?.id);
+      baselinePrices.set(entry.itemId, entry.price);
       entry.priceRecoveryDaysRemaining = 0;
       entry.priceRecoveryTarget = null;
     });
@@ -297,7 +300,10 @@ export function nextDayAction(deps) {
       priceMoves.push({
         itemId: entry.itemId,
         itemName: item ? item.name : `Item ${entry.itemId}`,
-        pctChange
+        pctChange,
+        previous,
+        current,
+        baseline: baselinePrices.get(entry.itemId)
       });
     });
     state.lastPriceMovesByItem = priceMoves.reduce((acc, move) => {
@@ -330,7 +336,10 @@ export function nextDayAction(deps) {
     state.daySummaryHistory.push(daySummary);
     if (state.daySummaryHistory.length > 7) state.daySummaryHistory = state.daySummaryHistory.slice(-7);
     state.pendingDaySummary = daySummary;
-    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, daySummary);
+    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, {
+      ...daySummary,
+      marketBulletin: buildMarketBulletin(priceMoves)
+    });
 
     if (!state.player?.openingTrade || state.player.openingTrade.completed) generateDailyTip(dowIndex);
     state.daySalesCount = 0;

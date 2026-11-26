@@ -2172,6 +2172,33 @@
             font-size: var(--font-ui);
             text-align: center;
         }
+        .market-bulletin {
+            color: #342719;
+            background: #ffefd0;
+            border: 1px solid #9c7953;
+            border-top: 3px double #9c7953;
+            padding: 7px 10px;
+            margin: 0 0 8px;
+            overflow: auto;
+            max-height: 26dvh;
+            min-height: min(68px, 17dvh);
+        }
+        .market-bulletin h2 {
+            margin: 0 0 2px;
+            letter-spacing: .035em;
+            font: bold clamp(14px, 4vw, 21px) Georgia, serif;
+        }
+        .market-bulletin p { margin: 0 0 2px; font-size: var(--font-ui); }
+        .market-bulletin ul { list-style: none; padding: 0; margin: 0; }
+        .market-bulletin li {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            border-top: 1px dashed #aa8a67;
+            gap: 2px 6px;
+            padding: 3px 0;
+        }
+        .market-bulletin li small { grid-column: 1 / -1; }
+        .market-bulletin li span { font-variant-numeric: tabular-nums; }
         .daily-roll-day-summary {
             margin: 0 0 10px;
             padding: 6px 8px;
@@ -3589,8 +3616,12 @@
         </div>
     </div>
     <div id="daily-roll-modal" class="daily-roll-modal" aria-hidden="true">
-        <div class="panel daily-roll-panel" role="dialog" aria-labelledby="daily-roll-title" aria-modal="true">
-            <h2 id="daily-roll-title" class="daily-roll-title">Market Roll</h2>
+        <div class="panel daily-roll-panel" role="dialog" aria-labelledby="market-bulletin-title" aria-modal="true">
+            <section class="market-bulletin" aria-labelledby="market-bulletin-title">
+                <h2 id="market-bulletin-title">The Market Gazette</h2>
+                <p id="market-bulletin-headline"></p>
+                <ul id="market-bulletin-list" aria-label="Biggest price moves"></ul>
+            </section>
             <div id="daily-roll-day-summary" class="daily-roll-day-summary">
                 <p id="daily-roll-day-summary-subtitle" class="daily-roll-day-summary-subtitle">Day 1 wrap-up</p>
                 <div class="daily-roll-day-summary-grid">

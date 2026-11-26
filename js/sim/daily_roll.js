@@ -29,6 +29,10 @@ function getUnlockedRollItems(state, isShopItemUnlocked) {
   });
 }
 
+export function getAppliedRollImpactPercent(impactPct) {
+  return Math.max(-90, Number(impactPct) || 0);
+}
+
 function getRollStoryForItem(itemName, defaultNewsEvents) {
   const templates = Array.isArray(defaultNewsEvents) ? defaultNewsEvents : [];
   if (!templates.length) {
@@ -154,8 +158,7 @@ export function applyDailyMarketRollToShopState(deps) {
     ensureShopEntryMarketFields(entry);
     const effect = rollResult.byItem.get(entry.itemId);
     if (!effect) return;
-    const factor = 1 + (effect.adjustedImpactPct / 100);
-    entry.price *= Math.max(0.1, factor);
+    entry.price *= Math.max(0.1, 1 + (effect.adjustedImpactPct / 100));
   });
 }
 
@@ -165,9 +168,10 @@ export function getDailyRollSummaryTextState(rollResult, fatiguePercent = 0) {
   }
   const parts = [];
   Array.from(rollResult.byItem.values()).forEach((effect) => {
-    const sign = effect.adjustedImpactPct >= 0 ? '+' : '';
+    const impact = getAppliedRollImpactPercent(effect.adjustedImpactPct);
+    const sign = impact >= 0 ? '+' : '';
     const stackText = effect.hits > 1 ? ` x${effect.hits}` : '';
-    parts.push(`${effect.itemName} ${sign}${effect.adjustedImpactPct.toFixed(0)}%${stackText}`);
+    parts.push(`${effect.itemName} ${sign}${impact.toFixed(0)}%${stackText}`);
   });
   const strengthText = `Roll Strength ${Math.max(0, Math.round(fatiguePercent))}%`;
   return `${strengthText} | ${parts.join(' | ')}`;
@@ -181,7 +185,9 @@ export function getBestRollOpportunityTextState(rollResult) {
     .sort((a, b) => (Number(b.adjustedImpactPct) || 0) - (Number(a.adjustedImpactPct) || 0));
   const best = ranked[0];
   if (!best) return 'No major market shift this day.';
-  const impact = Number(best.adjustedImpactPct) || 0;
+  const impact = getAppliedRollImpactPercent(best.adjustedImpactPct);
   const sign = impact >= 0 ? '+' : '';
-  return `Next opportunity: watch ${best.itemName} (${sign}${impact.toFixed(0)}% roll impact).`;
+  return impact > 0
+    ? `Largest upward roll: ${best.itemName} (${sign}${impact.toFixed(0)}% before comparison with yesterday).`
+    : 'No crops got an upward roll.';
 }
