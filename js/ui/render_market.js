@@ -554,6 +554,7 @@ export function renderMarketAction(deps) {
   const tableContainer = document.getElementById('market-table');
   const gridEl = document.getElementById('grid');
   const farmTitleEl = document.getElementById('farm-title');
+  const hadStarterPlotFocus = document.activeElement?.classList?.contains('starter-seed-plot');
 
   if (farmTitleEl) {
     farmTitleEl.textContent = state.activeFarmId === FARM_SECONDARY_ID ? 'Farm 2' : 'Farm 1';
@@ -573,6 +574,47 @@ export function renderMarketAction(deps) {
     ? state.items.find(item => item.id === selectedShopItemId)
     : null;
   const isPlantingSeed = !!selectedSeed && isProduceTypedItem(selectedSeed);
+
+  // This is the normal seed selection and planting flow, not a separate tutorial save.
+  const starterCarrotId = 4;
+  const starterSoil = state.player?.openingTrade?.carrotAvailable
+    && !state.player.openingTrade.completed
+    && state.activeFarmId !== FARM_SECONDARY_ID
+    && !state.gridItems?.some(Boolean)
+    ? (state.gridUnlocked?.findIndex(Boolean) ?? -1) : -1;
+  const starterQuote = starterSoil >= 0 && isShopItemUnlocked(starterCarrotId)
+    ? state.shop.find(entry => entry.itemId === starterCarrotId) : null;
+  const starterSelected = !!starterQuote && isPlantingSeed && selectedSeed.id === starterCarrotId;
+  const firstTicket = document.getElementById('first-seed-ticket');
+  if (firstTicket) {
+    firstTicket.hidden = !starterQuote;
+    if (starterQuote) {
+      const title = document.getElementById('first-seed-title');
+      const note = document.getElementById('first-seed-note');
+      const pick = document.getElementById('first-seed-pick');
+      if (title) title.textContent = starterSelected ? 'Seed in hand' : 'Your first seed packet';
+      const cost = getFreePurchaseCount(starterCarrotId) > 0
+        ? 'free' : `$${Number(starterQuote.price).toFixed(2)}`;
+      const text = starterSelected
+        ? `Plant on the marked plot · ${cost}`
+        : `Carrot · ${cost} to plant · 2 watered days`;
+      if (note && note.textContent !== text) note.textContent = text;
+      if (pick) {
+        pick.hidden = starterSelected;
+        pick.onclick = (event) => {
+          selectShopItem(starterCarrotId);
+          if (event.detail === 0) {
+            window.requestAnimationFrame(() => {
+              if (document.activeElement === document.body || document.activeElement === pick
+                || document.activeElement?.classList?.contains('starter-seed-plot')) {
+                gridEl?.querySelector('.starter-seed-plot')?.focus({ preventScroll: true });
+              }
+            });
+          }
+        };
+      }
+    }
+  }
 
   const selectedGridCellIndex = getSelectedGridCellIndex();
   if (
@@ -864,6 +906,23 @@ export function renderMarketAction(deps) {
     if (unlocked) {
       cell.classList.add('revealed');
       if (isPlantingSeed && !state.gridItems?.[i]) cell.classList.add('plant-target');
+      if (starterSelected && i === starterSoil) {
+        const ghost = document.createElement('img');
+        ghost.src = resolveResourcePath('items/produce/carrot.png');
+        ghost.alt = '';
+        ghost.className = 'seed-plot-ghost';
+        cell.classList.add('starter-seed-plot');
+        cell.tabIndex = 0;
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('aria-label', 'Plant carrot in this plot');
+        cell.appendChild(ghost);
+        cell.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (!event.repeat) applyGridActionForIndex(i, { mode: 'tap' });
+        });
+      }
     }
 
     const hideItemVisualForMove = i === moveHiddenFromIndex || i === moveHiddenToIndex;
@@ -1013,6 +1072,9 @@ export function renderMarketAction(deps) {
       ev.preventDefault();
     });
     if (gridEl) gridEl.appendChild(cell);
+    if (hadStarterPlotFocus && starterSelected && i === starterSoil) {
+      cell.focus({ preventScroll: true });
+    }
   }
   if (gridEl && String(state.weather?.id || '') === 'rain') {
     const rainOverlay = document.createElement('div');

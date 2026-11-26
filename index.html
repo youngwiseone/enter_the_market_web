@@ -3466,7 +3466,7 @@
     <link rel="stylesheet" href="css/desktop98.css?v=85">
     <link rel="stylesheet" href="css/cooking.css?v=85">
     <link rel="stylesheet" href="css/workspace.css?v=85">
-    <link rel="stylesheet" href="css/opening.css?v=88">
+    <link rel="stylesheet" href="css/opening.css?v=89">
 </head>
 <body>
     <dialog id="market-opening" aria-labelledby="market-opening-title" aria-describedby="market-opening-description">
@@ -3559,6 +3559,14 @@
                 </div>
 
                 <button id="chapter-farm-hint" class="chapter-farm-hint" type="button" hidden></button>
+                <div id="first-seed-ticket" hidden aria-label="First seed packet">
+                    <img class="seed-ticket-icon" src="resources/items/produce/carrot.png" alt="" loading="lazy">
+                    <div class="seed-ticket-copy">
+                        <span class="seed-ticket-title" id="first-seed-title">Carrot seed</span>
+                        <span class="seed-ticket-note" id="first-seed-note" aria-live="polite"></span>
+                    </div>
+                    <button type="button" id="first-seed-pick" class="seed-ticket-button">Pick seed</button>
+                </div>
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
                 </div>
@@ -3713,7 +3721,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=88"></script>
+    <script type="module" src="main.js?v=89"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
