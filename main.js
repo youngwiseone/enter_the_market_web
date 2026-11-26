@@ -1,3 +1,4 @@
+import { showMarketOpening } from './js/ui/market_opening.js?v=88';
 import { createCookingController } from './js/controllers/cooking_controller.js';
 import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=85';
 import { normalizeChapter } from './js/state/cooking_chapter.js';
@@ -2277,6 +2278,7 @@ function attachEventHandlers() {
  * attaches event handlers, selects the default tab and renders the UI.
  */
 async function main() {
+  showMarketOpening(loadFromStorage);
   await runAppBootstrap({
     loadJSONData,
     initialiseState,

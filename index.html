@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -3466,8 +3466,26 @@
     <link rel="stylesheet" href="css/desktop98.css?v=85">
     <link rel="stylesheet" href="css/cooking.css?v=85">
     <link rel="stylesheet" href="css/workspace.css?v=85">
+    <link rel="stylesheet" href="css/opening.css?v=88">
 </head>
 <body>
+    <dialog id="market-opening" aria-labelledby="market-opening-title" aria-describedby="market-opening-description">
+        <div class="opening-spread">
+            <div class="opening-valley" aria-hidden="true">
+                <p class="opening-caption">THE VALLEY / FIRST LIGHT</p>
+            </div>
+            <div class="opening-copy">
+                <p class="opening-stamp">THE VALLEY MARKET</p>
+                <h1 id="market-opening-title">Enter the <span>Market</span></h1>
+                <p id="market-opening-description">One patch of dirt. A pocketful of change. A market that won’t sit still.</p>
+                <button id="market-opening-enter" type="button" autofocus>
+                    <img src="resources/items/produce/carrot.png" alt="" loading="lazy">
+                    <span id="market-opening-enter-label">Open the stall</span>
+                </button>
+                <p class="opening-credit">A GAME BY BLIGH HEDGES</p>
+            </div>
+        </div>
+    </dialog>
     <header id="desktop-titlebar">
         <span class="desktop-brand"><img data-versioned-src="resources/items/produce/carrot.png" alt=""><span>Enter The Market</span></span>
         <details id="game-options"><summary>Options</summary><div class="options-popup"><div id="presentation-options"></div><strong>Appearance</strong><div id="appearance-options"></div><button id="options-cosmetics" type="button">Themes &amp; cosmetics</button></div></details>
@@ -3695,7 +3713,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=87"></script>
+    <script type="module" src="main.js?v=88"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
