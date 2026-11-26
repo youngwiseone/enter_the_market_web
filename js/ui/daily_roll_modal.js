@@ -1,4 +1,4 @@
-import { getAppliedRollImpactPercent } from '../sim/daily_roll.js';
+import { getAppliedRollImpactPercent } from '../sim/daily_roll.js?v=86';
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 
