@@ -1,3 +1,4 @@
+import { describeMarketRange } from '../sim/market_bulletin.js?v=87';
 import { getAppliedRollImpactPercent } from '../sim/daily_roll.js?v=86';
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
@@ -228,10 +229,16 @@ function renderMarketBulletin(moves, day) {
   const title = document.getElementById('market-bulletin-title');
   const list = document.getElementById('market-bulletin-list');
   const headline = document.getElementById('market-bulletin-headline');
+  const rangeNote = document.getElementById('market-bulletin-range');
   if (!title || !list || !headline) return;
   title.textContent = `The Market Gazette · Day ${day}`;
   list.replaceChildren();
   const lead = moves?.[0];
+  if (rangeNote) {
+    const text = lead ? describeMarketRange(lead.priorRange, lead.current) : '';
+    rangeNote.textContent = text;
+    rangeNote.hidden = !text;
+  }
   if (!lead) {
     headline.textContent = 'Prices hold steady at dawn.';
     return;

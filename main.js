@@ -31,7 +31,7 @@ import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bo
 import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
 import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller.js';
 import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js';
-import { nextDayAction } from './js/controllers/day_controller.js?v=86';
+import { nextDayAction } from './js/controllers/day_controller.js?v=87';
 import { createDayEconomyController } from './js/controllers/day_economy_controller.js';
 import { createDayMarketRuntimeController } from './js/controllers/day_market_runtime_controller.js';
 import { createGrowthRuntimeController } from './js/controllers/growth_runtime_controller.js';
@@ -255,7 +255,7 @@ import {
   setDaySummaryOpenDom,
   showDailyMarketRollModalAction,
   showDaySummaryModalDom
-} from './js/ui/daily_roll_modal.js?v=86';
+} from './js/ui/daily_roll_modal.js?v=87';
 import { createGoalCelebrationController } from './js/ui/goal_celebration_controller.js';
 import { createSeedPacketImageFactory } from './js/ui/seed_packet_image_factory.js';
 import {

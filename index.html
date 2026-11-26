@@ -2179,9 +2179,7 @@
             border-top: 3px double #9c7953;
             padding: 7px 10px;
             margin: 0 0 8px;
-            overflow: auto;
-            max-height: 26dvh;
-            min-height: min(68px, 17dvh);
+            flex: 0 0 auto;
         }
         .market-bulletin h2 {
             margin: 0 0 2px;
@@ -2189,7 +2187,9 @@
             font: bold clamp(14px, 4vw, 21px) Georgia, serif;
         }
         .market-bulletin p { margin: 0 0 2px; font-size: var(--font-ui); }
-        .market-bulletin ul { list-style: none; padding: 0; margin: 0; }
+        .market-bulletin ul { list-style: none; padding: 0; margin: 0; max-height: 18dvh; overflow: auto; }
+        .market-bulletin ul:empty { display: none; }
+        .daily-roll-panel { overflow-y: auto; }
         .market-bulletin li {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
@@ -2198,6 +2198,8 @@
             padding: 3px 0;
         }
         .market-bulletin li small { grid-column: 1 / -1; }
+        .market-bulletin-range { font-weight: bold; }
+        .market-bulletin ul:focus-visible { outline: 2px solid #7c542e; outline-offset: 2px; }
         .market-bulletin li span { font-variant-numeric: tabular-nums; }
         .daily-roll-day-summary {
             margin: 0 0 10px;
@@ -3620,7 +3622,8 @@
             <section class="market-bulletin" aria-labelledby="market-bulletin-title">
                 <h2 id="market-bulletin-title">The Market Gazette</h2>
                 <p id="market-bulletin-headline"></p>
-                <ul id="market-bulletin-list" aria-label="Biggest price moves"></ul>
+                <p id="market-bulletin-range" class="market-bulletin-range" hidden></p>
+                <ul id="market-bulletin-list" aria-label="Biggest price moves" tabindex="0"></ul>
             </section>
             <div id="daily-roll-day-summary" class="daily-roll-day-summary">
                 <p id="daily-roll-day-summary-subtitle" class="daily-roll-day-summary-subtitle">Day 1 wrap-up</p>
@@ -3692,7 +3695,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=86"></script>
+    <script type="module" src="main.js?v=87"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

@@ -16,3 +16,30 @@ export function buildMarketBulletin(moves) {
       || Math.abs(b.rollCents) - Math.abs(a.rollCents))
     .slice(0, 3);
 }
+
+// Today's quote is compared with completed days only, without inventing
+// prices for days before the crop was unlocked.
+export function getPriorMarketRange(history, itemId, day) {
+  const quotes = new Map();
+  for (const entry of Array.isArray(history) ? history : []) {
+    const quote = Number(entry?.prices?.[itemId]);
+    const quoteDay = Number(entry?.day);
+    if (Number.isInteger(quoteDay) && quoteDay >= Math.max(1, day - 7) &&
+      quoteDay < day && Number.isFinite(quote) && quote > 0) {
+      quotes.set(quoteDay, cents(quote));
+    }
+  }
+  const values = [...quotes.values()];
+  if (values.length < 3) return null;
+  return { low: Math.min(...values), high: Math.max(...values), count: values.length };
+}
+
+export function describeMarketRange(range, current) {
+  if (!range) return '';
+  const amount = cents(current);
+  const period = range.count === 7 ? 'previous 7 days' : `${range.count} earlier quotes`;
+  const comparison = amount > range.high ? 'Above' : amount < range.low ? 'Below' : 'Within';
+  const low = `$${(range.low / 100).toFixed(2)}`;
+  const high = `$${(range.high / 100).toFixed(2)}`;
+  return `${comparison} recent range · ${range.low === range.high ? low : `${low}–${high}`} (${period})`;
+}
