@@ -267,7 +267,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=99';
+import { renderMarketAction } from './js/ui/render_market.js?v=101';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=100';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
@@ -1149,7 +1149,7 @@ const uiRuntimeController = createUiRuntimeController(buildUiRuntimeDeps({
   trackActionDuration,
   calculateGoalProgress,
   renderGoalsPanel,
-  startTradingChallenge: () => startTradingChallengeAction({ state, saveState, rerender: renderGoals }),
+  startTradingChallenge: () => startTradingChallengeAction({ state, saveState, rerender: () => { renderGoals(); renderMarket(); } }),
   updateMainViewVisibilityDom,
   updateMainTabButtonsDom,
   toggleMessagesPanelDom,

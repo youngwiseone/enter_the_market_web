@@ -1,4 +1,5 @@
 import { isProduceItem } from '../content/item_types.js';
+import { getTradingChallengeView } from '../state/trading_challenge.js';
 
 const TOMATO_STARTER_GOAL = 'tomato-first-harvest';
 
@@ -10,18 +11,24 @@ function getFirstSaleSeedReward(state) {
   return reward;
 }
 
+export function getSeedChallengeNote(active, price, freeCount) {
+  return active && (freeCount > 0 || price <= 0) ? 'Doesn’t count for Market Timing' : '';
+}
+
 export function getSeedDrawerChoices({ state, isShopItemUnlocked, getFreePurchaseCount }) {
   const opening = state.player?.openingTrade;
   if (opening && !opening.lastSale && !opening.completed) return [];
   const names = new Map((state.items || []).filter(isProduceItem).map(item => [item.id, item]));
   const firstSaleReward = getFirstSaleSeedReward(state);
+  const challengeActive = getTradingChallengeView(state).status === 'active';
   return (state.shop || []).flatMap(entry => {
     const item = names.get(entry.itemId);
     const price = Number(entry.price);
     if (!item || !isShopItemUnlocked(item.id) || !Number.isFinite(price) || price < 0) return [];
     const freeCount = getFreePurchaseCount(item.id);
     const firstSaleFreeCount = firstSaleReward?.itemId === item.id ? firstSaleReward.count : 0;
-    return [{ id: item.id, name: item.name, price, freeCount, firstSaleFreeCount, item }];
+    const challengeNote = getSeedChallengeNote(challengeActive, price, freeCount);
+    return [{ id: item.id, name: item.name, price, freeCount, firstSaleFreeCount, challengeNote, item }];
   }).sort((a,b) => a.name.localeCompare(b.name));
 }
 
@@ -33,11 +40,17 @@ export function renderSeedDrawer(deps) {
   drawer.hidden = !choices.length;
   const summary = drawer.querySelector('summary');
   const options = drawer.querySelector('#seed-drawer-list');
+  const hint = drawer.querySelector('#seed-drawer-hint');
+  if (hint) {
+    hint.textContent = choices.some(choice => choice.challengeNote)
+      ? 'Pay when you plant. Free seeds don’t count for Market Timing.'
+      : 'Pick a seed. Pay when you plant.';
+  }
   const blocked = state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress;
   summary.setAttribute('aria-disabled', String(!!blocked));
   summary.onclick = blocked ? event => event.preventDefault() : null;
   if (drawer.hidden || blocked) drawer.open = false;
-  const signature = JSON.stringify([selectedItemId, choices.map(({ id, price, freeCount, firstSaleFreeCount }) => [id, price, freeCount, firstSaleFreeCount])]);
+  const signature = JSON.stringify([selectedItemId, choices.map(({ id, price, freeCount, firstSaleFreeCount, challengeNote }) => [id, price, freeCount, firstSaleFreeCount, challengeNote])]);
   if (options.dataset.choices !== signature) {
     options.dataset.choices = signature;
     options.replaceChildren();
@@ -54,6 +67,12 @@ export function renderSeedDrawer(deps) {
       const price = document.createElement('strong');
       price.textContent = choice.freeCount > 0 ? `${choice.freeCount} free` : `$${choice.price.toFixed(2)}`;
       button.append(icon, name, price);
+      if (choice.challengeNote) {
+        const note = document.createElement('span');
+        note.className = 'seed-drawer-reward';
+        note.textContent = choice.challengeNote;
+        button.append(note);
+      }
       if (choice.firstSaleFreeCount) {
         const reward = document.createElement('span');
         reward.className = 'seed-drawer-reward';

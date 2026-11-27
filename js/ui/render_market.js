@@ -1,5 +1,6 @@
 import { shouldUseFarmCellClick } from './farm_pointer_bindings.js?v=99';
-import { renderSeedDrawer } from './seed_drawer.js?v=97';
+import { getSeedChallengeNote, renderSeedDrawer } from './seed_drawer.js?v=101';
+import { getTradingChallengeView } from '../state/trading_challenge.js';
 import { getFieldCropState, getFieldReadout } from './field_readout.js?v=94';
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
@@ -754,6 +755,7 @@ export function renderMarketAction(deps) {
     });
     table.appendChild(headerRow);
 
+    const challengeActive = getTradingChallengeView(state).status === 'active';
     const marketRows = [];
     state.shop.forEach((entry) => {
       if (!isShopItemUnlocked(entry.itemId)) return;
@@ -798,6 +800,14 @@ export function renderMarketAction(deps) {
           ? `$${entry.price.toFixed(2)} (${freeCount} free)`
           : `$${entry.price.toFixed(2)}`;
         priceCell.appendChild(priceText);
+        const challengeNote = getSeedChallengeNote(challengeActive, entry.price, freeCount);
+        if (challengeNote) {
+          const note = document.createElement('small');
+          note.className = 'market-day-move';
+          note.style.display = 'block';
+          note.textContent = challengeNote;
+          priceCell.appendChild(note);
+        }
         const dayMove = Number(state.lastPriceMovesByItem?.[String(item.id)]) || 0;
         if (dayMove !== 0) {
           const move = document.createElement('small');
