@@ -2,7 +2,7 @@ import { createFarmSound, FARM_SOUND_KEY } from './js/fx/farm_sound.js?v=95';
 import { getWateringCanTilesPerEnergy } from './js/controllers/watering_infrastructure.js';
 import { showMarketOpening } from './js/ui/market_opening.js?v=88';
 import { createCookingController } from './js/controllers/cooking_controller.js?v=90';
-import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=93';
+import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=98';
 import { normalizeChapter } from './js/state/cooking_chapter.js';
 import { DISH_ITEMS } from './js/content/cooking_chapter.js';
 import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal } from './js/state/chapter_settlement.js';
@@ -267,7 +267,7 @@ import {
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
 import { renderMarketAction } from './js/ui/render_market.js?v=97';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=94';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=98';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
 import {

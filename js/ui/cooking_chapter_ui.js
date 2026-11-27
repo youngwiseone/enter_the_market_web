@@ -122,7 +122,8 @@ export function createCookingChapterUi(deps) {
     if (dock && sell && document.body.classList.contains('mobile-layout')) {
       dock.classList.add('is-visible', 'chapter-split');
       if (!indices.length) { sell.textContent = 'Sell · select items'; sell.disabled = true; }
-      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : ' · select request items'}`, () => give(cells, targetId, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
+      const unreadyLabel = dock.parentElement?.id === 'farm-title' ? '' : ' · select request items';
+      const giveButton = button(`Give${preview.ok ? ` (${cells.length})` : unreadyLabel}`, () => give(cells, targetId, indices), !preview.ok || !!state.runtimeFlags?.isSellBatchInFlight);
       giveButton.classList.add('give-action-button'); giveButton.title = preview.reason; dock.append(giveButton);
     }
   }

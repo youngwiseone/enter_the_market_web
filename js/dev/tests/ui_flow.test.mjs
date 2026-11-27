@@ -150,6 +150,33 @@ assert.equal(trade.children[0].textContent, 'Selling…');
 assert.equal(trade.children[0].disabled, true);
 assert.match(flattenedText(details).join(' '), /Known-cost profit/);
 
+// The workspace title takes only the presentation, not the settlement path.
+const dock = nodes.get('farm-action-dock');
+const dockButton = nodes.get('farm-action-button');
+const title = { append(el) { el.parentElement = this; } };
+const rest = { after(el) { el.parentElement = document.body; } };
+nodes.set('farm-title', title);
+nodes.set('rest-dock', rest);
+let saleTarget;
+const tradeDeps = {
+  getBulkSelectedGridInsightData: () => null,
+  getSelectedGridItemInsightData: () => cropInsight,
+  getSelectedShopItemInsightData: () => null,
+  sellSelectedGridItem: target => { saleTarget = target; }
+};
+renderSelectedItemInsightAction(tradeDeps);
+assert.equal(dock.parentElement, title);
+assert.equal(dockButton.textContent, 'Sell · $2.49');
+assert.equal(dockButton.dataset.sellActionButton, 'true');
+dockButton.onclick();
+assert.equal(saleTarget, dockButton);
+document.body.classList.contains = name => name === 'mobile-layout' || name === 'legacy-layout';
+renderSelectedItemInsightAction(tradeDeps);
+assert.equal(dock.parentElement, document.body);
+assert.match(dockButton.textContent, /known-cost profit/);
+document.body.classList.contains = name => name === 'mobile-layout';
+
+
 renderSelectedItemInsightAction({ getBulkSelectedGridInsightData: () => null, getSelectedGridItemInsightData: () => ({ ...cropInsight, canSell: false, growth: { isGrown: false, daysLeft: 1 }, wateredToday: false, waterRetainedToday: true }), getSelectedShopItemInsightData: () => null });
 assert.match(nodes.get('farm-action-button').textContent, /Moisture retained/);
 assert.doesNotMatch(nodes.get('farm-action-button').textContent, /Needs water/);

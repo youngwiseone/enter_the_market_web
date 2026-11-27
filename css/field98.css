@@ -256,3 +256,43 @@ body.mobile-layout #seed-drawer-panel { top:auto; bottom:100%; }
 }
 body.mobile-layout #farm-panel .farm-toolbar { position:relative; }
 body.mobile-layout #seed-drawer { position:static; }
+
+/* The normal page scroll owns the sticky title; never make body a nested scroller. */
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout { overflow-x:clip; overflow-y:visible; }
+@media (max-height:700px) {
+  body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel .farm-scenery { height:20px; }
+}
+/* Mobile trade slot: swapping the readout for actions keeps the plots stable. */
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-title {
+  position:sticky; top:var(--safe-top); z-index:20;
+  box-sizing:border-box; min-height:46px; padding-block:1px; gap:8px;
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-active-main-tab="farm"]:not(.is-cooking)
+  #farm-title #farm-action-dock.is-visible:has(> #farm-action-button[data-sell-action-button]) {
+  display:flex !important; position:static; align-items:center; flex:0 1 auto; gap:4px; min-width:0;
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-title #farm-action-dock > button {
+  width:auto; flex:0 1 auto; min-width:0; height:44px; min-height:44px; padding:0 9px;
+  font:700 13px/1.1 Tahoma,Arial,sans-serif;
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-title #farm-action-button {
+  background:var(--theme-control-bg); color:var(--theme-text);
+  box-shadow:inset 1px 1px var(--theme-control-border-hi),inset -1px -1px var(--theme-control-border-lo);
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-title #farm-action-button:disabled { opacity:.78; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-active-main-tab="farm"]:not(.is-cooking)
+  #farm-title:has(#farm-action-dock.is-visible > #farm-action-button[data-sell-action-button]) #field-readout {
+  display:none;
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-active-main-tab="farm"]:not(.is-cooking)
+  :is(#farm-panel #market-insight-panel,.mobile-insight-panel) .trade-action:has(> [data-sell-action-button]) {
+  display:none !important;
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-active-main-tab="farm"]:has(#seed-drawer[open])
+  #farm-title #farm-action-dock {
+  visibility:hidden;
+}
+html:has(body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-active-main-tab="farm"]) {
+  scroll-padding-top:calc(52px + var(--safe-top));
+  scroll-padding-bottom:calc(76px + var(--safe-bottom));
+}
