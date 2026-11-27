@@ -1,3 +1,4 @@
+import { shouldUseFarmCellClick } from './farm_pointer_bindings.js?v=99';
 import { renderSeedDrawer } from './seed_drawer.js?v=97';
 import { getFieldCropState, getFieldReadout } from './field_readout.js?v=94';
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
@@ -536,7 +537,6 @@ export function renderMarketAction(deps) {
     getRarityMultiplier,
     getActiveFarmSellMultiplier,
     getGridPriceBadgeDisplayState,
-    farmPointerState,
     applyGridActionForIndex,
     renderSelectedItemInsight,
     renderGuidancePanel,
@@ -1085,8 +1085,8 @@ export function renderMarketAction(deps) {
       cell.appendChild(waterImg);
     }
 
-    cell.addEventListener('click', () => {
-      if (Date.now() < farmPointerState.suppressClickUntil) return;
+    cell.addEventListener('click', (event) => {
+      if (!shouldUseFarmCellClick(event)) return;
       applyGridActionForIndex(i, { mode: 'tap' });
     });
     cell.addEventListener('contextmenu', (ev) => {

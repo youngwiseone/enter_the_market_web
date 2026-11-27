@@ -1,5 +1,12 @@
 import { installFarmGestureHint, rememberFarmGesture, refreshFarmGestureHint } from './farm_gesture_hints.js';
 
+// In Pointer Events browsers the stroke handles physical input from its
+// start. Click is reserved for keyboard/assistive activation, not a second
+// action on release (including long holds and ignored additional fingers).
+export function shouldUseFarmCellClick(event, hasPointerEvents = typeof globalThis.PointerEvent === 'function') {
+  return !hasPointerEvents || (event.detail === 0 && !event.pointerType);
+}
+
 export function stopFarmPointerInteractionAction(farmPointerState) {
   farmPointerState.active = false;
   farmPointerState.pointerId = null;
@@ -57,6 +64,10 @@ export function installFarmPointerHandlersAction(deps) {
   };
 
   grid.addEventListener('pointerdown', (event) => {
+    if (farmPointerState.active || (event.pointerType === 'touch' && event.isPrimary === false)) {
+      event.preventDefault();
+      return;
+    }
     if (isFarmActionBlocked()) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const index = getGridIndexFromPointerEvent(event);
@@ -67,7 +78,6 @@ export function installFarmPointerHandlersAction(deps) {
     farmPointerState.processedIndices.add(index);
     farmPointerState.startIndex = index;
     farmPointerState.didPromoteStartToBulk = false;
-    farmPointerState.suppressClickUntil = Date.now() + 260;
     applyAction(index, 'tap');
     if (typeof grid.setPointerCapture === 'function') {
       try {
@@ -81,7 +91,7 @@ export function installFarmPointerHandlersAction(deps) {
 
   document.addEventListener('pointermove', (event) => {
     if (!farmPointerState.active) return;
-    if (farmPointerState.pointerId !== null && event.pointerId !== farmPointerState.pointerId) return;
+    if (event.pointerId !== farmPointerState.pointerId) return;
     if (isFarmActionBlocked()) {
       stopFarmPointerInteraction();
       return;
@@ -105,11 +115,15 @@ export function installFarmPointerHandlersAction(deps) {
     event.preventDefault();
   }, { passive: false });
 
-  const endPointer = () => {
-    if (!farmPointerState.active) return;
+  const endPointer = (event) => {
+    if (!farmPointerState.active || event.pointerId !== farmPointerState.pointerId) return;
     stopFarmPointerInteraction();
   };
   document.addEventListener('pointerup', endPointer);
   document.addEventListener('pointercancel', endPointer);
+  grid.addEventListener('lostpointercapture', (event) => {
+    // Ignore a child's implicit capture ending when this grid takes over.
+    if (event.target === grid) endPointer(event);
+  });
   return true;
 }

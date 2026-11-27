@@ -58,7 +58,7 @@ import {
   selectGridCellAction,
   selectShopItemAction
 } from './js/controllers/grid_interaction_controller.js';
-import { createFarmPointerRuntimeController } from './js/controllers/farm_pointer_runtime_controller.js';
+import { createFarmPointerRuntimeController } from './js/controllers/farm_pointer_runtime_controller.js?v=99';
 import { createFarmUiRuntimeController } from './js/controllers/farm_ui_runtime_controller.js';
 import { createGameplayRuntimeController } from './js/controllers/gameplay_runtime_controller.js';
 import { createMessageRuntimeController } from './js/controllers/message_runtime_controller.js';
@@ -266,7 +266,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=97';
+import { renderMarketAction } from './js/ui/render_market.js?v=99';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=98';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
@@ -282,7 +282,7 @@ import {
   updateMainViewVisibilityDom
 } from './js/ui/tab_controller.js?v=85';
 import { createUiRuntimeController } from './js/ui/ui_runtime_controller.js';
-import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js';
+import { installFarmPointerHandlersAction, stopFarmPointerInteractionAction } from './js/ui/farm_pointer_bindings.js?v=99';
 import {
   getCurrentMarketUnlockIdsAction,
   getNewMarketUnlockCountAction,
@@ -1127,7 +1127,6 @@ function renderMarket() {
         ? uiRuntimeController.getNewMarketUnlockCounts()
         : { market: 0, cosmetics: 0, total: 0 }
     ),
-    farmPointerState: farmPointerRuntimeController.getFarmPointerState(),
     applyGridActionForIndex,
     renderSelectedItemInsight,
     renderGuidancePanel

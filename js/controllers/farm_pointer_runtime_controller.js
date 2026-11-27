@@ -52,8 +52,7 @@ export function createFarmPointerRuntimeController(deps) {
   const farmPointerState = {
     active: false,
     pointerId: null,
-    processedIndices: new Set(),
-    suppressClickUntil: 0
+    processedIndices: new Set()
   };
   let farmPointerHandlersInstalled = false;
 
