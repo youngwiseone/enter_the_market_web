@@ -3465,9 +3465,9 @@
     </style> 
     <link rel="stylesheet" href="css/desktop98.css?v=85">
     <link rel="stylesheet" href="css/cooking.css?v=90">
-    <link rel="stylesheet" href="css/workspace.css?v=85">
+    <link rel="stylesheet" href="css/workspace.css?v=92">
     <link rel="stylesheet" href="css/opening.css?v=89">
-    <link rel="stylesheet" href="css/stall.css?v=91">
+    <link rel="stylesheet" href="css/stall.css?v=92">
 </head>
 <body>
     <dialog id="market-opening" aria-labelledby="market-opening-title" aria-describedby="market-opening-description">
@@ -3559,7 +3559,16 @@
                     </button>
                 </div>
 
-                <button id="chapter-farm-hint" class="chapter-farm-hint" type="button" hidden></button>
+                <div id="chapter-farm-home">
+                    <button id="chapter-farm-hint" class="chapter-farm-hint" type="button" hidden>
+                        <img id="chapter-visit-portrait" alt="" width="42" height="42" hidden>
+                        <span class="chapter-visit-copy">
+                            <strong id="chapter-visit-title"></strong>
+                            <span id="chapter-visit-note" hidden></span>
+                        </span>
+                        <span id="chapter-visit-action" hidden>Read note <span aria-hidden="true">›</span></span>
+                    </button>
+                </div>
                 <div id="first-seed-ticket" hidden aria-label="First seed packet">
                     <img class="seed-ticket-icon" src="resources/items/produce/carrot.png" alt="" loading="lazy">
                     <div class="seed-ticket-copy">
@@ -3582,6 +3591,7 @@
                         <button id="tab-data" data-main-tab="data" class="tab-button" role="tab" aria-selected="false">Data</button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
+                    <div id="chapter-visit-desk"></div>
                     <div id="desktop-kitchen-host"></div>
                     <section id="current-action" aria-label="Current action">
                     <div id="market-insight-panel" class="market-insight-panel" aria-live="polite">
@@ -3724,7 +3734,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=91"></script>
+    <script type="module" src="main.js?v=92"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

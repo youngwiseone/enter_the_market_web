@@ -18,7 +18,7 @@ body:not(.workspace-disabled):not(.legacy-layout) .farm-scenery { order:1; heigh
 body:not(.workspace-disabled):not(.legacy-layout) #desktop-chat-log { order:2; height:22px; flex:none; }
 body:not(.workspace-disabled):not(.legacy-layout) #grid-container { order:3; width:var(--grid-size); height:var(--grid-size); flex:none; margin:0 auto; }
 body:not(.workspace-disabled):not(.legacy-layout) .farm-toolbar { order:4; flex:none; flex-wrap:wrap; height:auto; min-height:44px; }
-body:not(.workspace-disabled):not(.legacy-layout) #chapter-farm-hint { order:5; position:static; width:auto; height:auto; }
+body:not(.workspace-disabled):not(.legacy-layout) #chapter-farm-home { order:5; position:static; width:auto; height:auto; }
 body:not(.workspace-disabled):not(.legacy-layout) #farm-notes { order:6; position:static; display:flex; flex-wrap:wrap; width:auto; height:auto; margin-top:6px; }
 body:not(.workspace-disabled):not(.legacy-layout) #current-action { order:7; min-width:0; }
 body:not(.workspace-disabled):not(.legacy-layout) #market { height: min(720px, calc(100dvh - 190px)); min-height:400px; overflow:hidden; }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { getStableGridSize } from '../../ui/layout_controller.js';
+import { getStableGridSize, placeChapterFarmHint } from '../../ui/layout_controller.js';
 import { getBestReadySellSignal, getGuidancePayloadAction } from '../../controllers/guided_controller.js';
 import { getGestureHintContext } from '../../ui/farm_gesture_hints.js';
 import { getNextMeaningfulUnlock } from '../../ui/render_goals.js';
@@ -25,6 +25,31 @@ for (const [panelWidth, availableHeight] of [[470, 318], [585, 318], [600, 192],
   assert.equal(getStableGridSize({ ...context, receiptHeight: 180, selectionHeight: 100, guidanceHeight: 220 }), initial);
 }
 assert.equal(getStableGridSize({ panelWidth: 560, availableHeight: 510 }), 510);
+
+// The unaccepted visit occupies the side ledger on desktop rather than
+// pushing the farm out of view. The same control moves home on phone.
+{
+  let mobile = false, visit = true, numMoves = 0;
+  const hint = { hidden: false, classList: { contains: cls => cls === 'has-visit-note' && visit } };
+  const home = () => ({ append(el) { el.parentElement = this; numMoves++; } });
+  const farm = home(), desk = home();
+  const nodes = { 'chapter-farm-hint': hint, 'chapter-farm-home': farm, 'chapter-visit-desk': desk };
+  globalThis.document = { getElementById: id => nodes[id], body: { classList: { contains: cls => cls === 'mobile-layout' && mobile } } };
+  placeChapterFarmHint();
+  assert.equal(hint.parentElement, desk);
+  placeChapterFarmHint();
+  assert.equal(numMoves, 1);
+  mobile = true;
+  placeChapterFarmHint();
+  assert.equal(hint.parentElement, farm);
+  mobile = false;
+  placeChapterFarmHint();
+  assert.equal(hint.parentElement, desk);
+  visit = false;
+  placeChapterFarmHint();
+  assert.equal(hint.parentElement, farm);
+  delete globalThis.document;
+}
 
 const state = { activeFarmId: 2, player: { energy: 8 }, goalFlags: { selected: true, planted: true, harvest: true, rest: true, profit: true }, gridItems: [2, 6], items: [{ id: 2, name: 'Tomato' }, { id: 6, name: 'Onion' }], shop: [{ itemId: 2, price: 5, priceSum: 3, daysCount: 1 }, { itemId: 6, price: 2.2, priceSum: 2, daysCount: 1 }] };
 const snapshots = index => index === 1 ? { isProduce: true, sellNow: 4.4 } : null;

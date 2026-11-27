@@ -1,3 +1,12 @@
+export function placeChapterFarmHint() {
+  const hint = document.getElementById('chapter-farm-hint');
+  if (!hint) return;
+  const desktopVisit = !hint.hidden && hint.classList.contains('has-visit-note')
+    && !document.body.classList.contains('mobile-layout');
+  const home = document.getElementById(desktopVisit ? 'chapter-visit-desk' : 'chapter-farm-home');
+  if (home && home !== hint.parentElement) home.append(hint);
+}
+
 export function updateSidePanelScrollAreaAction() {
   ['market-table-container', 'store', 'goals-panel', 'messages-history-panel'].forEach((id) => {
     const panel = document.getElementById(id);
@@ -30,6 +39,7 @@ export function updateGridSizeAction(resizeFxCanvas, updateSidePanelScrollArea) 
     || window.matchMedia('(max-height: 500px)').matches
     || (isTouchViewport && window.matchMedia('(max-width: 1100px)').matches);
   body.classList.toggle('mobile-layout', mobile);
+  placeChapterFarmHint();
   const compactLandscape = false; // Narrow/short screens scroll; never add a recipe column.
   body.classList.toggle('compact-farm-layout', compactLandscape);
   root.style.setProperty('--bottom-bar-height', mobile ? '62px' : '0px');

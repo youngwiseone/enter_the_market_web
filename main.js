@@ -1,6 +1,6 @@
 import { showMarketOpening } from './js/ui/market_opening.js?v=88';
 import { createCookingController } from './js/controllers/cooking_controller.js?v=90';
-import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=91';
+import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=92';
 import { normalizeChapter } from './js/state/cooking_chapter.js';
 import { DISH_ITEMS } from './js/content/cooking_chapter.js';
 import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal } from './js/state/chapter_settlement.js';
@@ -272,7 +272,7 @@ import {
   installSidePanelScrollHandlersAction,
   updateGridSizeAction,
   updateSidePanelScrollAreaAction
-} from './js/ui/layout_controller.js?v=85';
+} from './js/ui/layout_controller.js?v=92';
 import {
   showTabDom,
   toggleMessagesPanelDom,
@@ -1957,7 +1957,7 @@ const chapterUi = createCookingChapterUi({ state, cooking: cookingController, co
   getCellSnapshot: getGridCellSellSnapshot, getGrowth: getPlantGrowthState,
   getSelection: () => selectedGridCellIndices.size ? [...selectedGridCellIndices].sort((a,b) => a-b) : selectedGridCellIndex === null ? [] : [selectedGridCellIndex],
   clearSelection: () => { selectedGridCellIndices.clear(); selectedGridCellIndex = null; },
-  renderAll, feedback: chapterFeedback, showGoals: () => showTab('goals'),
+  renderAll, feedback: chapterFeedback, isGoalsUnlocked: isGoalsTabUnlocked, showGoals: () => showTab('goals'),
   refreshPortrait: () => setChatProfile('player', 'neutral') });
 document.querySelector('#game-options > summary')?.addEventListener('click', () => renderGoals());
 document.getElementById('options-cosmetics')?.addEventListener('click', () => {

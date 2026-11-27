@@ -259,3 +259,48 @@ body[class] #farm-panel #guidance-objective-chip {
   background:var(--stall-control); color:var(--stall-paper);
   border:1px solid var(--stall-edge); border-radius:4px;
 }
+
+/* One paper note at the edge of the plot, not a blocking tutorial. */
+body[class] #chapter-farm-hint:not([hidden]) {
+  min-height:36px;
+  background:var(--stall-control);
+  color:var(--stall-paper);
+  border-color:var(--stall-edge);
+}
+body[class] #chapter-farm-hint.has-visit-note:not([hidden]) {
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  column-gap:9px;
+  align-items:center;
+  min-height:56px;
+  padding:5px 9px 5px 5px;
+  text-align:left;
+  color:#382919;
+  background:#f2dfb4;
+  border-color:#b58e57;
+  box-shadow:0 3px 0 #5b462d;
+}
+body[class] #chapter-farm-hint.has-visit-note:not([hidden]):hover { background:#fae9c5; }
+#chapter-visit-portrait {
+  object-fit:cover;
+  border:1px solid #a98354;
+  border-radius:6px;
+  image-rendering:pixelated;
+}
+.has-visit-note .chapter-visit-copy { display:grid; gap:2px; }
+.has-visit-note #chapter-visit-title { font:700 14px/1.15 Georgia,serif; }
+#chapter-visit-note { color:#5f4630; font-size:11px; font-weight:550; line-height:1.25; }
+#chapter-visit-action {
+  padding:5px 7px;
+  color:#4e3821;
+  border:1px solid #ae8551;
+  border-radius:6px;
+  background:#e8c789;
+  white-space:nowrap;
+}
+#chapter-visit-action span { margin-left:2px; }
+.chapter-first-dialogue { font-size:14px; }
+#chapter-farm-home:empty,#chapter-visit-desk:empty { display:none; }
+#chapter-farm-home:not(:has(#chapter-farm-hint:not([hidden]))) { display:none; }
+#chapter-farm-hint { box-sizing:border-box; width:100%; }
+#chapter-visit-desk #chapter-farm-hint { margin:7px 0; }

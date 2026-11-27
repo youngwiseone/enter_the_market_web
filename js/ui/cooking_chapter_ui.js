@@ -1,5 +1,6 @@
 import { RECIPES } from '../content/cooking_chapter.js';
 import { normalizeChapter, getChapterOffers, acceptRequest, declineRequest, claimPot, getDeliveryPreview, settleDelivery } from '../state/cooking_chapter.js';
+import { placeChapterFarmHint } from './layout_controller.js?v=92';
 import { resolveResourcePath } from '../content/resource_paths.js';
 import { compareCookingSale } from '../controllers/cooking_controller.js?v=90';
 
@@ -15,7 +16,7 @@ function button(text, click, disabled = false) {
   return el;
 }
 export function createCookingChapterUi(deps) {
-  const { state, cooking, getSelection, getCellSnapshot, commit, renderAll, feedback, showGoals, refreshPortrait } = deps;
+  const { state, cooking, getSelection, getCellSnapshot, commit, renderAll, feedback, showGoals, isGoalsUnlocked, refreshPortrait } = deps;
   const name = id => state.items.find(i => i.id === id)?.name || `Item ${id}`;
   let lastFeedback = '';
   function transact(fn) {
@@ -52,10 +53,16 @@ export function createCookingChapterUi(deps) {
       card.dataset.requestId = offer.id;
       const img = make('img', 'chapter-portrait'); img.src = resolveResourcePath(offer.portrait); img.alt = offer.speaker; img.width = 72; img.height = 72;
       const copy = make('div', 'chapter-card-copy');
-      copy.append(make('strong', '', `${offer.speaker} · ${offer.name || offer.title}`));
-      const dialogue = make('details', 'request-dialogue');
-      dialogue.append(make('summary', '', 'Read dialogue'), make('p', '', offer.dialogue));
-      copy.append(dialogue);
+      const title = make('strong', '', `${offer.speaker} · ${offer.name || offer.title}`);
+      copy.append(title);
+      if (offer.id === 'mina-experiment' && !c.active) {
+        title.tabIndex = -1;
+        copy.append(make('p', 'chapter-first-dialogue', offer.dialogue));
+      } else {
+        const dialogue = make('details', 'request-dialogue');
+        dialogue.append(make('summary', '', 'Read dialogue'), make('p', '', offer.dialogue));
+        copy.append(dialogue);
+      }
       if (offer.kind === 'gift') {
         copy.append(button('Receive Mina’s pot & recipes', () => transact(() => { const result = claimPot(state); if (result.ok) feedback('Mina’s pot is yours. Select Cook to open the prep board and make Garden Soup.', 'mina', 'excited'); })));
       } else {
@@ -228,13 +235,36 @@ export function createCookingChapterUi(deps) {
       const image = pot.querySelector('img');
       image.src = resolveResourcePath(`cooking/pot${!c.potUnlocked ? '_disabled' : state.activeTool === 'pot' ? '_selected' : ''}.png`);
     }
+    renderFarmVisit(c);
+  }
+  function renderFarmVisit(chapter) {
     const hint = document.getElementById('chapter-farm-hint');
-    if (hint) {
-      const offers = getChapterOffers(state);
-      hint.hidden = state.activeTool === 'pot' || !(c.active || offers.length || c.potUnlocked);
-      hint.textContent = c.active ? `${c.active.speaker} · ${requestText(c.active)} · Goals` : offers.length ? `${offers[0].speaker} is visiting · Goals` : 'Recipes & requests · Goals';
-      hint.onclick = showGoals;
+    if (!hint) return;
+    const next = chapter.active || getChapterOffers(state)[0];
+    const firstVisit = next?.id === 'mina-experiment' && !chapter.active;
+    hint.hidden = !isGoalsUnlocked() || state.activeTool === 'pot' || !(next || chapter.potUnlocked);
+    hint.classList.toggle('has-visit-note', firstVisit);
+    const portrait = document.getElementById('chapter-visit-portrait');
+    const title = document.getElementById('chapter-visit-title');
+    const note = document.getElementById('chapter-visit-note');
+    const action = document.getElementById('chapter-visit-action');
+    portrait.hidden = note.hidden = action.hidden = !firstVisit;
+    if (firstVisit) {
+      portrait.src = resolveResourcePath(next.portrait);
+      title.textContent = 'A note from Mina';
+      note.textContent = 'Three ordinary carrots, please.';
+    } else {
+      title.textContent = chapter.active ? `${next.speaker} · ${requestText(next)} · Goals`
+        : next ? `${next.speaker} is visiting · Goals` : 'Recipes & requests · Goals';
     }
+    placeChapterFarmHint();
+    hint.onclick = () => {
+      showGoals();
+      if (!firstVisit || document.body.dataset.activeMainTab !== 'goals') return;
+      requestAnimationFrame(() => {
+        document.querySelector('[data-request-id="mina-experiment"] .chapter-card-copy > strong')?.focus();
+      });
+    };
   }
   function note(text) { lastFeedback = text; }
   return { render, note };
