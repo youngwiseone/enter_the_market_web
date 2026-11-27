@@ -1,15 +1,27 @@
 import { isProduceItem } from '../content/item_types.js';
 
+const TOMATO_STARTER_GOAL = 'tomato-first-harvest';
+
+function getFirstSaleSeedReward(state) {
+  if (state.goalsClaimed?.[TOMATO_STARTER_GOAL]) return null;
+  const goal = state.goals?.find(goal => goal?.id === TOMATO_STARTER_GOAL);
+  const reward = goal?.reward?.freePurchases;
+  if (!goal || goal.enabled === false || !Number.isInteger(reward?.count) || reward.count < 1) return null;
+  return reward;
+}
+
 export function getSeedDrawerChoices({ state, isShopItemUnlocked, getFreePurchaseCount }) {
   const opening = state.player?.openingTrade;
   if (opening && !opening.lastSale && !opening.completed) return [];
   const names = new Map((state.items || []).filter(isProduceItem).map(item => [item.id, item]));
+  const firstSaleReward = getFirstSaleSeedReward(state);
   return (state.shop || []).flatMap(entry => {
     const item = names.get(entry.itemId);
     const price = Number(entry.price);
     if (!item || !isShopItemUnlocked(item.id) || !Number.isFinite(price) || price < 0) return [];
-    const free = getFreePurchaseCount(item.id) > 0;
-    return [{ id: item.id, name: item.name, price, free, item }];
+    const freeCount = getFreePurchaseCount(item.id);
+    const firstSaleFreeCount = firstSaleReward?.itemId === item.id ? firstSaleReward.count : 0;
+    return [{ id: item.id, name: item.name, price, freeCount, firstSaleFreeCount, item }];
   }).sort((a,b) => a.name.localeCompare(b.name));
 }
 
@@ -25,7 +37,7 @@ export function renderSeedDrawer(deps) {
   summary.setAttribute('aria-disabled', String(!!blocked));
   summary.onclick = blocked ? event => event.preventDefault() : null;
   if (drawer.hidden || blocked) drawer.open = false;
-  const signature = JSON.stringify([selectedItemId, choices.map(({ id, price, free }) => [id,price,free])]);
+  const signature = JSON.stringify([selectedItemId, choices.map(({ id, price, freeCount, firstSaleFreeCount }) => [id, price, freeCount, firstSaleFreeCount])]);
   if (options.dataset.choices !== signature) {
     options.dataset.choices = signature;
     options.replaceChildren();
@@ -40,8 +52,15 @@ export function renderSeedDrawer(deps) {
       const name = document.createElement('span');
       name.textContent = choice.name;
       const price = document.createElement('strong');
-      price.textContent = choice.free ? 'Free' : `$${choice.price.toFixed(2)}`;
+      price.textContent = choice.freeCount > 0 ? `${choice.freeCount} free` : `$${choice.price.toFixed(2)}`;
       button.append(icon, name, price);
+      if (choice.firstSaleFreeCount) {
+        const reward = document.createElement('span');
+        reward.className = 'seed-drawer-reward';
+        const count = choice.firstSaleFreeCount;
+        reward.textContent = `First sale earns ${count} free seed${count === 1 ? '' : 's'}`;
+        button.append(reward);
+      }
       button.addEventListener('click', () => {
         if (drawer.hidden || state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return;
         drawer.open = false;

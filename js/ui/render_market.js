@@ -1,4 +1,4 @@
-import { renderSeedDrawer } from './seed_drawer.js?v=96';
+import { renderSeedDrawer } from './seed_drawer.js?v=97';
 import { getFieldCropState, getFieldReadout } from './field_readout.js?v=94';
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
