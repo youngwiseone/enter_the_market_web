@@ -1,3 +1,4 @@
+import { createFarmSound, FARM_SOUND_KEY } from './js/fx/farm_sound.js?v=95';
 import { getWateringCanTilesPerEnergy } from './js/controllers/watering_infrastructure.js';
 import { showMarketOpening } from './js/ui/market_opening.js?v=88';
 import { createCookingController } from './js/controllers/cooking_controller.js?v=90';
@@ -1468,6 +1469,7 @@ async function sellSelectedGridItem(sellButtonElement = null) {
 
 async function sellBulkSelectedGridItems(sellButtonElement = null) {
   if (getIsSellBatchInFlight()) return;
+  const itemsSoldBefore = state.totalItemsSold;
   await sellBulkSelectedGridItemsAction({
     state,
     getBulkSelectedGridInsightData,
@@ -1500,6 +1502,30 @@ async function sellBulkSelectedGridItems(sellButtonElement = null) {
     setIsSellBatchInFlight,
     sellButtonElement
   });
+  if (state.totalItemsSold > itemsSoldBefore) farmSound.play('sale');
+}
+
+const AudioEngine = window.AudioContext || window.webkitAudioContext;
+const farmSound = createFarmSound({
+  makeContext: AudioEngine ? () => new AudioEngine() : null,
+  readPreference: () => localStorage.getItem(FARM_SOUND_KEY),
+  writePreference: value => localStorage.setItem(FARM_SOUND_KEY, value)
+});
+const soundToggle = document.getElementById('farm-sounds');
+function reflectFarmSound() {
+  soundToggle.setAttribute('aria-pressed', String(farmSound.isEnabled()));
+  soundToggle.textContent = `Farm sounds: ${farmSound.isEnabled() ? 'On' : 'Off'}`;
+}
+if (AudioEngine && soundToggle) {
+  soundToggle.hidden = false;
+  reflectFarmSound();
+  soundToggle.addEventListener('click', () => {
+    farmSound.setEnabled(!farmSound.isEnabled());
+    reflectFarmSound();
+  });
+  // Saved opt-in remains silent until the next intentional interaction.
+  document.addEventListener('pointerdown', farmSound.activate, { capture: true });
+  document.addEventListener('keydown', farmSound.activate, { capture: true });
 }
 
 function clearCurrentInfoSelection() {
@@ -1892,7 +1918,10 @@ function mineGridTile(index) {
 } 
 
 function waterGridTile(index) {
-  return gameplayRuntimeController.waterGridTile(index);
+  const wasWatered = state.gridWateredDay?.[index] === state.player.day;
+  const result = gameplayRuntimeController.waterGridTile(index);
+  if (!wasWatered && state.gridWateredDay?.[index] === state.player.day) farmSound.play('water');
+  return result;
 } 
 
 /**
@@ -2200,11 +2229,16 @@ function notifyDailyRollClosed() {
 }
 
 function purchaseAndPlaceSelected(cellIndex) {
+  const wasEmpty = !state.gridItems?.[cellIndex];
   gameplayRuntimeController.purchaseAndPlaceSelected(cellIndex);
+  const item = state.items.find(it => it.id === state.gridItems?.[cellIndex]);
+  if (wasEmpty && item?.type === 'produce') farmSound.play('plant');
 }
 
 async function harvestPlant(cellIndex, sellButtonElement = null) {
+  const itemsSoldBefore = state.totalItemsSold;
   await gameplayRuntimeController.harvestPlant(cellIndex, sellButtonElement);
+  if (state.totalItemsSold > itemsSoldBefore) farmSound.play('sale');
 }
 
 /**
