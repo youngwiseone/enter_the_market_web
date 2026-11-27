@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { getFieldCropState, getFieldReadout } from '../../ui/field_readout.js';
+assert.equal(getFieldCropState({ isGrown: true }, true), 'ready');
+assert.equal(getFieldCropState({ isGrown: false }, true), 'wet');
+assert.equal(getFieldCropState({ isGrown: false }, false), 'dry');
+const field = { ready: 5, wet: 2, dry: 3, open: 4, refill: 1 };
+assert.equal(getFieldReadout('glove', field), '5 ready · 3 need water');
+assert.equal(getFieldReadout('watering', field), '3 need water · 1 to refill · 2 watered');
+assert.equal(getFieldReadout('glove', field, true), 'Market prices on');
+assert.equal(getFieldReadout('plant', field), '4 open to plant');
+assert.equal(getFieldReadout('watering', { ready: 5, wet: 0, dry: 0, open: 0 }), 'No crops to water');
+console.log('Field readout distinguishes ripe, dry, watered and refillable plots.');

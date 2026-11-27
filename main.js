@@ -1,3 +1,4 @@
+import { getWateringCanTilesPerEnergy } from './js/controllers/watering_infrastructure.js';
 import { showMarketOpening } from './js/ui/market_opening.js?v=88';
 import { createCookingController } from './js/controllers/cooking_controller.js?v=90';
 import { createCookingChapterUi } from './js/ui/cooking_chapter_ui.js?v=93';
@@ -264,8 +265,8 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=89';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=93';
+import { renderMarketAction } from './js/ui/render_market.js?v=94';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=94';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
 import {
@@ -1515,6 +1516,20 @@ function renderSelectedItemInsight() {
     clearCurrentInfoSelection,
     sellBulkSelectedGridItems,
     sellSelectedGridItem,
+    getWaterAction: index => {
+      if (!isToolUnlocked(TOOL_WATERING) || state.activeTool !== TOOL_GLOVE || selectedShopItemId) return null;
+      const cost = 1 / getWateringCanTilesPerEnergy(state);
+      const day = state.player.day, farm = state.activeFarmId, instance = state.gridPlacedMeta?.[index]?.instanceId;
+      return {
+        label: cost === 1 ? 'Water · 1 energy' : 'Water',
+        disabled: !!(state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress),
+        run: () => {
+          if (day !== state.player.day || farm !== state.activeFarmId || selectedGridCellIndex !== index
+            || instance !== state.gridPlacedMeta?.[index]?.instanceId || state.activeTool !== TOOL_GLOVE) return;
+          waterGridTile(index);
+        }
+      };
+    },
     updateGridSize
   });
   chapterUi.render();

@@ -163,3 +163,47 @@ body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel #cur
 body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #chapter-farm-home { order:6; }
 body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-notes { order:7; }
 body:not(.workspace-disabled):not(.legacy-layout).mobile-layout .trade-details > summary { min-height:38px; }
+
+/* One status line; tool targets are printed on the plots, not in a help card. */
+#farm-title::after { content:none; }
+#field-readout {
+  font-family:Tahoma,Verdana,Arial,sans-serif !important;
+  font-size:12px; line-height:1.2; font-weight:normal; text-align:right;
+}
+#grid[data-field-mode="watering"] .grid-cell[data-field-crop="dry"],
+#grid[data-field-mode="watering"] .grid-cell.field-refill {
+  outline:2px dashed #a9eaff; outline-offset:-3px;
+}
+#grid[data-field-mode="watering"] .grid-cell[data-field-crop="dry"] .crop-state,
+#grid[data-field-mode="watering"] .grid-cell[data-field-crop="wet"] .crop-state { color:#142e48; background:#c2e9fa; }
+#grid[data-field-mode="watering"] .crop-state.needs-water::before {
+  content:'↓'; font:700 12px/1 Arial,sans-serif; color:#164f76;
+}
+#grid[data-field-mode="watering"] .crop-state.is-watered::before { background:#23658b; }
+#grid[data-field-mode="watering"] .grid-cell[data-field-crop="ready"] > img:not(.grid-overlay) { opacity:.78; }
+#grid[data-field-mode="pickaxe"] .grid-cell:not(.revealed) { cursor:crosshair; }
+#grid[data-field-mode="plant"] .grid-cell.plant-target { outline-color:#f5dba5; }
+.market-insight-panel .trade-action > .field-water-action {
+  color:var(--header-fg,#fff); background:var(--header-bg,#202f70);
+}
+@media (forced-colors:active) {
+  #grid[data-field-mode="watering"] .grid-cell:is([data-field-crop="dry"],.field-refill) { outline-color:Highlight; }
+}
+
+/* Small meadow details stay behind the game pieces and disappear when cleared. */
+#grid .grid-cell:nth-child(7n + 5):not(.revealed)::before,
+#grid .grid-cell:nth-child(17n + 8):not(.revealed)::before {
+  content:''; position:absolute; left:63%; top:35%; width:2px; height:2px;
+  background:#eee7ad; box-shadow:-2px 2px #eee7ad,2px 2px #eee7ad,0 4px #5d794a;
+  pointer-events:none;
+}
+#grid[data-field-mode="glove"] .grid-cell[data-field-crop="ready"] .crop-state {
+  color:#372c1c; background:#f4d78b; opacity:1;
+}
+
+.market-insight-panel .field-water-row {
+  display:grid; align-items:center; gap:6px;
+  grid-template-columns:minmax(0,1fr) auto;
+}
+.market-insight-panel .field-water-row .trade-growth { margin:0; font-size:12px; }
+.market-insight-panel .field-water-row .field-water-action { padding:4px 8px; }

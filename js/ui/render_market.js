@@ -1,3 +1,4 @@
+import { getFieldCropState, getFieldReadout } from './field_readout.js?v=94';
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
 import { getRefillableTankState } from '../controllers/watering_infrastructure.js';
@@ -553,7 +554,7 @@ export function renderMarketAction(deps) {
 
   const tableContainer = document.getElementById('market-table');
   const gridEl = document.getElementById('grid');
-  const farmTitleEl = document.getElementById('farm-title');
+  const farmTitleEl = document.getElementById('farm-name');
   const hadStarterPlotFocus = document.activeElement?.classList?.contains('starter-seed-plot');
 
   if (farmTitleEl) {
@@ -891,6 +892,9 @@ export function renderMarketAction(deps) {
     }
   }
 
+  const fieldMode = isPlantingSeed ? 'plant' : state.activeTool || 'glove';
+  const field = { ready: 0, wet: 0, dry: 0, open: 0, refill: 0 };
+  if (gridEl) gridEl.dataset.fieldMode = fieldMode;
   for (let i = 0; i < GRID_CELL_COUNT; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
@@ -905,6 +909,7 @@ export function renderMarketAction(deps) {
     const unlocked = Array.isArray(state.gridUnlocked) ? state.gridUnlocked[i] : false;
     if (unlocked) {
       cell.classList.add('revealed');
+      if (!state.gridItems?.[i]) field.open++;
       if (isPlantingSeed && !state.gridItems?.[i]) cell.classList.add('plant-target');
       if (starterSelected && i === starterSoil) {
         const ghost = document.createElement('img');
@@ -953,8 +958,12 @@ export function renderMarketAction(deps) {
           const status = document.createElement('span');
           status.className = 'crop-state';
           const watered = isPlantWateredForDay(state, i);
+          const cropState = getFieldCropState(growth, watered);
+          cell.dataset.fieldCrop = cropState;
+          field[cropState]++;
           status.textContent = growth.isGrown ? '✓' : `${growth.daysLeft}d`;
-          if (watered && !growth.isGrown) status.classList.add('is-watered');
+          if (cropState === 'wet') status.classList.add('is-watered');
+          if (cropState === 'dry') status.classList.add('needs-water');
           const moistureLabel = state.gridWateredDay?.[i] === state.player.day ? 'watered today' : 'retained moisture today';
           status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left; ${watered ? moistureLabel : 'needs water today'}`;
           status.setAttribute('aria-label', status.title);
@@ -1009,7 +1018,16 @@ export function renderMarketAction(deps) {
             ? `Sell for $${resale.toFixed(2)} | Tank days ${Number(tankState.current || 0)}/${Number(tankState.capacity || 0)}`
             : `Sell for $${resale.toFixed(2)}`;
         }
-        if (gridPriceBadgeDisplayState.visible && isProduceGridItem && growth.isGrown) {
+        if (fieldMode === 'watering' && !isProduceGridItem) {
+          const tank = getRefillableTankState(it, state.gridPlacedMeta?.[i]);
+          if (tank && tank.current < tank.capacity) {
+            cell.classList.add('field-refill');
+            field.refill++;
+          }
+        }
+        const explicitlySelected = selectedGridCellIndices.has(i) || getSelectedGridCellIndex() === i;
+        if (gridPriceBadgeDisplayState.visible && isProduceGridItem && growth.isGrown
+          && (alwaysShowGridItemInfo || (fieldMode === 'glove' && explicitlySelected))) {
           const priceDeltaBadge = createGridPriceDeltaBadge(gridMarketPercentDelta, !!gridPriceBadgeDisplayState.fading);
           if (priceDeltaBadge) {
             cell.appendChild(priceDeltaBadge);
@@ -1076,6 +1094,9 @@ export function renderMarketAction(deps) {
       cell.focus({ preventScroll: true });
     }
   }
+  const readout = document.getElementById('field-readout');
+  const nextReadout = getFieldReadout(fieldMode, field, alwaysShowGridItemInfo);
+  if (readout && readout.textContent !== nextReadout) readout.textContent = nextReadout;
   if (gridEl && String(state.weather?.id || '') === 'rain') {
     const rainOverlay = document.createElement('div');
     rainOverlay.className = 'weather-rain-overlay';

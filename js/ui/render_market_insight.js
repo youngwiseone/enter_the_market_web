@@ -52,6 +52,7 @@ export function renderSelectedItemInsightAction(deps) {
     clearShopSelection,
     sellBulkSelectedGridItems,
     sellSelectedGridItem,
+    getWaterAction,
     updateGridSize,
     isSellBatchInFlight = false
   } = deps;
@@ -364,7 +365,18 @@ export function renderSelectedItemInsightAction(deps) {
         const left = gridInsight.growth.daysLeft;
         const today = gridInsight.wateredToday ? 'Watered today' : gridInsight.waterRetainedToday ? 'Moisture retained' : 'Needs water today';
         condition.textContent = `${today} · ${left} watered day${left === 1 ? '' : 's'} to grow`;
-        panel.appendChild(condition);
+        const water = !gridInsight.wateredToday && !gridInsight.waterRetainedToday && getWaterAction?.(gridInsight.cellIndex);
+        if (water) {
+          const waterButton = document.createElement('button');
+          waterButton.className = 'button field-water-action';
+          waterButton.type = 'button';
+          waterButton.textContent = water.label;
+          waterButton.disabled = water.disabled;
+          waterButton.addEventListener('click', water.run);
+          actionRow.classList.add('field-water-row');
+          actionRow.append(condition, waterButton);
+          panel.appendChild(actionRow);
+        } else panel.appendChild(condition);
       } else {
         actionRow.appendChild(sellButton);
         panel.appendChild(actionRow);
@@ -617,7 +629,7 @@ export function renderSelectedItemInsightAction(deps) {
     const tool = document.querySelector?.('.farm-toolbar [data-tool].active');
     if (tool && !shopInsight && !gridInsight && !bulkInsight?.count && panel === primary) {
       const kind = tool.getAttribute('data-tool');
-      const instruction = kind === 'watering' ? 'Tap a growing crop to water it.' : kind === 'pickaxe' ? 'Tap grass to clear a plot.' : '';
+      const instruction = kind === 'watering' ? 'Tap a marked plot to water it.' : kind === 'pickaxe' ? 'Tap grass to clear a plot.' : '';
       if (instruction) {
         const active = document.createElement('p');
         active.className = 'active-tool-summary';
