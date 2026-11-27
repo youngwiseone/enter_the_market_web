@@ -1,0 +1,261 @@
+/* First Light art direction, extended to the playable farm.
+   Theme IDs, economy, grid sizes and art assets are unchanged. */
+body[class] {
+  --stall-paper:#fcf1d5;
+  --stall-muted:#d3cbb1;
+  --stall-gold:#efc278;
+  --stall-gold-light:#f7d695;
+  --stall-ink:#25251a;
+  --stall-panel:#303c28;
+  --stall-surface:#23301e;
+  --stall-control:#4d5935;
+  --stall-edge:#77815a;
+  --stall-soil:#664732;
+  --stall-seam:#352a23;
+  --stall-rim:#874f35;
+  font-family:system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:#17251f;
+  color:var(--stall-paper);
+}
+body[class*="theme-"]:not(.theme-default) {
+  --stall-panel:color-mix(in srgb,#303c28 84%,var(--header-bg,#303c28));
+  --stall-surface:color-mix(in srgb,#23301e 87%,var(--header-bg,#303c28));
+  --stall-control:color-mix(in srgb,#4d5935 79%,var(--theme-control-bg,#4d5935));
+  --stall-edge:color-mix(in srgb,#68785b 70%,var(--theme-control-border-hi,#68785b));
+}
+body.theme-default, body.default:not([class*="theme-"]) {
+  --theme-surface:#ece6d2;
+  --theme-text:#25251a;
+  --theme-text-muted:#535848;
+  --theme-border:#a09c83;
+  --theme-accent:#586c44;
+  --theme-control-bg:#e7dfc8;
+  --theme-control-text:#27281e;
+  --theme-control-active-bg:#c8d3ad;
+  --theme-control-active-text:#252c20;
+  --theme-control-border-hi:#f6f0e1;
+  --theme-control-border-lo:#8b9076;
+  --theme-progress-track:#17271e;
+  --theme-progress-fill:#c8d48e;
+  --theme-table-header-bg:#354837;
+  --theme-table-header-text:#fcf1d5;
+  --theme-table-border:#b1ab8f;
+  --theme-table-even:#e6e3d0;
+  --theme-table-odd:#f4eedc;
+  --theme-table-text:#27281e;
+  --theme-highlight-row:#ece1ae;
+  --theme-subtle-bg:#e0e4cf;
+  --theme-subtle-border:#a7ad8d;
+  --header-bg:#26382c;
+  --header-fg:#fcf1d5;
+  --secondary-color:#344b36;
+  background:#17251f;
+}
+body:not(.mobile-layout) {
+  background-image:linear-gradient(180deg,#15261fc4 0%,#17251f42 48%,#17251fa8 100%),url('../resources/ui/desktop-meadow.webp');
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+}
+body[class][data-weather='rain']:not(.mobile-layout) {
+  background-image:linear-gradient(#15272091,#152720ad),url('../resources/ui/desktop-lake-rain.webp');
+}
+body.mobile-layout[class] {
+  background-image:linear-gradient(180deg,#17251f12,#17251f 206px),url('../resources/ui/desktop-meadow.webp');
+  background-size:100% 212px,100% auto; background-repeat:no-repeat;
+  background-position:center top;
+}
+body.mobile-layout[class][data-weather='rain'] {
+  background-image:linear-gradient(180deg,#17251f20,#17251f 206px),url('../resources/ui/desktop-lake-rain.webp');
+}
+body.mobile-layout[class] #desktop-titlebar { background:#1c291bdc; }
+body.mobile-layout[class] #hud-profile-panel { background:color-mix(in srgb,var(--stall-panel) 91%,transparent); }
+#desktop-titlebar {
+  background:var(--stall-surface);
+  border:1px solid var(--stall-edge);
+  border-radius:10px;
+  color:var(--stall-paper);
+  box-shadow:none;
+  padding-inline:11px;
+}
+.desktop-brand { font-weight:750; letter-spacing:-.01em; }
+#game-options > summary { color:var(--stall-muted); }
+#game-options[open] > .options-popup { border-radius:9px; border:1px solid var(--theme-border); }
+body[class] .panel { border:1px solid var(--theme-border); border-radius:9px; box-shadow:0 3px 8px #17201729; }
+body.theme-default .panel { background-color:var(--theme-surface); color:var(--theme-text); border-color:var(--theme-border); }
+body[class] :is(#farm-panel,#hud-profile-panel) { background:var(--stall-panel); color:var(--stall-paper); border:1px solid var(--stall-edge); }
+body[class] #hud-top-stats { background:none; color:var(--stall-paper); border:0; box-shadow:none; }
+#hud-cash { color:var(--stall-gold-light); font-family:inherit; }
+#hud-top-stats > span + span { border-left:1px solid #d2d9be46; }
+.hud-profile-avatar { border:1px solid var(--stall-edge); border-radius:8px; box-shadow:none; }
+body[class] #hud-profile-panel :is(.profile-energy-info,.player-level-info,.profile-goals-info) { background:none; border:0; color:var(--stall-paper); }
+#hud-profile-panel :is(.desktop-roll-indicator,.mobile-roll-indicator,.player-xp-text,.profile-section-label,.player-level-label) { color:var(--stall-muted); }
+#hud-profile-panel #energy-bar { background:#182820; box-shadow:none; border:0; border-radius:7px; overflow:hidden; }
+#hud-profile-panel #energy-bar .energy-segment { background:#263526; box-shadow:none; }
+#hud-profile-panel #energy-bar :is(.energy-segment.filled,.energy-bar-fill) { background:#69814b; box-shadow:none; }
+#hud-profile-panel .energy-compact-label { color:#fff0cb; font-weight:750; }
+#hud-profile-panel .player-xp-bar { background:#17291f; border:0; border-radius:5px; overflow:hidden; }
+#hud-profile-panel #player-xp-fill { background:#d4b474; }
+body[class] :is(#desktop-chat-log,#mobile-chat-log) { background:#192c238f; color:var(--stall-muted); border:0; box-shadow:none; border-radius:5px; }
+#farm-title { background:none; color:var(--stall-paper); border:0; box-shadow:none; font-family:inherit; font-size:15px; font-weight:760; padding-inline:3px; }
+#farm-title::after { color:var(--stall-muted); font-family:inherit; font-size:10px; }
+.farm-scenery { border:1px solid var(--stall-edge); border-radius:6px; box-shadow:none; overflow:hidden; }
+.farm-scenery::after { border:0; border-radius:3px; background:#17251edb; }
+#grid-container { border:2px solid #241e18; border-radius:7px; box-shadow:0 0 0 1px #a0775280,0 4px #161f16b8; }
+#grid { border:0; background:#241e18; border-radius:5px; }
+#grid .grid-cell {
+  background:#4c573c;
+  border:1px solid #283529;
+  box-shadow:inset 0 1px #84916b39;
+}
+#grid .grid-cell.revealed {
+  background:repeating-linear-gradient(180deg,#7652370b 0px,#7652370b 5px,#c38b5612 6px,#7652370b 7px),var(--stall-soil);
+  border:1px solid var(--stall-seam);
+  box-shadow:inset 0 1px #b8835349;
+}
+#grid.farm-two .grid-cell.revealed { background-color:#694336; }
+#grid .grid-cell .rarity-frame { inset:1px; border-width:1px; border-radius:3px; }
+#grid .grid-cell.rarity-common .rarity-frame { display:none; }
+#grid .grid-cell.rarity-uncommon .rarity-frame { border-color:#b1bb9488; }
+#grid .grid-cell:is(.rarity-rare,.rarity-mythic) .rarity-frame { border-width:2px; }
+#grid .grid-cell.revealed:has(.crop-state.is-watered) { background-color:#483d30; }
+#grid .grid-cell:is(.grid-cell-selected,.grid-cell-bulk-selected,.cooking-selected) { outline:2px solid var(--stall-gold-light); outline-offset:-3px; box-shadow:inset 0 0 0 3px #211a14; }
+#grid .grid-cell.request-eligible:not(.cooking-selected)::after { border-color:#d6dc9bbd; }
+#grid .crop-state { color:#fff6d8; background:#26382e; border:0; border-radius:4px; box-shadow:none; font-family:inherit; }
+#grid .crop-state[title="Ready to sell or hold"] { opacity:0; }
+#grid .grid-cell:is(:hover,:focus-visible,.grid-cell-selected,.grid-cell-bulk-selected) .crop-state[title="Ready to sell or hold"] { opacity:1; }
+
+/* One tactile control style; olive for tools, honey for committing an action. */
+body[class] :is(button,.button,.tab-button,.tool-button) {
+  font-family:inherit;
+  font-weight:670;
+  border:1px solid var(--theme-border);
+  border-radius:8px;
+  box-shadow:0 2px 0 #20231555;
+  text-shadow:none;
+}
+body[class] :is(button,.button,.tab-button,.tool-button):not(:disabled):active { box-shadow:inset 0 2px 1px #151f2543; }
+body[class] :is(button,summary,a,select):focus-visible { outline:2px solid #e5a44b; outline-offset:2px; }
+body[class] .farm-toolbar { gap:5px; }
+body[class] .tool-button {
+  background:var(--stall-control);
+  color:var(--stall-paper);
+  border-color:var(--stall-edge);
+  box-shadow:0 3px 0 #18271e;
+  gap:4px;
+}
+body[class] .tool-button.active {
+  background:var(--stall-gold);
+  color:var(--stall-ink);
+  outline:none;
+  border-color:#ba8845;
+  box-shadow:0 3px 0 #654827;
+}
+body[class] .tool-name { font-family:inherit; font-size:11px; font-weight:720; }
+body[class] .tool-key-label { color:inherit; }
+body[class] #mobile-bottom-tabs {
+  background:var(--stall-surface); border:1px solid var(--stall-edge);
+  border-radius:10px; box-shadow:0 4px 12px #17201780; padding:2px; gap:2px;
+}
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button { color:var(--stall-muted); background:none; border:1px solid transparent; box-shadow:none; border-radius:7px; min-height:42px; }
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button.active { background:var(--stall-control); color:var(--stall-paper); border-color:var(--stall-edge); }
+body[class] #next-day { background:var(--stall-gold); color:var(--stall-ink); border:1px solid #9d7140; box-shadow:0 3px 0 #694629; border-radius:9px; }
+body[class] #next-day::before { color:var(--stall-ink); margin-right:5px; }
+body[class] #farm-action-button:not(:disabled) { color:var(--stall-ink); background:var(--stall-gold); }
+
+body[class] #farm-panel #cooking-context {
+  background:#523623;
+  border:1px solid #927052;
+  border-radius:8px;
+  box-shadow:0 3px 0 #1e2017;
+}
+.kitchen-top select { appearance:auto; padding-inline:6px; border:1px solid #b59b65; background:#fbebcb; color:#2c231b; border-radius:7px; box-shadow:none; font:600 12px system-ui,sans-serif; }
+.kitchen-title strong { font-weight:740; letter-spacing:-.015em; }
+body[class] .kitchen-slot { background:#d7c29c; border-color:#a98c60; border-radius:6px; min-width:0; }
+body[class] .kitchen-slot.is-filled { background:#fae8c3; border-color:#d8b576; }
+.kitchen-value { background:#f5e1b8; color:#372719; border:1px solid #c39d69; border-radius:6px; }
+body[class] #kitchen-clear { background:#4b4537; border-color:#8b7659; color:#fcf1d5; }
+body[class] #kitchen-cook { background:#705d41; border-color:#8b7659; color:#fcf1d5; }
+body[class] #kitchen-cook:not(:disabled) { background:var(--stall-gold); border-color:#be8d47; color:var(--stall-ink); }
+body[class] #farm-notes { color:var(--stall-paper); }
+body[class] #farm-notes :is(summary,#guidance-objective-text) { color:var(--stall-paper); }
+body.mobile-layout[class] .tool-button img { width:21px; height:21px; }
+@media (max-width:390px) {
+  body.mobile-layout[class] .farm-toolbar:not([hidden]) .tool-button { min-width:50px; flex-basis:50px; padding-inline:3px; }
+}
+
+#desktop-titlebar,.kitchen-title,.kitchen-slot,.kitchen-value,.kitchen-actions .chapter-button,
+body[class] .tool-name,body.mobile-layout[class] #mobile-bottom-tabs .tab-button {
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button {
+  position:relative; display:flex; flex-direction:column; gap:2px;
+}
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button::before {
+  content:""; width:15px; height:15px; background:currentColor;
+  mask:var(--stall-nav-icon) center / contain no-repeat;
+}
+#tab-farm-mobile { --stall-nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linecap='round' d='M10 17v-6M10 11C5 11 3 9 3 5c4 0 7 2 7 6ZM10 11c0-5 3-7 7-7 0 4-2 7-7 7ZM5 17h10'/%3E%3C/svg%3E"); }
+#tab-market-mobile { --stall-nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' d='M2 8l2-4h12l2 4v3H2zM4 11v6h12v-6M8 4l-1 7M12 4l1 7'/%3E%3C/svg%3E"); }
+#tab-goals-mobile { --stall-nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linecap='round' d='M5 3h10v14H5zM7.5 10l1.7 2 3.3-4'/%3E%3C/svg%3E"); }
+#tab-data-mobile { --stall-nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linecap='round' d='M3 17h14M6 14V9m4 5V6m4 8V3'/%3E%3C/svg%3E"); }
+body.mobile-layout[class] #mobile-bottom-tabs .tab-badge { position:absolute; inset:3px 2px auto auto; }
+body.mobile-layout[class] #farm-panel #cooking-context { margin-bottom:2px; }
+.kitchen-slot.is-filled::after { content:""; display:block; width:5px; height:9px; border:solid #61743c; border-width:0 2px 2px 0; transform:rotate(45deg); grid-column:3; grid-row:1 / span 2; margin-right:3px; }
+.kitchen-slot { grid-template-columns:22px minmax(0,1fr) 10px; }
+
+/* A quiet market ledger beside the field, not another bright window. */
+body[class] :is(#market-header,#market-table-container,#goals-panel,#data-panel) {
+  --theme-surface:var(--stall-surface);
+  --theme-text:var(--stall-paper);
+  --theme-text-muted:var(--stall-muted);
+  --theme-border:var(--stall-edge);
+  --theme-control-bg:var(--stall-control);
+  --theme-control-text:var(--stall-paper);
+  --theme-control-active-bg:#69804c;
+  --theme-control-active-text:#fff1cc;
+  --theme-subtle-bg:#3d4732;
+  --theme-subtle-border:#6a7654;
+  --theme-table-header-bg:var(--stall-control);
+  --theme-table-header-text:var(--stall-paper);
+  --theme-table-even:color-mix(in srgb,var(--stall-panel) 80%,#1a291d);
+  --theme-table-odd:color-mix(in srgb,var(--stall-panel) 91%,#4b5131);
+  --theme-table-border:#56634a;
+  --theme-table-text:var(--stall-paper);
+  --theme-highlight-row:#566645;
+  --theme-accent:#c7d49f;
+  --header-bg:var(--stall-panel);
+  --header-fg:var(--stall-paper);
+  --secondary-color:var(--stall-panel);
+  background:var(--stall-surface);
+  color:var(--stall-paper);
+  border-color:var(--stall-edge);
+}
+body[class] :is(#market-header,#market-table-container,#goals-panel,#data-panel) .tab-button {
+  background:var(--stall-control); color:var(--stall-paper); border:1px solid var(--stall-edge);
+}
+body[class] :is(#market-header,#market-table-container,#goals-panel,#data-panel) .tab-button.active {
+  background:var(--stall-gold); color:var(--stall-ink); border-color:#b88448;
+}
+body[class] #market-table .zebra-table { border-collapse:separate; border-spacing:0; }
+body[class] #market-table .zebra-table :is(td,th) { border-width:0 0 1px; border-color:var(--theme-table-border); }
+body[class] #market-table .zebra-table th { font-family:system-ui,sans-serif; }
+#farm-kitchen-host { order:5; width:100%; }
+#farm-kitchen-host:empty,#desktop-kitchen-host:empty { display:none; }
+body[class] #desktop-kitchen-host #cooking-context {
+  --kitchen-ink:#261c17; --kitchen-paper:#fff0cb;
+  display:grid; gap:8px; width:100%; height:auto; max-height:none; overflow:visible;
+  box-sizing:border-box; margin:7px 0; padding:9px;
+  background:#523623; border:1px solid #927052; border-radius:8px;
+  box-shadow:0 3px 0 #1e2017;
+}
+#desktop-kitchen-host #cooking-context[hidden] { display:none !important; }
+body[class] .kitchen-slot { color:#261c17; }
+body[class] #farm-panel #guidance-panel {
+  background:var(--stall-surface); color:var(--stall-paper);
+  border:1px solid var(--stall-edge); border-radius:7px; box-shadow:none;
+}
+body[class] #farm-panel #guidance-objective-chip {
+  background:var(--stall-control); color:var(--stall-paper);
+  border:1px solid var(--stall-edge); border-radius:4px;
+}

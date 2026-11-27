@@ -123,6 +123,8 @@ export function createCookingChapterUi(deps) {
     const host = document.getElementById('cooking-context');
     if (!host) return;
     const previousControl = host.contains(document.activeElement) ? document.activeElement.id : '';
+    const kitchenHome = document.getElementById(document.body.classList.contains('mobile-layout') ? 'farm-kitchen-host' : 'desktop-kitchen-host');
+    if (kitchenHome && host.parentElement !== kitchenHome) kitchenHome.append(host);
     host.hidden = state.activeTool !== 'pot';
     const outfit = () => button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); }));
     const appearance = document.getElementById('appearance-options');
