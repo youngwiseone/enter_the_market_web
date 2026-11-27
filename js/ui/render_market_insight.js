@@ -34,6 +34,15 @@ function createInsightHeader(titleText, clearCurrentInfoSelection) {
   return head;
 }
 
+function createTradeDetails(label) {
+  const details = document.createElement('details');
+  details.className = 'crop-outlook-details trade-details';
+  const summary = document.createElement('summary');
+  summary.textContent = label;
+  details.appendChild(summary);
+  return details;
+}
+
 export function renderSelectedItemInsightAction(deps) {
   const {
     getBulkSelectedGridInsightData,
@@ -145,6 +154,7 @@ export function renderSelectedItemInsightAction(deps) {
         ? bulkInsight.cells.some((cell) => cell && cell.isProduce === false)
         : false;
       panel.appendChild(createInsightHeader(`${bulkInsight.count} selected ${hasNonProduce ? 'items' : 'crops'}`, clearCurrentInfoSelection));
+      const details = createTradeDetails('Trade details');
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = [
@@ -166,48 +176,40 @@ export function renderSelectedItemInsightAction(deps) {
         metric.appendChild(valueEl);
         metricGrid.appendChild(metric);
       });
-      panel.appendChild(metricGrid);
-      if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
-        const details = document.createElement('details');
-        details.className = 'sale-breakdown';
-        const summary = document.createElement('summary');
-        summary.textContent = 'Why this sale value?';
-        const text = document.createElement('p');
-        const q = gridInsight.quote;
-        const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
-        text.textContent = `Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}. Cost $${q.cost.toFixed(2)}; net ${signed(q.profit)}. Holding keeps your crop, but uses this growing tile.`;
-        details.append(summary, text);
-        panel.appendChild(details);
-      }
+      details.appendChild(metricGrid);
       const chipRow = document.createElement('div');
       chipRow.className = 'market-insight-row';
       const compositionChip = document.createElement('span');
       compositionChip.className = 'insight-chip';
       compositionChip.textContent = bulkInsight.itemBreakdown.join(', ');
       chipRow.appendChild(compositionChip);
+      details.appendChild(chipRow);
       if (bulkInsight.cells?.some((cell) => cell.quote?.historicalCostUnknown)) {
         const limitation = document.createElement('p');
         limitation.className = 'market-context';
         limitation.textContent = 'Older treatment costs are unknown for some selected crops. Profit uses recorded costs only.';
-        panel.appendChild(limitation);
+        details.appendChild(limitation);
       }
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
       sellButton.className = 'button';
-      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : `Sell Selected (${bulkInsight.count})`;
+      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : `Sell ${bulkInsight.count} · $${bulkInsight.totalSale.toFixed(2)}`;
       sellButton.disabled = isSellBatchInFlight;
       sellButton.dataset.sellActionButton = 'true';
       sellButton.addEventListener('click', () => {
         sellBulkSelectedGridItems(sellButton);
       });
-      chipRow.appendChild(sellButton);
-      panel.appendChild(chipRow);
+      const actions = document.createElement('div');
+      actions.className = 'market-insight-row trade-action';
+      actions.appendChild(sellButton);
+      panel.append(actions, details);
       return;
     }
 
     if (gridInsight) {
       panel.appendChild(createInsightHeader(gridInsight.itemName, clearCurrentInfoSelection));
-      appendMarketContext(panel, gridInsight);
+      const profile = createTradeDetails(gridInsight.isProduce ? 'Crop & price details' : 'Item details');
+      appendMarketContext(profile, gridInsight);
       const metricGrid = document.createElement('div');
       metricGrid.className = 'market-insight-grid';
       const rows = gridInsight.isDish ? [
@@ -237,18 +239,18 @@ export function renderSelectedItemInsightAction(deps) {
         metric.appendChild(valueEl);
         metricGrid.appendChild(metric);
       });
-      panel.appendChild(metricGrid);
+      profile.appendChild(metricGrid);
       if (gridInsight.isProduce) {
         const costNote = document.createElement('p');
         costNote.className = 'market-context';
         costNote.textContent = `Seed + treatments $${(gridInsight.quote?.cost ?? gridInsight.buyPrice).toFixed(2)}${gridInsight.canSell && gridInsight.rarity ? ' · ' + gridInsight.rarity : ''}`;
-        panel.appendChild(costNote);
+        profile.appendChild(costNote);
       }
       if (gridInsight.quote?.historicalCostUnknown) {
         const limitation = document.createElement('p');
         limitation.className = 'market-context';
         limitation.textContent = 'Older treatment costs are unknown. Profit subtracts only recorded seed and treatment spending.';
-        panel.appendChild(limitation);
+        profile.appendChild(limitation);
       }
       if (gridInsight?.isProduce && gridInsight.canSell && gridInsight.quote) {
         const details = document.createElement('details');
@@ -260,7 +262,7 @@ export function renderSelectedItemInsightAction(deps) {
         const signed = value => `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
         text.textContent = `Ordinary crop $${q.ordinaryValue.toFixed(2)} · market ${signed(q.marketEffect)} · rarity ${signed(q.rarityBonus)}${q.farmBonus ? ' · farm ' + signed(q.farmBonus) : ''}. Cost $${q.cost.toFixed(2)}; net ${signed(q.profit)}. Holding keeps your crop, but uses this growing tile.`;
         details.append(summary, text);
-        panel.appendChild(details);
+        profile.appendChild(details);
       }
 
       const chipRow = document.createElement('div');
@@ -346,7 +348,7 @@ export function renderSelectedItemInsightAction(deps) {
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
       sellButton.className = 'button';
-      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : gridInsight.canSell ? `Sell Selected ($${gridInsight.sellNow.toFixed(2)})` : 'Sell Selected (Locked)';
+      sellButton.textContent = isSellBatchInFlight ? 'Selling…' : gridInsight.canSell ? `Sell · $${gridInsight.sellNow.toFixed(2)}` : 'Not ready to sell';
       sellButton.disabled = !gridInsight.canSell || isSellBatchInFlight;
       if (gridInsight.canSell) {
         sellButton.dataset.sellActionButton = 'true';
@@ -355,14 +357,18 @@ export function renderSelectedItemInsightAction(deps) {
         sellSelectedGridItem(sellButton);
       });
       const actionRow = document.createElement('div');
-      actionRow.className = 'market-insight-row';
-      actionRow.appendChild(sellButton);
-      panel.appendChild(actionRow);
-      const profile = document.createElement('details');
-      profile.className = 'crop-outlook-details';
-      const profileTitle = document.createElement('summary');
-      profileTitle.textContent = gridInsight.isProduce ? 'Crop details' : 'Item details';
-      profile.appendChild(profileTitle);
+      actionRow.className = 'market-insight-row trade-action';
+      if (!gridInsight.canSell && gridInsight.isProduce && gridInsight.growth?.daysLeft > 0) {
+        const condition = document.createElement('p');
+        condition.className = 'market-context trade-growth';
+        const left = gridInsight.growth.daysLeft;
+        const today = gridInsight.wateredToday ? 'Watered today' : gridInsight.waterRetainedToday ? 'Moisture retained' : 'Needs water today';
+        condition.textContent = `${today} · ${left} watered day${left === 1 ? '' : 's'} to grow`;
+        panel.appendChild(condition);
+      } else {
+        actionRow.appendChild(sellButton);
+        panel.appendChild(actionRow);
+      }
       profile.appendChild(chipRow);
       if (gridInsight.isDish) {
         const recipeNote = document.createElement('p');
@@ -609,11 +615,15 @@ export function renderSelectedItemInsightAction(deps) {
       : new Set();
     renderIntoPanel(panel);
     const tool = document.querySelector?.('.farm-toolbar [data-tool].active');
-    if (tool && !shopInsight) {
-      const active = document.createElement('p'); active.className = 'active-tool-summary';
+    if (tool && !shopInsight && !gridInsight && !bulkInsight?.count && panel === primary) {
       const kind = tool.getAttribute('data-tool');
-      active.textContent = `Tool: ${tool.textContent.trim()}${kind === 'watering' ? ' · Tap a growing crop to water; 1 energy.' : kind === 'pickaxe' ? ' · Tap locked soil to mine.' : ''}`;
-      panel.prepend(active);
+      const instruction = kind === 'watering' ? 'Tap a growing crop to water it.' : kind === 'pickaxe' ? 'Tap grass to clear a plot.' : '';
+      if (instruction) {
+        const active = document.createElement('p');
+        active.className = 'active-tool-summary';
+        active.textContent = instruction;
+        panel.prepend(active);
+      }
     }
     if (shopInsight) {
       const paid = document.createElement('div');
@@ -626,12 +636,6 @@ export function renderSelectedItemInsightAction(deps) {
       cancel.onclick = clearShopSelection || clearCurrentInfoSelection;
       paid.append(cancel); panel.prepend(paid);
     }
-    if (bulkInsight?.cells?.length) {
-      const names = document.createElement('p'); names.className = 'selection-names';
-      names.textContent = bulkInsight.cells.map(cell => cell.itemName || cell.item?.name || 'Item').join(' · ');
-      panel.prepend(names);
-    }
-
     panel.dataset.insightSelection = selectionKey;
     panel.querySelectorAll('details').forEach(detail => {
       detail.open = openDetails.has(detail.querySelector('summary')?.textContent);

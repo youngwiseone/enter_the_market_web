@@ -180,6 +180,7 @@ export function updateToolButtonsAction(deps) {
     keyLabel.textContent = shortcut ? `(${shortcut})` : '';
     button.disabled = !unlocked;
     button.title = unlocked ? baseTitle : `${baseTitle} (Locked by goal)`;
+    button.setAttribute('aria-pressed', String(tool === state.activeTool));
     if (tool === state.activeTool) {
       button.classList.add('active');
     } else {

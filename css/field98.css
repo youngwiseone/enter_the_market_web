@@ -1,0 +1,165 @@
+/* The landscape is the game; the controls are its Win98 window.
+   Colours come from the player's existing cosmetic, not a new theme. */
+#desktop-titlebar { min-height:34px; padding-inline:8px; }
+.desktop-brand { font-size:15px; }
+#game-options > summary { min-height:32px; display:flex; align-items:center; }
+#game-options > summary::before { content:'▸'; margin-right:5px; }
+#game-options[open] > summary::before { content:'▾'; }
+body[class] :is(.tool-name,.market-insight-title,.crop-state,#chapter-farm-hint,#next-day,.market-context,.kitchen-slot,.kitchen-value,#mobile-bottom-tabs button) {
+   font-family:Tahoma,Verdana,Arial,sans-serif !important;
+}
+#hud-profile-panel .hud-profile-avatar {
+  border:1px solid var(--theme-border);
+  background:var(--theme-subtle-bg);
+}
+#hud-profile-panel .hud-profile-avatar.buy-mode-avatar {
+  filter:none;
+  border:2px solid var(--theme-accent);
+  box-shadow:none;
+}
+#profile-message-bubble { background:var(--theme-surface); color:var(--theme-text); border-color:var(--theme-border); box-shadow:1px 1px var(--desktop-shadow); }
+#farm-panel .farm-scenery { height:51px; margin-bottom:2px; }
+#farm-panel .farm-scenery::after { background:var(--header-bg,#202f70); }
+#farm-title::after { content:'Field view'; }
+#farm-panel .farm-toolbar { order:2; flex-wrap:nowrap; padding:3px 0 4px; margin:0; gap:4px; }
+#farm-panel #desktop-chat-log { order:5; margin-top:5px; }
+#farm-panel .tool-button {
+  position:relative; min-width:48px; flex:0 1 96px; padding:0 5px;
+  box-shadow:inset 1px 1px var(--theme-control-border-hi),inset -1px -1px #4b4b4b,inset -2px -2px var(--theme-control-border-lo);
+}
+#farm-panel .tool-button.active {
+  box-shadow:inset 1px 1px var(--theme-control-border-lo),inset -1px -1px var(--theme-control-border-hi);
+  outline:1px dotted var(--theme-accent); outline-offset:-3px;
+}
+#farm-panel .tool-button.active::after {
+  content:''; position:absolute; bottom:3px; inset-inline:7px; height:2px;
+  background:var(--theme-accent);
+}
+#farm-panel .tool-name { font-size:13px; font-weight:bold; }
+#farm-panel .tool-key-label { font-size:10px; }
+#farm-panel .tool-button img { width:22px; height:22px; }
+body[class] :is(button,summary,a,select):focus-visible { outline:2px dashed var(--theme-accent); outline-offset:2px; }
+
+#grid-container { border-width:2px; background:#716354; }
+#grid { border:1px solid #34472b; }
+#grid .grid-cell:not(.revealed) {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30' shape-rendering='crispEdges'%3E%3Cpath fill='%23e1d99d' opacity='.45' d='M5 9h1v2h-1zm1 2h1v1H6zm12 11h1v2h-1zm2-1h1v2h-1zM24 6h1v2h-1z'/%3E%3Cpath fill='%233d6035' opacity='.55' d='M6 12h2v1H6zm12 12h3v1h-3zm6-16h2v1h-2z'/%3E%3C/svg%3E") 0 0 / 30px 30px,
+    #90a770;
+  border:1px solid #9fb480; border-right-color:#819464; border-bottom-color:#819464;
+  box-shadow:none; color:#263e26;
+}
+#grid .grid-cell:nth-child(3n + 2):not(.revealed) { background-position:11px 6px; background-color:#96ab74; }
+#grid .grid-cell:nth-child(4n + 3):not(.revealed) { background-position:5px 14px; background-color:#8ca26c; }
+#grid .grid-cell.revealed {
+  background-color:#835938; border-color:#5d412d #a2764c #a2764c #5d412d;
+  box-shadow:inset 1px 1px #61432c;
+}
+#grid.farm-two .grid-cell.revealed { background-color:#684b3d; }
+#grid .grid-cell.revealed:has(.crop-state.is-watered) { background-color:#4e4842; }
+#grid .grid-cell.rarity-common .rarity-frame { display:none; }
+#grid .grid-cell.rarity-uncommon .rarity-frame { opacity:.65; }
+#grid .grid-cell .crop-state { font-size:10px; border-width:0; padding:2px 3px; box-shadow:none; }
+#grid .grid-cell .crop-state[title="Ready to sell or hold"] {
+  font-size:10px; min-width:0; padding:1px 3px; color:#fffbdc; background:#364521; opacity:.88;
+}
+#grid .grid-cell:has(.crop-state[title="Ready to sell or hold"]) > img:not(.grid-overlay) { width:92%; height:92%; }
+#grid .grid-cell.request-eligible:not(.cooking-selected)::after { border-color:#f5e39d; }
+
+#chapter-farm-home:empty,#chapter-visit-desk:empty,#farm-kitchen-host:empty,#desktop-kitchen-host:empty { display:none; }
+#chapter-farm-home:not(:has(#chapter-farm-hint:not([hidden]))) { display:none; }
+#chapter-farm-hint { box-sizing:border-box; width:100%; min-height:38px; }
+#chapter-farm-hint.has-visit-note:not([hidden]) {
+  display:grid; grid-template-columns:32px minmax(0,1fr) auto; column-gap:8px; align-items:center;
+  text-align:left; padding:5px 8px; min-height:48px;
+  color:var(--theme-text); background:var(--theme-table-odd);
+}
+#chapter-visit-portrait { width:32px; height:32px; object-fit:cover; image-rendering:pixelated; }
+.has-visit-note .chapter-visit-copy { display:grid; line-height:1.25; }
+.has-visit-note #chapter-visit-title { font-size:13px; }
+#chapter-visit-note { font-size:11px; }
+#chapter-visit-action { color:var(--theme-text); font-size:11px; white-space:nowrap; }
+#chapter-visit-desk #chapter-farm-hint { margin:5px 0; }
+.chapter-first-dialogue { font-size:14px; }
+#farm-kitchen-host { order:5; width:100%; }
+body[class] #desktop-kitchen-host #cooking-context,
+body[class] #farm-panel #cooking-context {
+  display:grid; height:auto; max-height:none; gap:7px; overflow:visible; margin:5px 0; padding:8px;
+  width:100%; background:var(--theme-surface); border:1px solid var(--theme-border);
+  box-shadow:inset 1px 1px var(--theme-control-border-hi); box-sizing:border-box;
+}
+#cooking-context .kitchen-title,#cooking-context .kitchen-status { color:var(--theme-text); }
+#cooking-context .kitchen-slot,#cooking-context .kitchen-value { background:var(--theme-table-odd); color:var(--theme-text); border-color:var(--theme-border); }
+#cooking-context .kitchen-slot.is-filled { background:var(--theme-control-active-bg); border-style:solid; }
+#cooking-context .kitchen-slot-state { color:var(--theme-text-muted); }
+#cooking-context #kitchen-cook:not(:disabled) { background:var(--header-bg,#202f70); color:var(--header-fg,#fff); }
+body[class] #desktop-kitchen-host #cooking-context[hidden] { display:none; }
+
+.market-insight-panel .trade-action { margin:5px 7px; }
+.market-insight-panel .trade-action > button[data-sell-action-button] { background:var(--header-bg,#202f70); color:var(--header-fg,#fff); box-shadow:inset 1px 1px var(--theme-control-border-hi),inset -1px -1px var(--theme-control-border-lo); }
+.market-insight-panel .trade-action > button { min-height:44px; flex:1 1 auto; font-size:14px; }
+.market-insight-head { padding:0 0 0 8px; min-height:30px; }
+.market-insight-title { font-size:14px; }
+.market-insight-close { min-width:52px; }
+.trade-details > summary { font-size:13px; }
+.market-context.trade-growth { margin:6px 8px; color:var(--theme-text); }
+body[class] #farm-notes > details { min-width:0; }
+body[class] #farm-notes #guidance-objective-text { font-size:12px; }
+body[class] #farm-notes .active-tool-summary { display:none; }
+body.mobile-layout[class] :is(#mobile-bottom-tabs,#rest-dock) { bottom:calc(8px + var(--safe-bottom)); }
+body.mobile-layout[class] #mobile-bottom-tabs { background:var(--theme-surface); border-radius:0; gap:2px; }
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button {
+  border-radius:0; min-height:44px; font-size:12px; font-weight:bold; padding:3px;
+}
+body.mobile-layout[class] #mobile-bottom-tabs .tab-button.active { background:var(--header-bg,#202f70); color:var(--header-fg,#fff); }
+body.mobile-layout[class] #next-day { min-height:46px; letter-spacing:0; }
+
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #hud-profile-panel { height:auto; min-height:82px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout .hud-profile-avatar,
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout .hud-profile-avatar.buy-mode-avatar { width:48px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #mobile-profile-row { gap:7px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #hud-top-stats { margin:0; gap:6px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #mobile-chat-log { height:18px; min-height:18px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel .farm-scenery { display:block; height:30px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel .tool-button { flex:1 1 0; min-width:0; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel .tool-button img { width:20px; height:20px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel #current-action { order:4; }
+@media (max-width:360px) {
+  #farm-panel .tool-name { font-size:11px; }
+  #farm-panel .tool-button img { width:17px; height:17px; }
+  body.mobile-layout[class] #mobile-bottom-tabs .tab-button { font-size:11px; }
+}
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #current-action .trade-details details[open],
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #market-insight-panel-mobile-market .trade-details details[open] { position:static; inset:auto; box-shadow:none; padding:5px 8px; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #current-action .trade-details details[open] > summary { position:static; padding:5px 0; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #current-action .trade-details details[open] > summary::after { content:none; }
+
+/* Default portraits use a subdued screen tint; Mono keeps its original neon. */
+body.default:not([class*="theme-"]) .hud-profile-avatar:not(.buy-mode-avatar),
+body.default:not([class*="theme-"]) #chapter-visit-portrait,
+body.theme-default .hud-profile-avatar:not(.buy-mode-avatar),
+body.theme-default #chapter-visit-portrait {
+  filter:grayscale(1) sepia(.25) hue-rotate(155deg) brightness(1.08);
+}
+body.mobile-layout #profile-message-bubble:not(:has(img)) { display:none; }
+.market-insight-panel > .active-tool-summary { margin:0; padding:6px 9px; font-size:13px; }
+.market-insight-panel:has(> .active-tool-summary) { display:block; }
+@media (min-width:901px) {
+  #desktop-titlebar,#market-layout { width:min(100%,1120px); margin-inline:auto; }
+  body:not(.workspace-disabled):not(.legacy-layout) #mobile-profile-side { grid-template-columns:minmax(155px,1fr) minmax(150px,295px); }
+}
+body:not(.workspace-disabled):not(.legacy-layout) #farm-notes #guidance-panel:not([open]) #guidance-objective-text { white-space:normal; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-notes { height:auto; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-notes summary { min-height:28px; }
+
+.market-insight-head > .market-insight-close {
+  flex:0 0 54px; min-width:54px !important; width:54px; height:32px;
+}
+body[class] #market .market-insight-head > .market-insight-close,
+body[class] .trade-action > button { font-family:Tahoma,Verdana,Arial,sans-serif !important; }
+#grid .grid-cell-price-delta { top:2px; bottom:auto; right:2px; border-radius:0; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel .farm-toolbar { order:4; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-panel #current-action { order:5; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #chapter-farm-home { order:6; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout #farm-notes { order:7; }
+body:not(.workspace-disabled):not(.legacy-layout).mobile-layout .trade-details > summary { min-height:38px; }

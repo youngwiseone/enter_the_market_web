@@ -106,7 +106,7 @@ export function createCookingChapterUi(deps) {
     const panels = Array.from(document.querySelectorAll('#market-insight-panel, [data-insight-panel]'));
     panels.forEach(panel => {
       const note = make('p', 'chapter-delivery', text); panel.append(note);
-      let sell = panel.querySelector('[data-sell-action-button]');
+      let sell = panel.querySelector('[data-sell-action-button], .trade-action button');
       // Even an empty/immature selection shows the disabled Give control.
       if (!sell) {
         sell = button('Sell', null, true);

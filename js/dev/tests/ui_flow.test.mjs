@@ -142,6 +142,14 @@ assert.match(receiptText, /Older treatment costs are unknown/);
 assert.match(receiptText, /11\.35/);
 assert.equal(nodes.get('farm-action-button').textContent, 'Selling…');
 assert.equal(nodes.get('farm-action-button').disabled, true);
+const primary = nodes.get('market-insight-panel');
+const trade = primary.children.find(el => el.className?.includes('trade-action'));
+const details = primary.children.find(el => el.className?.includes('trade-details'));
+assert.ok(primary.children.indexOf(trade) < primary.children.indexOf(details));
+assert.equal(trade.children[0].textContent, 'Selling…');
+assert.equal(trade.children[0].disabled, true);
+assert.match(flattenedText(details).join(' '), /Known-cost profit/);
+
 renderSelectedItemInsightAction({ getBulkSelectedGridInsightData: () => null, getSelectedGridItemInsightData: () => ({ ...cropInsight, canSell: false, growth: { isGrown: false, daysLeft: 1 }, wateredToday: false, waterRetainedToday: true }), getSelectedShopItemInsightData: () => null });
 assert.match(nodes.get('farm-action-button').textContent, /Moisture retained/);
 assert.doesNotMatch(nodes.get('farm-action-button').textContent, /Needs water/);
