@@ -19,6 +19,15 @@ export function quoteRecipe(cells) {
     rarity: RARITY_TYPES[Math.floor(cells.reduce((n, c) => n + Math.max(0, RARITY_TYPES.indexOf(c.rarity)), 0) / cells.length)] };
 }
 
+export function compareCookingSale(cells) {
+  if (!cells.length) return null;
+  const meal = quoteRecipe(cells).saleValue;
+  const raw = cells.reduce((sum, cell) => sum + (Number(cell.sellNow ?? cell.quote?.saleValue) || 0), 0);
+  // The market displays currency to cents. Compare the same displayed amounts.
+  const cents = value => Math.round((value + Number.EPSILON) * 100);
+  return { meal, raw, difference: (cents(meal) - cents(raw)) / 100 };
+}
+
 export function clearConsumedCell(farm, index) {
   for (const field of ['gridItems', 'gridPurchasePrice', 'gridRarity', 'gridPlantedDay', 'gridPlacedMeta']) {
     if (Array.isArray(farm[field])) farm[field][index] = null;
@@ -54,11 +63,22 @@ export function createCookingController(deps) {
     if (cells.some(c => !isSaleCropPresent(state, c) || Number(c.farmId) !== Number(state.activeFarmId || 1))) {
       cancel(); return reject('The ingredients changed. Start the recipe again.');
     }
-    const next = [...cells, cell];
-    if (next.length < recipe.ingredients.length) {
-      cells = next; context = contextKey();
-      return { ok: true, complete: false };
+    cells = [...cells, cell]; context = contextKey();
+    return { ok: true, ready: cells.length === recipe.ingredients.length, complete: false };
+  }
+  function finish() {
+    sync();
+    if (state.activeTool !== 'pot' || !normalizeChapter(state).potUnlocked) return reject('Mina will teach you to use her pot.');
+    if (state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress) return reject('Wait for the current action to finish.');
+    const recipe = getRecipe();
+    if (cells.length !== recipe.ingredients.length) return reject('Choose all the ingredients first.');
+    const next = cells.map(cell => getCellSnapshot(cell.cellIndex));
+    if (next.some((cell, i) => !cell || cell.instanceId !== cells[i].instanceId ||
+        cell.itemId !== cells[i].itemId || cell.farmId !== cells[i].farmId ||
+        !isSaleCropPresent(state, cell))) {
+      cancel(); return reject('The ingredients changed. Start the recipe again.');
     }
+    const index = next.at(-1).cellIndex;
     if ((Number(state.player.energy) || 0) < 1) return reject('Cooking needs 1 energy. Rest or cancel; nothing has been consumed.');
     const quote = quoteRecipe(next);
     // Revalidate the complete set before any mutation. Settlement has no await.
@@ -85,5 +105,5 @@ export function createCookingController(deps) {
     try { onCooked({ recipe, index, quote, inputs: next }); } catch { /* Cosmetic feedback cannot undo a settled meal. */ }
     return { ok: true, complete: true, index, quote };
   }
-  return { tap, cancel, chooseRecipe, getPending, getPreview };
+  return { tap, finish, cancel, chooseRecipe, getPending, getPreview };
 }

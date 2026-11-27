@@ -3,7 +3,7 @@ import { createEmptyFarmStateForGrid } from '../../state/farm_state.js';
 import { applyFarmStateToActiveGridRuntime } from '../../state/farm_runtime.js';
 import { withNewCropIdentity } from '../../state/crop_identity.js';
 import { normalizeChapter, getChapterOffers, acceptRequest, declineRequest, getDeliveryPreview, settleDelivery, claimPot } from '../../state/cooking_chapter.js';
-import { createCookingController, quoteRecipe } from '../../controllers/cooking_controller.js';
+import { createCookingController, quoteRecipe, compareCookingSale } from '../../controllers/cooking_controller.js';
 import { createChapterCommit, recoverChapterSettlement, refreshChapterJournal, finishChapterJournal, CHAPTER_JOURNAL_KEY } from '../../state/chapter_settlement.js';
 import { getGridCellSellSnapshotAction } from '../../controllers/grid_interaction_controller.js';
 import { getSelectedGridItemInsightDataAction } from '../../ui/market_insight_data.js';
@@ -160,7 +160,12 @@ function cookingFixture() {
   const untouched = clone(state.farms);
   assert.equal(controller.tap(0).ok, false); assert.equal(controller.tap(1).ok, false);
   assert.deepEqual(state.farms, untouched);
-  assert.equal(controller.tap(48).complete, true);
+  assert.equal(controller.tap(48).ready, true);
+  assert.deepEqual(state.farms, untouched, 'selection never spends crops');
+  assert.equal(state.player.energy, 10);
+  assert.equal(f.saved(), null);
+  assert.equal(controller.finish().complete, true);
+  assert.equal(controller.finish().ok, false, 'cannot cook twice after settlement');
   assert.equal(state.gridItems[0], null); assert.equal(state.gridItems[48], 101);
   assert.equal(state.gridItems.filter(Boolean).length, 48);
   assert.equal(state.gridPlacedMeta[48].dish.cost, 6);
@@ -177,8 +182,8 @@ function cookingFixture() {
 for (const mode of ['sequence', 'single', 'bulk']) {
   const { state, controller } = cookingFixture();
   for (const [i,id] of [[0,4],[1,5],[2,4],[3,5]]) plant(state,i,id,i % 2 ? 'mythic' : 'rare');
-  controller.tap(0); const first = controller.tap(1);
-  controller.tap(2); const second = controller.tap(3);
+  controller.tap(0); controller.tap(1); const first = controller.finish();
+  controller.tap(2); controller.tap(3); const second = controller.finish();
   let loaded = reload(state);
   // Market/farm/rarity presentation changes cannot upgrade the frozen meal quote.
   loaded.items.find(i => i.id === 101).price = 99999;
@@ -225,7 +230,7 @@ for (const mode of ['sequence', 'single', 'bulk']) {
 for (const change of ['cancel', 'tool', 'farm', 'day', 'request', 'reaccept', 'identity', 'energy']) {
   const { state, controller } = cookingFixture(); plant(state, 0, 4); plant(state, 1, 5);
   if (change === 'reaccept') normalizeChapter(state).active = { id:'same-request', acceptedDay:99, requirements:[],deadlineDay:999 };
-  controller.tap(0);
+  controller.tap(0); controller.tap(1);
   if (change === 'cancel') controller.cancel();
   if (change === 'tool') state.activeTool = 'glove';
   if (change === 'farm') applyFarmStateToActiveGridRuntime(state, 2, config);
@@ -234,10 +239,28 @@ for (const change of ['cancel', 'tool', 'farm', 'day', 'request', 'reaccept', 'i
   if (change === 'reaccept') normalizeChapter(state).active.acceptedDay = 100;
   if (change === 'identity') state.gridPlacedMeta[0] = withNewCropIdentity({});
   if (change === 'energy') state.player.energy = 0;
-  controller.tap(1);
+  assert.equal(controller.finish().ok, false, change);
   assert.equal(state.farms[1].gridItems[0], 4, change);
   assert.equal(state.farms[1].gridItems[1], 5, change);
   assert.equal(normalizeChapter(state).cookedCount, 0, change);
+}
+// Compare the same two outcomes shown to players; compare rounded cents and keep price previews pure.
+{
+  const f = cookingFixture(), { state, controller } = f;
+  plant(state, 0, 4); plant(state, 1, 5); plant(state, 2, 4);
+  controller.tap(0); controller.tap(1);
+  assert.equal(controller.tap(2).ok, false);
+  const cells = controller.getPending().cells.map((cell, i) => ({ ...cell, sellNow: i ? 7.04 : 8.06 }));
+  const comparison = compareCookingSale(cells);
+  assert.equal(comparison.meal, quoteRecipe(cells).saleValue);
+  assert.ok(Math.abs(comparison.raw - 15.10) < 1e-9);
+  assert.equal(comparison.difference, -2.68);
+  const cheaperRaw = cells.map(cell => ({ ...cell, sellNow: 3 }));
+  assert.equal(compareCookingSale(cheaperRaw).difference, 6.42);
+  controller.chooseRecipe('tomato');
+  assert.equal(controller.getPending().cells.length, 0);
+  assert.equal(controller.finish().ok, false);
+  assert.equal(f.saved(), null);
 }
 // Journal replay is idempotent across interrupted key writes; quota rejection rolls back.
 {

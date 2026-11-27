@@ -30,7 +30,7 @@ Play here: https://youngwiseone.github.io/enter_the_market_web/
 
 Mina visits through Goals from level 4. Three produce requests lead to her restaurant job and a personal pot gift. The trial opens after the $25,000 milestone and at least eight discovered crops; previously claimed milestones count, and old saves start the story normally. Accepted requests share the farm's existing selection and contextual Sell/Give controls. Partial story donations survive reload, decline and expiry.
 
-The pot is a tool, not a placed station. Choose Garden Soup, Tomato Stew or Pumpkin Mash, then tap their mature ingredients on one farm. The last tap replaces that ingredient with the meal; cancellation costs nothing. Meals remain on the grid, can be sold normally or delivered to Bea and Rowan, and cannot be recooked. Mina returns with occasional larger restaurant produce orders.
+The pot is a tool, not a placed station. Choose Garden Soup, Tomato Stew or Pumpkin Mash, then tap their mature ingredients on one farm. The prep board compares selling those exact crops today against the meal price. Confirm Cook to spend 1 energy and replace the last selected ingredient with the meal; Clear and cancellation cost nothing. Meals remain on the grid, can be sold normally or delivered to Bea and Rowan, and cannot be recooked. Mina returns with occasional larger restaurant produce orders.
 
 Chapter implementation, balance and actual browser results: [guide/cooking_chapter.txt](guide/cooking_chapter.txt). Repeatable local fixture installer: `js/dev/cooking_playtest.html` (use an empty dedicated localhost origin). Focused checks: `node js/dev/tests/cooking_chapter.test.mjs` on Node 22+.
 

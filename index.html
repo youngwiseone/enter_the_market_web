@@ -3464,7 +3464,7 @@
         @media (prefers-reduced-motion: reduce) { .crop-just-ready { animation: none; } }
     </style> 
     <link rel="stylesheet" href="css/desktop98.css?v=85">
-    <link rel="stylesheet" href="css/cooking.css?v=85">
+    <link rel="stylesheet" href="css/cooking.css?v=90">
     <link rel="stylesheet" href="css/workspace.css?v=85">
     <link rel="stylesheet" href="css/opening.css?v=89">
 </head>
@@ -3570,6 +3570,7 @@
                 <div id="grid-container">
                     <div id="grid" style="width: 100%; height: 100%;"></div>
                 </div>
+                <section id="cooking-context" aria-label="Mina’s kitchen" hidden></section>
                 <div id="farm-notes" aria-label="Farm information"></div>
         </div>
         <div id="market">
@@ -3580,7 +3581,7 @@
                         <button id="tab-data" data-main-tab="data" class="tab-button" role="tab" aria-selected="false">Data</button>
                         <a id="feedbackButton" class="tab-button" role="tab" aria-selected="false" href="https://forms.gle/4HQyx93Y4nvpao6j6" rel="noopener noreferrer">Review</a>
                     </div>
-                    <section id="current-action" aria-label="Current action"><div id="cooking-context" class="market-insight-panel" hidden aria-live="polite"></div>
+                    <section id="current-action" aria-label="Current action">
                     <div id="market-insight-panel" class="market-insight-panel" aria-live="polite">
                         <div id="market-insight-empty" class="market-insight-empty">Select an item to preview expected return.</div>
                     </div></section>
@@ -3721,7 +3722,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=89"></script>
+    <script type="module" src="main.js?v=90"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

@@ -167,7 +167,7 @@ Recent gameplay/runtime behavior notes:
 Cooking chapter modules:
 - `js/content/cooking_chapter.js`: stable recipes, dish IDs 101–103, people and request dialogue.
 - `js/state/cooking_chapter.js`: additive `player.cookingChapter` migration, accepted requests, exact partial delivery, story and bounded restaurant cadence.
-- `js/controllers/cooking_controller.js`: transient exact ingredient selection and synchronous last-tile meal settlement.
+- `js/controllers/cooking_controller.js`: transient exact ingredient staging and synchronous settlement on explicit Cook, with the meal on the last selected tile.
 - `js/state/chapter_settlement.js`: recoverable multi-key settlement journal, replayed before initialization and refreshed by subsequent ordinary saves.
 - `js/sim/dish_quote.js`: frozen meal sale quotes, with carried seed/treatment costs and legacy uncertainty.
 - `js/ui/cooking_chapter_ui.js`: Goals request cards, existing selection's Sell/Give split, recipe context and eligible outlines.

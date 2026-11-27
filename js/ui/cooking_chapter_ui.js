@@ -1,7 +1,7 @@
 import { RECIPES } from '../content/cooking_chapter.js';
 import { normalizeChapter, getChapterOffers, acceptRequest, declineRequest, claimPot, getDeliveryPreview, settleDelivery } from '../state/cooking_chapter.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
-import { quoteRecipe } from '../controllers/cooking_controller.js';
+import { compareCookingSale } from '../controllers/cooking_controller.js?v=90';
 
 const make = (tag, className, text) => {
   const el = document.createElement(tag);
@@ -57,7 +57,7 @@ export function createCookingChapterUi(deps) {
       dialogue.append(make('summary', '', 'Read dialogue'), make('p', '', offer.dialogue));
       copy.append(dialogue);
       if (offer.kind === 'gift') {
-        copy.append(button('Receive Mina’s pot & recipes', () => transact(() => { const result = claimPot(state); if (result.ok) feedback('Mina’s pot is yours. Select Cook to make your first Garden Soup.', 'mina', 'excited'); })));
+        copy.append(button('Receive Mina’s pot & recipes', () => transact(() => { const result = claimPot(state); if (result.ok) feedback('Mina’s pot is yours. Select Cook to open the prep board and make Garden Soup.', 'mina', 'excited'); })));
       } else {
         copy.append(make('p', 'chapter-requirements', requestText(offer)));
         copy.append(make('p', '', `${offer.reward ? `$${offer.reward.toFixed(2)} paid once, on full delivery.` : 'A gift to help Mina; no cash payment.'} ${c.active ? `Give by day ${offer.deadlineDay}.` : `${offer.deadlineDays} in-game days after accepting.`} Partial deliveries are welcome.`));
@@ -122,46 +122,82 @@ export function createCookingChapterUi(deps) {
   function renderCooking() {
     const host = document.getElementById('cooking-context');
     if (!host) return;
-    host.replaceChildren();
+    const previousControl = host.contains(document.activeElement) ? document.activeElement.id : '';
     host.hidden = state.activeTool !== 'pot';
-    if (host.hidden) {
-      const appearance = document.getElementById('appearance-options');
-      if (appearance && normalizeChapter(state).potUnlocked) appearance.replaceChildren(button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); })));
-      return;
-    }
-    const pending = cooking.getPending(), recipe = pending.recipe;
-    const row = make('div', 'cooking-recipe-row');
-    const select = make('select'); select.setAttribute('aria-label', 'Choose recipe'); select.id = 'cooking-recipe';
-    RECIPES.forEach(r => { const option = make('option', '', r.name); option.value = r.id; option.selected = r.id === recipe.id; select.append(option); });
-    select.onchange = () => { cooking.chooseRecipe(select.value); lastFeedback = ''; renderAll(); };
-    row.append(select, button('Clear combination', () => { cooking.cancel(); lastFeedback = 'Combination cleared. No ingredients spent.'; renderAll(); }));
-    const outfit = button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); }));
+    const outfit = () => button(state.player.cookingOutfit ? 'Remove apron' : 'Wear apron', () => transact(() => { state.player.cookingOutfit = !state.player.cookingOutfit; refreshPortrait(); }));
     const appearance = document.getElementById('appearance-options');
-    if (appearance) appearance.replaceChildren(outfit);
-    host.append(row);
-    const names = recipe.ingredients.map(id => name(id)).join(' + ');
-    const nextIsFinal = pending.cells.length === recipe.ingredients.length - 1;
-    host.append(make('p', '', `${names} · ${pending.cells.length}/${recipe.ingredients.length}. ${nextIsFinal ? `Next valid tap makes ${recipe.name} here.` : 'Tap mature ingredients on this farm.'} 1 energy · +2 cooking XP.`));
-    if (pending.cells.length) {
-      const remaining = recipe.ingredients.slice();
-      pending.cells.forEach(c => remaining.splice(remaining.indexOf(c.itemId), 1));
-      if (nextIsFinal) {
-        const quotes = state.gridItems.map((id, index) => remaining.includes(id) ? getCellSnapshot(index) : null)
-          .filter(cell => cell && !pending.cells.some(c => c.instanceId === cell.instanceId))
-          .map(cell => quoteRecipe([...pending.cells, cell]));
-        const range = key => {
-          const values = quotes.map(q => q[key]);
-          const low = Math.min(...values), high = Math.max(...values);
-          return `$${low.toFixed(2)}${high - low > .005 ? `–$${high.toFixed(2)}` : ''}`;
-        };
-        host.append(make('p', 'chapter-requirements', quotes.length
-          ? `Meal ${range('saleValue')} · ${quotes.some(q => q.historicalCostUnknown) ? 'known-cost ' : ''}profit ${range('profit')}`
-          : `Need mature ${remaining.map(name).join(' + ')}. Nothing spent.`));
-      } else host.append(make('p', 'chapter-requirements', `Next: ${remaining.map(name).join(' + ')}.`));
+    if (appearance && normalizeChapter(state).potUnlocked) appearance.replaceChildren(outfit());
+    if (host.hidden) { host.replaceChildren(); return; }
+
+    const pending = cooking.getPending(), { recipe, cells } = pending;
+    const ready = cells.length === recipe.ingredients.length;
+    const hasEnergy = Number(state.player.energy) >= 1;
+    const busy = !!(state.runtimeFlags?.isSellBatchInFlight || state.runtimeFlags?.isRestInProgress);
+    const image = (path, className) => {
+      const img = make('img', className);
+      img.src = resolveResourcePath(path); img.alt = '';
+      return img;
+    };
+    const header = make('div', 'kitchen-top');
+    header.append(image('cooking/pot.png', 'kitchen-pot'));
+    const title = make('div', 'kitchen-title');
+    title.append(make('strong', '', 'Mina’s kitchen'), make('span', '', 'Prep board'));
+    header.append(title);
+    const select = make('select'); select.setAttribute('aria-label', 'Choose recipe'); select.id = 'cooking-recipe';
+    RECIPES.forEach(r => {
+      const option = make('option', '', r.name); option.value = r.id; option.selected = r.id === recipe.id; select.append(option);
+    });
+    select.onchange = () => { cooking.chooseRecipe(select.value); lastFeedback = ''; renderAll(); };
+    header.append(select);
+
+    const remaining = cells.slice();
+    const slots = make('ol', 'kitchen-ingredients');
+    slots.setAttribute('aria-label', 'Recipe ingredients');
+    for (const itemId of recipe.ingredients) {
+      const pos = remaining.findIndex(cell => cell.itemId === itemId);
+      const filled = pos >= 0;
+      if (filled) remaining.splice(pos, 1);
+      const item = state.items.find(i => i.id === itemId);
+      const slot = make('li', `kitchen-slot${filled ? ' is-filled' : ''}`);
+      const asset = item?.harvestImage || item?.image;
+      if (asset) slot.append(image(asset, 'kitchen-crop'));
+      slot.append(make('span', '', name(itemId)), make('span', 'kitchen-slot-state', filled ? 'Ready' : 'Needed'));
+      slots.append(slot);
     }
-    else if (!lastFeedback) host.append(make('p', '', 'Clear combination/Escape or switch tools/farms: no cost.'));
-    if (lastFeedback) host.append(make('p', 'chapter-outcome', lastFeedback));
-    const instructions = make('details'); instructions.append(make('summary', '', 'Cooking details'), make('p', '', 'Choose a recipe once, then tap its mature ingredients on this farm. The last ingredient becomes the meal. Each meal costs 1 energy and gives 2 cooking XP. Clear combination spends nothing. Sell or Give the finished meal, or tap ingredients for the next batch.')); host.append(instructions);
+
+    const quote = make('div', 'kitchen-quote');
+    const status = make('p', 'kitchen-status');
+    status.setAttribute('role', 'status');
+    if (ready) {
+      const comparison = compareCookingSale(cells);
+      for (const [label, value] of [['Sell crops', comparison.raw], ['Meal at market', comparison.meal]]) {
+        const figure = make('span', 'kitchen-value');
+        figure.append(make('span', '', label), make('strong', '', `$${value.toFixed(2)}`));
+        quote.append(figure);
+      }
+      const diff = comparison.difference;
+      status.textContent = !hasEnergy ? 'Needs 1 energy. Nothing spent.' : diff === 0 ? 'Same sale value today.' :
+        `Meal: $${Math.abs(diff).toFixed(2)} ${diff > 0 ? 'more' : 'less'} today.`;
+    } else {
+      status.textContent = lastFeedback || 'Pick ripe crops. Nothing spent until you cook.';
+    }
+
+    const actions = make('div', 'kitchen-actions');
+    const clear = button('Clear', () => { cooking.cancel(); lastFeedback = ''; renderAll(); }, !cells.length);
+    clear.id = 'kitchen-clear';
+    const cook = button(ready ? 'Cook · 1 energy' : `Cook · ${cells.length}/${recipe.ingredients.length}`, () => {
+      const result = cooking.finish();
+      if (!result.ok) renderAll();
+    }, !ready || !hasEnergy || busy);
+    cook.id = 'kitchen-cook';
+    actions.append(clear, cook);
+    const bottom = make('div', 'kitchen-bottom');
+    bottom.append(ready ? quote : status, actions);
+    host.replaceChildren(header, slots, bottom, ...(ready ? [status] : []));
+    if (previousControl) {
+      const restore = document.getElementById(previousControl);
+      (restore?.disabled ? select : restore)?.focus({ preventScroll: true });
+    }
   }
   function highlight() {
     const c = normalizeChapter(state), pending = cooking.getPending();
@@ -175,13 +211,7 @@ export function createCookingChapterUi(deps) {
       pending.cells.forEach(cell => remaining.splice(remaining.indexOf(cell.itemId), 1));
       const cookEligible = state.activeTool === 'pot' && remaining.includes(id) && mature && !pending.cells.some(cell => cell.cellIndex === index);
       tile.classList.toggle('request-eligible', mature && (state.activeTool === 'pot' ? cookEligible : !!eligible));
-      if (cookEligible && remaining.length === 1) {
-        const snapshot = getCellSnapshot(index);
-        if (snapshot) {
-          const quote = quoteRecipe([...pending.cells, snapshot]);
-          tile.title = `Cook ${pending.recipe.name} here · $${quote.saleValue.toFixed(2)} · ${quote.historicalCostUnknown ? 'known-cost ' : ''}profit $${quote.profit.toFixed(2)} · 1 energy`;
-        }
-      }
+      if (cookEligible) tile.title = `Add ${name(id)} to ${pending.recipe.name}`;
       tile.classList.toggle('cooking-selected', pending.cells.some(cell => cell.cellIndex === index));
     });
   }

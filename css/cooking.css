@@ -30,3 +30,46 @@ body.mobile-layout #profile-message-bubble { left:0; top:100%; max-width:calc(10
 body.mobile-layout #profile-message-bubble.is-hidden { display:none; }
 body.mobile-layout .chapter-card { padding:7px; gap:7px; }
 body.mobile-layout .chapter-portrait { width:56px; height:56px; }
+
+/* The cooking tool opens a worktop next to the actual ingredient tiles. */
+#farm-panel #cooking-context {
+  --kitchen-ink:#261c17; --kitchen-paper:#fff0cb; --kitchen-wood:#6c3b28; --kitchen-edge:#3d241c;
+  display:grid; gap:7px; height:auto; max-height:none; overflow:visible; order:5;
+  width:100%; margin:6px 0; padding:9px; color:var(--kitchen-ink);
+  background:repeating-linear-gradient(0deg,#714631 0 27px,#653d2c 28px 29px);
+  border:2px solid var(--kitchen-edge); box-shadow:inset 0 1px #b18863,0 2px #251a16;
+}
+.kitchen-top,.kitchen-actions { display:flex; align-items:center; gap:7px; min-width:0; }
+.kitchen-top { color:var(--kitchen-paper); }
+.kitchen-pot { width:27px; height:27px; image-rendering:pixelated; flex:none; }
+.kitchen-title { display:grid; flex:1; line-height:1.15; }
+.kitchen-title strong { font-size:14px; }
+.kitchen-title span { font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+.kitchen-top select { flex:0 1 48%; min-width:0; min-height:38px; font-size:12px; }
+.kitchen-ingredients { display:grid; grid-auto-columns:minmax(0,1fr); grid-auto-flow:column; list-style:none; padding:0; margin:0; gap:5px; }
+.kitchen-slot { display:grid; grid-template-columns:22px minmax(0,1fr); align-items:center; gap:0 5px; padding:5px; min-height:40px; font-size:11px; line-height:1.1;
+  background:#ead6ae; border:1px dashed #624839; overflow-wrap:anywhere; }
+.kitchen-slot.is-filled { background:var(--kitchen-paper); border-style:solid; }
+.kitchen-crop { width:22px; height:22px; object-fit:contain; image-rendering:pixelated; grid-row:span 2; opacity:.55; }
+.kitchen-slot.is-filled .kitchen-crop { opacity:1; }
+.kitchen-slot-state { font-size:10px; color:#523e29; grid-column:2; }
+.kitchen-quote { display:flex; justify-content:space-between; gap:6px; }
+.kitchen-value { display:flex; flex:1; flex-wrap:wrap; gap:3px 8px; justify-content:space-between; align-items:center; padding:5px 7px; background:var(--kitchen-paper); font-size:11px; min-width:0; }
+.kitchen-value strong { font-size:14px; }
+#cooking-context .kitchen-status { margin:0; color:var(--kitchen-paper); line-height:1.32; font-size:12px; }
+.kitchen-actions { justify-content:flex-end; }
+.kitchen-actions .chapter-button { min-height:44px; }
+.kitchen-actions #kitchen-cook:not(:disabled) { background:#f5ce83; color:#27190f; font-weight:bold; }
+body.mobile-layout .kitchen-top select { min-height:44px; }
+.kitchen-bottom { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:7px; }
+.kitchen-quote { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.kitchen-value { flex-wrap:nowrap; }
+@media(max-width:1000px) { .kitchen-value { flex-wrap:wrap; gap:1px 4px; line-height:1.2; } }
+body.mobile-layout #farm-panel #cooking-context { gap:4px; padding:6px; margin:3px 0 0; }
+body.mobile-layout .kitchen-title span { display:none; }
+body.mobile-layout .kitchen-slot { min-height:33px; padding:3px 5px; }
+body.mobile-layout .kitchen-actions { gap:4px; }
+body.mobile-layout .kitchen-actions .chapter-button { font-size:11px; padding:2px 6px; min-width:45px; }
+body.mobile-layout .kitchen-status { font-size:11px !important; }
+body.mobile-layout.is-cooking:not(.workspace-disabled):not(.legacy-layout) #hud-profile-panel { height:82px; }
+body.mobile-layout.is-cooking:not(.workspace-disabled):not(.legacy-layout) #mobile-chat-log { display:none; }
