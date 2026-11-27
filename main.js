@@ -33,7 +33,8 @@ import { buildGoalCelebrationControllerDeps, buildSessionRuntimeDeps } from './j
 import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bootstrap/farm.js';
 import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
 import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller.js';
-import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js';
+import { getMiningWeatherReadout } from './js/sim/farm_weather.js';
+import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js?v=100';
 import { nextDayAction } from './js/controllers/day_controller.js?v=87';
 import { createDayEconomyController } from './js/controllers/day_economy_controller.js';
 import { createDayMarketRuntimeController } from './js/controllers/day_market_runtime_controller.js';
@@ -248,7 +249,7 @@ import {
   renderHUDAction,
   renderPlayerLevelStatusAction,
   updateTimeOfDayMoodAction
-} from './js/ui/render_player.js?v=85';
+} from './js/ui/render_player.js?v=100';
 import {
   continueDailyRollModalAction,
   continueDaySummaryModalAction,
@@ -267,7 +268,7 @@ import {
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
 import { renderMarketAction } from './js/ui/render_market.js?v=99';
-import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=98';
+import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=100';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
 import {
@@ -1534,6 +1535,9 @@ function clearCurrentInfoSelection() {
 function renderSelectedItemInsight() {
   renderSelectedItemInsightAction({
     clearShopSelection,
+    getMiningInstruction: () => state.gridUnlocked.some(unlocked => !unlocked)
+      ? getMiningWeatherReadout(getActiveFarmMiningEnergyCost(), state.weather?.id, state.nextDayWeather?.id)
+      : 'All plots cleared.',
     isSellBatchInFlight: !!state.runtimeFlags?.isSellBatchInFlight,
     getBulkSelectedGridInsightData,
     getSelectedGridItemInsightData,

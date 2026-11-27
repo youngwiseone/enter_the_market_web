@@ -1,52 +1,20 @@
 import { resolveResourcePath } from '../content/resource_paths.js';
 import { getFarmSceneryPhase } from './farm_scenery_state.js';
 
-function getHudWeatherVisual(state) {
-  const weatherId = String(state?.weather?.id || '').trim().toLowerCase();
-  const nextWeatherId = String(state?.nextDayWeather?.id || '').trim().toLowerCase();
-  if (weatherId === 'rain') {
-    return {
-      src: resolveResourcePath('weather/rainy.png'),
-      alt: 'Rainy today'
-    };
+function renderWeather(state) {
+  const today = state.weather?.id;
+  const tomorrow = state.nextDayWeather?.id;
+  const rainy = today === 'rain';
+  const rainDue = tomorrow === 'rain';
+  const icon = document.getElementById('hud-weather-icon');
+  if (icon) {
+    const asset = rainy ? 'rainy' : rainDue ? 'cloudy' : 'sunny';
+    const src = resolveResourcePath(`weather/${asset}.png`);
+    if (icon.getAttribute('src') !== src) icon.src = src;
+    icon.title = rainy ? 'Rain waters crops at dawn and makes mining harder' : 'Dry today';
   }
-  if (nextWeatherId === 'rain') {
-    return {
-      src: resolveResourcePath('weather/cloudy.png'),
-      alt: 'Cloudy, rain likely tomorrow'
-    };
-  }
-  return {
-    src: resolveResourcePath('weather/sunny.png'),
-    alt: 'Sunny today'
-  };
-}
-
-function renderItemsSoldHud(el, totalItemsSold, weatherVisual) {
-  if (!el) return;
-  el.classList.add('hud-items-sold');
-  el.textContent = '';
-
-  if (weatherVisual?.src) {
-    const day = document.getElementById('hud-day');
-    if (day) { day.title = weatherVisual.alt; day.setAttribute('aria-label', `${day.textContent}. ${weatherVisual.alt}`); }
-    const icon = document.createElement('img');
-    icon.className = 'hud-weather-icon';
-    icon.src = weatherVisual.src;
-    icon.alt = '';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.title = weatherVisual.alt || '';
-    if (day) { day.querySelector('.hud-weather-icon')?.remove(); day.appendChild(icon); }
-  }
-
-  const text = document.createElement('span');
-  text.textContent = `Items Sold: ${totalItemsSold.toLocaleString('en-US')}`;
-  el.appendChild(text);
-
-  if (weatherVisual?.alt) {
-    el.title = weatherVisual.alt;
-    el.setAttribute('aria-label', `${text.textContent}. ${weatherVisual.alt}.`);
-  }
+  const forecast = document.getElementById('hud-forecast');
+  if (forecast) forecast.hidden = !rainDue;
 }
 
 function getRollStrengthLabel(state) {
@@ -279,7 +247,6 @@ export function renderHUDAction(deps) {
   const dow = daysOfWeek[(day - 1) % 7];
   const weatherId = String(state.weather?.id || '');
   const weatherLabel = weatherId === 'rain' ? 'Rain' : '';
-  const weatherVisual = getHudWeatherVisual(state);
   if (document.body) {
     document.body.setAttribute('data-weather', weatherId || 'clear');
   }
@@ -293,8 +260,9 @@ export function renderHUDAction(deps) {
     storageElem.textContent = 'Storage: Unlimited';
   }
   netElems.forEach((el) => {
-    renderItemsSoldHud(el, totalItemsSold, weatherVisual);
+    el.textContent = `Items Sold: ${totalItemsSold.toLocaleString('en-US')}`;
   });
+  renderWeather(state);
   renderBuyModeHudAction(deps);
   renderPlayerLevelStatus();
 }

@@ -296,3 +296,8 @@ html:has(body:not(.workspace-disabled):not(.legacy-layout).mobile-layout[data-ac
   scroll-padding-top:calc(52px + var(--safe-top));
   scroll-padding-bottom:calc(76px + var(--safe-bottom));
 }
+
+/* Keep the forecast visible on touch screens without changing the toolbar. */
+#hud-date { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+#hud-date .hud-weather-icon { margin:0; }
+#hud-forecast { white-space:nowrap; font-weight:700; }

@@ -53,6 +53,7 @@ export function renderSelectedItemInsightAction(deps) {
     sellBulkSelectedGridItems,
     sellSelectedGridItem,
     getWaterAction,
+    getMiningInstruction,
     updateGridSize,
     isSellBatchInFlight = false
   } = deps;
@@ -641,7 +642,7 @@ export function renderSelectedItemInsightAction(deps) {
     const tool = document.querySelector?.('.farm-toolbar [data-tool].active');
     if (tool && !shopInsight && !gridInsight && !bulkInsight?.count && panel === primary) {
       const kind = tool.getAttribute('data-tool');
-      const instruction = kind === 'watering' ? 'Tap a marked plot to water it.' : kind === 'pickaxe' ? 'Tap grass to clear a plot.' : '';
+      const instruction = kind === 'watering' ? 'Tap a marked plot to water it.' : kind === 'pickaxe' ? (getMiningInstruction?.() || 'Tap grass to clear a plot.') : '';
       if (instruction) {
         const active = document.createElement('p');
         active.className = 'active-tool-summary';

@@ -1,3 +1,4 @@
+import { getMiningEnergyPerHit } from '../sim/farm_weather.js';
 import { getItemBehavior, isDecorationItem, isProduceItem } from '../content/item_types.js';
 import { getPlantGrowthProgressWithFertiliser, isPlantWateredForDay, persistRetainedWaterProgress } from './fertiliser_controller.js';
 import {
@@ -32,8 +33,7 @@ export function mineGridTileAction(deps) {
 
   if (!Array.isArray(state.gridUnlocked) || index < 0 || index >= state.gridUnlocked.length) return false;
   if (state.gridUnlocked[index]) return false;
-  const isRainDay = String(state.weather?.id || '') === 'rain';
-  const miningEnergyCost = getActiveFarmMiningEnergyCost() + (isRainDay ? 1 : 0);
+  const miningEnergyCost = getMiningEnergyPerHit(getActiveFarmMiningEnergyCost(), state.weather?.id);
   if (!consumeEnergy(miningEnergyCost, 'mine this tile')) return true;
   registerDayAction();
   const mineXpReward = state.activeFarmId === farmSecondaryId ? 40 : xpRewards.mine;

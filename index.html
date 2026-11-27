@@ -3467,7 +3467,7 @@
     <link rel="stylesheet" href="css/cooking.css?v=90">
     <link rel="stylesheet" href="css/workspace.css?v=92">
     <link rel="stylesheet" href="css/opening.css?v=89">
-    <link rel="stylesheet" href="css/field98.css?v=98">
+    <link rel="stylesheet" href="css/field98.css?v=100">
 </head>
 <body>
     <dialog id="market-opening" aria-labelledby="market-opening-title" aria-describedby="market-opening-description">
@@ -3499,8 +3499,9 @@
                 <img id="chat-profile" class="hud-profile-avatar" data-versioned-src="resources/profiles/player.png" alt="player neutral">
                 <div id="mobile-profile-side">
     <div id="hud-top-stats" class="panel">
-        <span id="hud-day">Day 1</span>
+        <span id="hud-date"><span id="hud-day">Day 1</span><img id="hud-weather-icon" class="hud-weather-icon" alt=""></span>
         <span id="hud-cash">$0.00</span>
+        <span id="hud-forecast" title="Rain will water crops tomorrow at dawn" hidden>Rain tomorrow</span>
 
     </div>
 
@@ -3742,7 +3743,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=99"></script>
+    <script type="module" src="main.js?v=100"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
