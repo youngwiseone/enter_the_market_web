@@ -266,7 +266,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=94';
+import { renderMarketAction } from './js/ui/render_market.js?v=96';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=94';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';

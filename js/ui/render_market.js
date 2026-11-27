@@ -1,3 +1,4 @@
+import { renderSeedDrawer } from './seed_drawer.js?v=96';
 import { getFieldCropState, getFieldReadout } from './field_readout.js?v=94';
 import { isProduceItem as isProduceTypedItem, getNormalizedItemTableKey } from '../content/item_types.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
@@ -575,6 +576,8 @@ export function renderMarketAction(deps) {
     ? state.items.find(item => item.id === selectedShopItemId)
     : null;
   const isPlantingSeed = !!selectedSeed && isProduceTypedItem(selectedSeed);
+  renderSeedDrawer({ state, isShopItemUnlocked, getFreePurchaseCount, getShopSeedVisualPath,
+    selectShopItem, selectedItemId: selectedSeed?.id ?? null, isPlantingSeed });
 
   // This is the normal seed selection and planting flow, not a separate tutorial save.
   const starterCarrotId = 4;

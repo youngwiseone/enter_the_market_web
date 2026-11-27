@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { getSeedDrawerChoices } from '../../ui/seed_drawer.js';
+const state = { player:{}, items:[{id:4,name:'Carrot',type:'produce'},{id:5,name:'Potato',type:'produce'},{id:2,name:'Tomato',type:'produce'},{id:31,name:'Sprinkler',type:'sprinkler'}], shop:[{itemId:5,price:2},{itemId:4,price:1.30},{itemId:2,price:3},{itemId:31,price:7}] };
+const query = () => getSeedDrawerChoices({ state, isShopItemUnlocked: id=>id!==2, getFreePurchaseCount: id=>id===5?1:0 });
+const original = JSON.stringify(state);
+assert.deepEqual(query().map(({ name,price,free })=>[name,price,free]),[['Carrot',1.3,false],['Potato',2,true]]);
+assert.equal(JSON.stringify(state),original);
+state.player.openingTrade={carrotAvailable:true};
+assert.deepEqual(query(),[]);
+state.player.openingTrade={carrotAvailable:false};
+assert.deepEqual(query(),[]);
+state.player.openingTrade.lastSale={profit:-1};
+assert.equal(query().length,2);
+state.shop[1].price=1.70;
+assert.equal(query()[0].price,1.70);
+console.log('The seed drawer shows only unlocked produce, with current prices and free seed offers, after the opening sale.');
