@@ -36,7 +36,7 @@ import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller
 import { createCropReadyFx } from './js/ui/crop_ready_fx.js?v=102';
 import { getMiningWeatherReadout } from './js/sim/farm_weather.js';
 import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js?v=100';
-import { nextDayAction } from './js/controllers/day_controller.js?v=87';
+import { nextDayAction } from './js/controllers/day_controller.js?v=104';
 import { createDayEconomyController } from './js/controllers/day_economy_controller.js';
 import { createDayMarketRuntimeController } from './js/controllers/day_market_runtime_controller.js';
 import { createGrowthRuntimeController } from './js/controllers/growth_runtime_controller.js';
@@ -260,7 +260,7 @@ import {
   setDaySummaryOpenDom,
   showDailyMarketRollModalAction,
   showDaySummaryModalDom
-} from './js/ui/daily_roll_modal.js?v=87';
+} from './js/ui/daily_roll_modal.js?v=104';
 import { createGoalCelebrationController } from './js/ui/goal_celebration_controller.js';
 import { createSeedPacketImageFactory } from './js/ui/seed_packet_image_factory.js';
 import {
@@ -268,7 +268,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=103';
+import { renderMarketAction } from './js/ui/render_market.js?v=104';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=100';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';

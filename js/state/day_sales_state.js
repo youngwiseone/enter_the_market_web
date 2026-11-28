@@ -31,3 +31,29 @@ export function normalizeDaySalesState(state) {
     state.marketPressureByItem = {};
   }
 }
+
+// The latest summary travels through the existing save/reset flow. Prior
+// summaries retain the stall takings but no longer retain yesterday's paper.
+export function recordDaySummary(state, summary) {
+  const history = Array.isArray(state.daySummaryHistory) ? state.daySummaryHistory : [];
+  const previous = history.slice(-6).map((entry) => {
+    if (!Array.isArray(entry?.marketBulletin)) return entry;
+    const { marketBulletin, ...takings } = entry;
+    return takings;
+  });
+  state.daySummaryHistory = [...previous, summary];
+}
+
+export function getCurrentGazette(state) {
+  const issue = Array.isArray(state.daySummaryHistory) ? state.daySummaryHistory.at(-1) : null;
+  if (!issue || Number(issue.day) + 1 !== Number(state.player?.day) || !Array.isArray(issue.marketBulletin)) {
+    return null;
+  }
+  // Legacy summaries omit the paper. If a saved paper is damaged, hide it
+  // rather than guessing the reasons for the day’s price movement.
+  return issue.marketBulletin.length <= 3 && issue.marketBulletin.every((move) => move
+    && typeof move.itemName === 'string'
+    && [move.previous, move.current, move.changeCents, move.cycleCents, move.rollCents].every(Number.isFinite)
+    && (!move.priorRange || [move.priorRange.low, move.priorRange.high, move.priorRange.count].every(Number.isFinite)))
+    ? issue : null;
+}

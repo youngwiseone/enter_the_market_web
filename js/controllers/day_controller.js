@@ -1,3 +1,4 @@
+import { recordDaySummary } from '../state/day_sales_state.js?v=104';
 import { buildMarketBulletin, getPriorMarketRange } from '../sim/market_bulletin.js?v=87';
 import { WEATHER_IDS, rollWeatherId, normalizeWeatherId } from '../sim/weather.js';
 import { isProduceItem } from '../content/item_types.js';
@@ -332,14 +333,13 @@ export function nextDayAction(deps) {
       topSale: state.dayTopSale || null,
       nextOpportunity: getBestRollOpportunityText(dailyRoll)
     };
-    if (!Array.isArray(state.daySummaryHistory)) state.daySummaryHistory = [];
-    state.daySummaryHistory.push(daySummary);
-    if (state.daySummaryHistory.length > 7) state.daySummaryHistory = state.daySummaryHistory.slice(-7);
-    state.pendingDaySummary = daySummary;
     const marketBulletin = buildMarketBulletin(priceMoves);
     const marketLead = marketBulletin[0];
     if (marketLead) marketLead.priorRange = getPriorMarketRange(state.marketHistory, marketLead.itemId, state.player.day);
-    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, { ...daySummary, marketBulletin });
+    const summaryWithGazette = { ...daySummary, marketBulletin };
+    recordDaySummary(state, summaryWithGazette);
+    state.pendingDaySummary = daySummary;
+    showDailyMarketRollModal(dailyRoll, rollSummary, fatigue.fatiguePercent, summaryWithGazette);
 
     if (!state.player?.openingTrade || state.player.openingTrade.completed) generateDailyTip(dowIndex);
     state.daySalesCount = 0;

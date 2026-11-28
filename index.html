@@ -2189,6 +2189,23 @@
         .market-bulletin p { margin: 0 0 2px; font-size: var(--font-ui); }
         .market-bulletin ul { list-style: none; padding: 0; margin: 0; max-height: 18dvh; overflow: auto; }
         .market-bulletin ul:empty { display: none; }
+        #current-gazette { margin: 6px 8px 0; }
+        #current-gazette summary {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 5px 9px;
+            background: var(--theme-subtle-bg, #dfdfdf);
+            border: 1px solid var(--theme-subtle-border, #858585);
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #current-gazette summary:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+        body.mobile-layout #current-gazette summary {
+            min-height: 44px;
+            align-content: center;
+        }
+        #current-gazette .market-bulletin { margin: 4px 0 0; }
+        #current-gazette .market-bulletin ul { max-height: none; }
         .daily-roll-panel { overflow-y: auto; }
         .market-bulletin li {
             display: grid;
@@ -3621,6 +3638,15 @@
                     </div></section>
                 </div>
         <div id="market-table-container" class="panel">
+            <details id="current-gazette" hidden>
+                <summary>Today’s Gazette</summary>
+                <section class="market-bulletin" aria-labelledby="current-gazette-title">
+                    <h2 id="current-gazette-title">The Market Gazette</h2>
+                    <p data-gazette-headline></p>
+                    <p class="market-bulletin-range" hidden></p>
+                    <ul aria-label="Biggest price moves"></ul>
+                </section>
+            </details>
             <div id="market-table"></div>
         </div>
         <div id="goals-panel" class="panel">
@@ -3682,7 +3708,7 @@
         <div class="panel daily-roll-panel" role="dialog" aria-labelledby="market-bulletin-title" aria-modal="true">
             <section class="market-bulletin" aria-labelledby="market-bulletin-title">
                 <h2 id="market-bulletin-title">The Market Gazette</h2>
-                <p id="market-bulletin-headline"></p>
+                <p id="market-bulletin-headline" data-gazette-headline></p>
                 <p id="market-bulletin-range" class="market-bulletin-range" hidden></p>
                 <ul id="market-bulletin-list" aria-label="Biggest price moves" tabindex="0"></ul>
             </section>
@@ -3756,7 +3782,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=103"></script>
+    <script type="module" src="main.js?v=104"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

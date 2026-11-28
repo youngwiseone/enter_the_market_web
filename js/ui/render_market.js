@@ -1,3 +1,5 @@
+import { getCurrentGazette } from '../state/day_sales_state.js?v=104';
+import { renderCurrentGazette } from './market_gazette.js?v=104';
 import { prepareFarmKeyboard } from './farm_keyboard.js?v=103';
 import { shouldUseFarmCellClick } from './farm_pointer_bindings.js?v=99';
 import { getSeedChallengeNote, renderSeedDrawer } from './seed_drawer.js?v=101';
@@ -684,6 +686,8 @@ export function renderMarketAction(deps) {
     ? getNewMarketUnlockCounts()
     : { market: 0, utility: 0, decorations: 0, cosmetics: 0, total: 0 };
 
+  renderCurrentGazette(document.getElementById('current-gazette'),
+    activeMarketTableView === 'items' ? getCurrentGazette(state) : null);
   const tableHost = document.createElement('div');
   tableHost.id = MARKET_SUBTAB_PANEL_ID;
   tableHost.setAttribute('role', 'tabpanel');

@@ -1,4 +1,4 @@
-import { describeMarketRange } from '../sim/market_bulletin.js?v=87';
+import { renderMarketBulletin } from './market_gazette.js?v=104';
 import { getAppliedRollImpactPercent } from '../sim/daily_roll.js?v=86';
 import { setModalVisible } from './modal_focus.js';
 import { resolveResourcePath } from '../content/resource_paths.js';
@@ -225,42 +225,6 @@ export function continueDaySummaryModalAction(setDaySummaryOpen) {
   setDaySummaryOpen(false);
 }
 
-function renderMarketBulletin(moves, day) {
-  const title = document.getElementById('market-bulletin-title');
-  const list = document.getElementById('market-bulletin-list');
-  const headline = document.getElementById('market-bulletin-headline');
-  const rangeNote = document.getElementById('market-bulletin-range');
-  if (!title || !list || !headline) return;
-  title.textContent = `The Market Gazette · Day ${day}`;
-  list.replaceChildren();
-  const lead = moves?.[0];
-  if (rangeNote) {
-    const text = lead ? describeMarketRange(lead.priorRange, lead.current) : '';
-    rangeNote.textContent = text;
-    rangeNote.hidden = !text;
-  }
-  if (!lead) {
-    headline.textContent = 'Prices hold steady at dawn.';
-    return;
-  }
-  headline.textContent = lead.changeCents > 0
-    ? `${lead.itemName} opens higher`
-    : lead.changeCents < 0 ? `${lead.itemName} opens lower` : `${lead.itemName} holds its opening price`;
-  const money = (value) => `$${value.toFixed(2)}`;
-  const signedCents = (value) => `${value < 0 ? '−' : '+'}${money(Math.abs(value) / 100)}`;
-  moves.forEach((move) => {
-    const row = document.createElement('li');
-    const name = document.createElement('strong');
-    name.textContent = move.itemName;
-    const prices = document.createElement('span');
-    prices.textContent = `${money(move.previous)} → ${money(move.current)}`;
-    const cause = document.createElement('small');
-    cause.textContent = `Cycle & weather ${signedCents(move.cycleCents)} · Roll ${signedCents(move.rollCents)}`;
-    row.append(name, prices, cause);
-    list.append(row);
-  });
-}
-
 export async function showDailyMarketRollModalAction(deps) {
   const {
     rollResult,
@@ -309,7 +273,7 @@ export async function showDailyMarketRollModalAction(deps) {
 
   const marketDay = Math.max(1, Number(daySummary?.day) || 1);
   if (daySummarySubtitleEl) daySummarySubtitleEl.textContent = `Stall takings · Day ${marketDay}`;
-  renderMarketBulletin(daySummary?.marketBulletin, marketDay + 1);
+  renderMarketBulletin(modal.querySelector('.market-bulletin'), daySummary?.marketBulletin, marketDay + 1);
   if (daySummarySoldEl) {
     daySummarySoldEl.textContent = String(Math.max(0, Number(daySummary?.itemsSold) || 0));
   }
