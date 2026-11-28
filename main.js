@@ -32,7 +32,8 @@ import { isProduceItem } from './js/content/item_types.js';
 import { buildGoalCelebrationControllerDeps, buildSessionRuntimeDeps } from './js/app/bootstrap/session.js';
 import { buildFarmPointerRuntimeDeps, buildFarmUiRuntimeDeps } from './js/app/bootstrap/farm.js';
 import { buildRenderMarketDeps, buildUiRuntimeDeps } from './js/app/bootstrap/market.js';
-import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller.js';
+import { playQueuedSprinklerDawnFxAction } from './js/ui/sprinkler_fx_controller.js?v=102';
+import { createCropReadyFx } from './js/ui/crop_ready_fx.js?v=102';
 import { getMiningWeatherReadout } from './js/sim/farm_weather.js';
 import { mineGridTileAction, waterGridTileAction } from './js/controllers/farm_actions.js?v=100';
 import { nextDayAction } from './js/controllers/day_controller.js?v=87';
@@ -267,7 +268,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=101';
+import { renderMarketAction } from './js/ui/render_market.js?v=102';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=100';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';
@@ -1052,6 +1053,19 @@ function assignGridRarity(index) {
   return growthRuntimeController.assignGridRarity(index);
 }
 
+let sprinklerDawnFxPlaying = false;
+const cropReadyFx = createCropReadyFx({
+  state,
+  frame: (run) => requestAnimationFrame(run),
+  isFarmVisible: () => !sprinklerDawnFxPlaying && !document.hidden
+    && !!document.getElementById('grid')?.offsetParent
+    && !document.querySelector('.is-open [aria-modal="true"]'),
+  getCell: (index) => getGridActionFxTargetsDom(index).cell,
+  isReduceMotion: () => fxController.isReduceMotion()
+});
+document.addEventListener('etm-modal-closed', cropReadyFx.schedule);
+document.addEventListener('visibilitychange', cropReadyFx.schedule);
+
 /**
  * Render the Farmer's Market tab. Populates the shop and inventory tables with
  * current data and sets up buy/sell controls. This function
@@ -1086,6 +1100,7 @@ function renderMarket() {
     getHarvestImagePath,
     getPlantStageImagePath,
     getGridRarity,
+    queueCropReadyFx: cropReadyFx.queue,
     assignGridRarity,
     normalizeRarity,
     addRareGrowthMessage,
@@ -1132,6 +1147,7 @@ function renderMarket() {
     renderSelectedItemInsight,
     renderGuidancePanel
   }));
+  cropReadyFx.schedule();
 }
 
 function renderData() {
@@ -2216,8 +2232,12 @@ function setActiveTool(tool) {
 
 function notifyDailyRollClosed() {
   sessionRuntimeController.showNextGoalCelebration();
-  playQueuedSprinklerDawnFxAction({
+  sprinklerDawnFxPlaying = playQueuedSprinklerDawnFxAction({
     state,
+    onSettled: () => {
+      sprinklerDawnFxPlaying = false;
+      cropReadyFx.schedule();
+    },
     renderMarket,
     getTileCenter,
     getGridActionFxTargets: getGridActionFxTargetsDom,

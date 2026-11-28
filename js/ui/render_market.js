@@ -531,6 +531,7 @@ export function renderMarketAction(deps) {
     getHarvestImagePath,
     getPlantStageImagePath,
     getGridRarity,
+    queueCropReadyFx,
     assignGridRarity,
     normalizeRarity,
     addRareGrowthMessage,
@@ -981,12 +982,12 @@ export function renderMarketAction(deps) {
           status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left; ${watered ? moistureLabel : 'needs water today'}`;
           status.setAttribute('aria-label', status.title);
           cell.appendChild(status);
-          if (growth.isGrown && !getGridRarity(i)) cell.classList.add('crop-just-ready');
         }
         if (isProduceGridItem && growth.isGrown) {
           const hadRarity = !!getGridRarity(i);
           const rarity = assignGridRarity(i);
           if (!hadRarity) {
+            queueCropReadyFx?.(i, itmId);
             const normalizedRarity = normalizeRarity(rarity);
             if (normalizedRarity === 'rare' || normalizedRarity === 'mythic') {
               addRareGrowthMessage(it, normalizedRarity);

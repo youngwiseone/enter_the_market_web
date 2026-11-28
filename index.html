@@ -3454,14 +3454,16 @@
         .sale-breakdown summary { cursor: pointer; min-height: 32px; display: list-item; }
         .sale-breakdown p { margin: 4px 0; }
         .crop-state { position: absolute; bottom: 2px; right: 3px; background: #fff9e6; color: #203527; border: 1px solid #746e53; font: bold 12px monospace; min-width: 14px; text-align: center; z-index: 6; pointer-events: none; }
-        .crop-just-ready { animation: crop-ready var(--action-settle) ease-out; }
-        @keyframes crop-ready { 50% { transform: scale(1.07); } }
+        .crop-just-ready > img:first-child { animation: crop-ready 420ms ease-out; }
+        .crop-just-ready > .crop-state { animation: crop-ready-badge 420ms ease-out; }
+        @keyframes crop-ready { 35% { transform: translateY(-2px) scale(1.16); } }
+        @keyframes crop-ready-badge { 20%, 44% { outline: 2px solid #fff6b0; outline-offset: 1px; } }
         button:focus-visible, summary:focus-visible { outline: 3px solid #343c91; outline-offset: 2px; }
         body.mobile-layout #farm-action-dock { bottom: calc(60px + var(--safe-bottom) + var(--bottom-bar-height)); }
         body.mobile-layout #mobile-bottom-tabs .tab-button { min-height: 44px; }
         body.mobile-layout #guidance-panel { padding: 7px 9px; }
         body.mobile-layout .market-insight-close { min-width: 44px; min-height: 44px; }
-        @media (prefers-reduced-motion: reduce) { .crop-just-ready { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .crop-just-ready > img:first-child, .crop-just-ready > .crop-state { animation: none; } }
     </style> 
     <link rel="stylesheet" href="css/desktop98.css?v=85">
     <link rel="stylesheet" href="css/cooking.css?v=90">
@@ -3743,7 +3745,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=101"></script>
+    <script type="module" src="main.js?v=102"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

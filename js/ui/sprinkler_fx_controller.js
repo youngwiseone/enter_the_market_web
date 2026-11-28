@@ -6,7 +6,8 @@ export function playQueuedSprinklerDawnFxAction(deps) {
     getGridActionFxTargets,
     triggerFxClass,
     spawnBurst,
-    spawnRing
+    spawnRing,
+    onSettled
   } = deps;
 
   const pendingSprinklerEvents = Array.isArray(state?.runtimeFlags?.pendingSprinklerDawnFxEvents)
@@ -95,6 +96,7 @@ export function playQueuedSprinklerDawnFxAction(deps) {
     if (typeof renderMarket === 'function') {
       renderMarket();
     }
+    onSettled?.();
   }, finalDelayMs);
   return true;
 }
