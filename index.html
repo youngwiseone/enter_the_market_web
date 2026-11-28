@@ -3470,6 +3470,17 @@
     <link rel="stylesheet" href="css/workspace.css?v=92">
     <link rel="stylesheet" href="css/opening.css?v=89">
     <link rel="stylesheet" href="css/field98.css?v=100">
+    <style>
+        /* Keyboard focus is separate from crop selection and tool overlays. */
+        #grid .grid-cell:focus-visible {
+            outline: 2px solid #fff8d8;
+            outline-offset: -2px;
+            box-shadow: inset 0 0 0 4px #21213d, inset 0 0 0 6px #fff8d8;
+        }
+        @media (forced-colors: active) {
+            #grid .grid-cell:focus-visible { outline-color: Highlight; }
+        }
+    </style>
 </head>
 <body>
     <dialog id="market-opening" aria-labelledby="market-opening-title" aria-describedby="market-opening-description">
@@ -3533,7 +3544,7 @@
         <div id="farm-panel" class="panel">
             <!-- Side container holds the grid -->
                 <!-- Interactive grid area. -->
-                <div id="farm-title" class="panel-title"><strong id="farm-name">Farm 1</strong><span id="field-readout" role="status"></span></div>
+                <div id="farm-title" class="panel-title"><strong id="farm-name" title="Tab into the field. Move with the arrow keys and use your tool with Enter or Space.">Farm 1</strong><span id="field-readout" role="status"></span></div>
                 <div class="farm-scenery" aria-hidden="true"></div>
                 <div id="desktop-chat-log" aria-live="polite"></div>
                 <details id="guidance-panel" aria-live="polite">
@@ -3589,7 +3600,7 @@
                     <button type="button" id="first-seed-pick" class="seed-ticket-button">Pick seed</button>
                 </div>
                 <div id="grid-container">
-                    <div id="grid" style="width: 100%; height: 100%;"></div>
+                    <div id="grid" role="group" aria-label="Farm plots" aria-description="Use the arrow keys to pick a plot, then Enter or Space to use your tool." style="width: 100%; height: 100%;"></div>
                 </div>
                 <div id="farm-kitchen-host"><section id="cooking-context" aria-label="Mina’s kitchen" hidden></section></div>
                 <div id="farm-notes" aria-label="Farm information"></div>
@@ -3745,7 +3756,7 @@
             image.setAttribute('src', `${src}?v=${encodeURIComponent(window.ETM_IMAGE_VERSION)}`);
         });
     </script>
-    <script type="module" src="main.js?v=102"></script>
+    <script type="module" src="main.js?v=103"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1565723ff66a4156b0b14b3ada223aa5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

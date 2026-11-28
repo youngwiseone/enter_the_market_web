@@ -213,7 +213,7 @@ export function attachCoreEventHandlers(deps) {
         return;
       }
       if (!desktopShortcuts || isTextInputTarget) return;
-      if (target instanceof Element && target.closest('button, a, summary, [role="button"], [contenteditable]')) return;
+      if (target instanceof Element && target.closest('button, a, summary, [role="button"]:not(.grid-cell), [contenteditable]')) return;
       const summaryModal = document.getElementById('day-summary-modal');
       const isDaySummaryOpen = !!(summaryModal && summaryModal.classList.contains('is-open'));
       if (isDaySummaryOpen) return;
@@ -234,6 +234,7 @@ export function attachCoreEventHandlers(deps) {
         return;
       }
       if (event.code === 'Space' || event.key === ' ') {
+        if (target instanceof Element && target.closest('#grid .grid-cell')) return;
         event.preventDefault();
         nextDay();
       }

@@ -233,7 +233,7 @@ import {
   setCreatorSignatureNodeState,
   setLicenseNoteNodeState
 } from './js/ui/creator_license.js';
-import { attachCoreEventHandlers } from './js/ui/bindings/core_bindings.js?v=85';
+import { attachCoreEventHandlers } from './js/ui/bindings/core_bindings.js?v=103';
 import { calculateGoalProgress, renderGoalsPanel } from './js/ui/render_goals.js?v=85';
 import { copyFeedbackTextAction, setFeedbackModalOpenDom } from './js/ui/feedback_controller.js';
 import {
@@ -268,7 +268,7 @@ import {
   getSelectedShopItemInsightDataAction
 } from './js/ui/market_insight_data.js';
 import { renderDataAction } from './js/ui/render_data.js?v=85';
-import { renderMarketAction } from './js/ui/render_market.js?v=102';
+import { renderMarketAction } from './js/ui/render_market.js?v=103';
 import { renderSelectedItemInsightAction } from './js/ui/render_market_insight.js?v=100';
 import { createMessagesController } from './js/ui/messages_controller.js';
 import { renderAllAction } from './js/ui/render_root.js?v=85';

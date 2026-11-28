@@ -202,3 +202,10 @@ keyHandlers.forEach(handler => handler(buttonSpace));
 assert.equal(rested, 0);
 assert.equal(buttonSpace.prevented, undefined);
 console.log('Focused button Space preserves native activation without resting.');
+
+const focusedPlot = new Element();
+focusedPlot.closest = selector => selector === '#grid .grid-cell' ? focusedPlot : null;
+const plotSpace = { ...buttonSpace, target: focusedPlot };
+keyHandlers.forEach(handler => handler(plotSpace));
+assert.equal(rested, 0);
+assert.equal(plotSpace.prevented, undefined);

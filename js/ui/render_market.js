@@ -1,3 +1,4 @@
+import { prepareFarmKeyboard } from './farm_keyboard.js?v=103';
 import { shouldUseFarmCellClick } from './farm_pointer_bindings.js?v=99';
 import { getSeedChallengeNote, renderSeedDrawer } from './seed_drawer.js?v=101';
 import { getTradingChallengeView } from '../state/trading_challenge.js';
@@ -558,7 +559,6 @@ export function renderMarketAction(deps) {
   const tableContainer = document.getElementById('market-table');
   const gridEl = document.getElementById('grid');
   const farmTitleEl = document.getElementById('farm-name');
-  const hadStarterPlotFocus = document.activeElement?.classList?.contains('starter-seed-plot');
 
   if (farmTitleEl) {
     farmTitleEl.textContent = state.activeFarmId === FARM_SECONDARY_ID ? 'Farm 2' : 'Farm 1';
@@ -643,6 +643,14 @@ export function renderMarketAction(deps) {
     stale.forEach((index) => selectedGridCellIndices.delete(index));
   }
 
+  const farmKeyboard = prepareFarmKeyboard(gridEl, {
+    farm: state.activeFarmId,
+    preferred: starterSelected ? starterSoil : -1,
+    fallback: Array.isArray(state.gridUnlocked) ? state.gridUnlocked.findIndex(Boolean) : -1,
+    count: GRID_CELL_COUNT,
+    columns: 7,
+    activate: (index) => applyGridActionForIndex(index, { mode: 'tap' })
+  });
   if (tableContainer) tableContainer.innerHTML = '';
   if (gridEl) gridEl.innerHTML = '';
 
@@ -921,6 +929,9 @@ export function renderMarketAction(deps) {
     }
 
     const unlocked = Array.isArray(state.gridUnlocked) ? state.gridUnlocked[i] : false;
+    let plotDescription = unlocked
+      ? (isPlantingSeed ? `Plant ${selectedSeed.name}` : 'Open soil')
+      : 'Locked soil';
     if (unlocked) {
       cell.classList.add('revealed');
       if (!state.gridItems?.[i]) field.open++;
@@ -931,16 +942,7 @@ export function renderMarketAction(deps) {
         ghost.alt = '';
         ghost.className = 'seed-plot-ghost';
         cell.classList.add('starter-seed-plot');
-        cell.tabIndex = 0;
-        cell.setAttribute('role', 'button');
-        cell.setAttribute('aria-label', 'Plant carrot in this plot');
         cell.appendChild(ghost);
-        cell.addEventListener('keydown', (event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return;
-          event.preventDefault();
-          event.stopPropagation();
-          if (!event.repeat) applyGridActionForIndex(i, { mode: 'tap' });
-        });
       }
     }
 
@@ -966,6 +968,7 @@ export function renderMarketAction(deps) {
           img.src = gridImagePath;
         }
         img.alt = it.name;
+        plotDescription = it.name;
         cell.appendChild(img);
         if (isProduceGridItem) {
           if (!growth.isGrown && Number(state.gridWateredCount?.[i] || 0) === 0) cell.classList.add('crop-seeded');
@@ -981,6 +984,7 @@ export function renderMarketAction(deps) {
           const moistureLabel = state.gridWateredDay?.[i] === state.player.day ? 'watered today' : 'retained moisture today';
           status.title = growth.isGrown ? 'Ready to sell or hold' : `${growth.daysLeft} watered growth days left; ${watered ? moistureLabel : 'needs water today'}`;
           status.setAttribute('aria-label', status.title);
+          plotDescription += `, ${status.title}`;
           cell.appendChild(status);
         }
         if (isProduceGridItem && growth.isGrown) {
@@ -1103,11 +1107,12 @@ export function renderMarketAction(deps) {
     cell.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
     });
+    const keyboardLabel = starterSelected && i === starterSoil ? 'Plant carrot in this plot'
+      : `Row ${Math.floor(i / 7) + 1}, column ${i % 7 + 1}: ${plotDescription}`;
+    farmKeyboard.bind(cell, i, keyboardLabel);
     if (gridEl) gridEl.appendChild(cell);
-    if (hadStarterPlotFocus && starterSelected && i === starterSoil) {
-      cell.focus({ preventScroll: true });
-    }
   }
+  farmKeyboard.restore();
   const readout = document.getElementById('field-readout');
   const nextReadout = getFieldReadout(fieldMode, field, alwaysShowGridItemInfo);
   if (readout && readout.textContent !== nextReadout) readout.textContent = nextReadout;
